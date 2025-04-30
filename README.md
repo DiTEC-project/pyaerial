@@ -16,10 +16,9 @@ This is a Python implementation of the Aerial scalable neurosymbolic association
     - [Frequent itemset mining with Aerial](#5-frequent-itemset-mining-with-aerial)
     - [Using Aerial for rule-based classification for interpretable inference](#6-using-aerial-for-rule-based-classification-for-interpretable-inference)
     - [Fine-tuning the training parameters](#7-fine-tuning-the-training-parameters)
-    - [Setting the log levels](#9-setting-the-log-levels)
+    - [Setting the log levels](#8-setting-the-log-levels)
 - [Functions Overview](#functions-overview)
 - [Citation](#citation)
-- [About](#about)
 - [Contact](#contact)
 - [Contributing](#contributing)
 
@@ -32,8 +31,9 @@ explosion and execution time problems in ARM and it is fully compatible with the
 first creates a neural representation of a given tabular data using an Autoencoder, and then extracts association rules
 from the neural representation.
 
-Please see the [About](#about) section for the details of data preparation and the
-paper [Neurosymbolic Association Rule Mining from Tabular Data](https://arxiv.org/abs/2504.19354).
+See our paper for the details of Autoencoder architecture, training and rule extraction
+algorithm [Neurosymbolic Association Rule Mining from Tabular Data](https://arxiv.org/abs/2504.19354).
+If you use Aerial in your work, please [cite](#citation) our paper.
 
 ---
 
