@@ -136,7 +136,8 @@ trained_autoencoder = model.train(breast_cancer, layer_dims=[2])
 ### 4. Running Aerial for numerical values
 
 Discretizing numerical values is required before running Aerial. We provide 2 discretization methods as part of
-the [`discretization.py`](aerial/discretization.py) script; equal-frequency and equal-width discretization.
+the [`discretization.py`](aerial/discretization.py) script; equal-frequency and equal-width discretization. However,
+Aerial can work with any other discretization method of your choice as well.
 
 ```
 from aerial import model, rule_extraction, rule_quality, discretization
@@ -252,7 +253,8 @@ Sample output showing rules with class labels on the right hand side:
 
 The [`train()`](aerial/model.py) function allows programmers to specify various training parameters:
 
-- autoencoder: You can implement your own Autoencoder and use it for ARM as part of Aerial
+- autoencoder: You can implement your own Autoencoder and use it for ARM as part of Aerial, as long as the last layer
+  matches the original version (see our paper or the source code, [`model.py`](aerial/model.py))
 - noise_factor `default=0.5`: amount of random noise (`+-`) added to each neuron of the denoising Autoencoder
   before the training process
 - lr `default=5e-3`: learning rate
