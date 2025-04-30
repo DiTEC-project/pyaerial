@@ -16,7 +16,6 @@ This is a Python implementation of the Aerial scalable neurosymbolic association
     - [Frequent itemset mining with Aerial](#5-frequent-itemset-mining-with-aerial)
     - [Using Aerial for rule-based classification for interpretable inference](#6-using-aerial-for-rule-based-classification-for-interpretable-inference)
     - [Fine-tuning the training parameters](#7-fine-tuning-the-training-parameters)
-    -
     - [Setting the log levels](#9-setting-the-log-levels)
 - [Functions Overview](#functions-overview)
 - [Citation](#citation)
