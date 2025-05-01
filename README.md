@@ -32,9 +32,10 @@ explosion and execution time problems in ARM and it is fully compatible with the
 first creates a neural representation of a given tabular data using an Autoencoder, and then extracts association rules
 from the neural representation.
 
-See our paper for the details of Autoencoder architecture, training and rule extraction
-algorithm [Neurosymbolic Association Rule Mining from Tabular Data](https://arxiv.org/abs/2504.19354).
-If you use Aerial in your work, please [cite](#citation) our paper.
+See [How Aerial works?](#how-aerial-works) section or our paper for the details of Autoencoder architecture, training
+and rule extraction algorithm
+[Neurosymbolic Association Rule Mining from Tabular Data](https://arxiv.org/abs/2504.19354). If you use Aerial in your
+work, please [cite](#citation) our paper.
 
 ---
 
