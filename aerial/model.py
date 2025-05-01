@@ -154,11 +154,12 @@ def train(transactions: pd.DataFrame, autoencoder: AutoEncoder = None, noise_fac
 
     softmax_ranges = [(cat['start'], cat['end']) for cat in feature_value_indices]
 
+    total_batches = len(dataloader)
     for epoch in range(epochs):
-        # print(f"Epoch {epoch + 1}/{epochs}")
         for batch_index, (batch,) in enumerate(dataloader):
-            noisy_batch = (batch + torch.randn_like(batch) * noise_factor).clamp(0, 1)
+            logger.debug(f"Epoch [{epoch + 1}/{epochs}], Batch [{batch_index + 1}/{total_batches}]")
 
+            noisy_batch = (batch + torch.randn_like(batch) * noise_factor).clamp(0, 1)
             # Forward pass
             reconstructed_batch = autoencoder(noisy_batch, softmax_ranges)
 

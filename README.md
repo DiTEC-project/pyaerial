@@ -301,6 +301,10 @@ aerial.setup_logging(logging.DEBUG)
 ...
 ```
 
+### 9. How to save and load a trained Autoencoder model for ARM?
+
+ToDo: explain saving the model, loading it, and loading it into a process
+
 ## How Aerial works?
 
 The figure below shows the pipeline of operations for Aerial in 3 main stages.
