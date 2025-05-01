@@ -22,8 +22,8 @@ def generate_rules(autoencoder: AutoEncoder, ant_similarity=0.5, cons_similarity
     extract rules from a trained Autoencoder using Aerial+ algorithm
     @param target_class: if given a target class, generate rules with the target class on the right hand side only
     :param max_antecedents: max number of antecedents that the rules will contain
-    :param cons_similarity: consequent simi
-    :param ant_similarity:
+    :param cons_similarity: consequent similarity threshold
+    :param ant_similarity: antecedent similarity threshold
     :param autoencoder:
     """
     if not autoencoder:
