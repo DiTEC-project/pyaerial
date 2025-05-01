@@ -17,6 +17,7 @@ This is a Python implementation of the Aerial scalable neurosymbolic association
     - [Using Aerial for rule-based classification for interpretable inference](#6-using-aerial-for-rule-based-classification-for-interpretable-inference)
     - [Fine-tuning the training parameters](#7-fine-tuning-the-training-parameters)
     - [Setting the log levels](#8-setting-the-log-levels)
+- [How Aerial works?](#how-aerial-works)
 - [Functions Overview](#functions-overview)
 - [Citation](#citation)
 - [Contact](#contact)
@@ -298,6 +299,50 @@ import aerial
 aerial.setup_logging(logging.DEBUG)
 ...
 ```
+
+## How Aerial works?
+
+The figure below shows the pipeline of operations for Aerial in 3 main stages.
+
+![Aerial neurosymbolic association rule mining pipeline](pipeline.png)
+
+1. **Data preparation.**
+    1. Tabular data is first one-hot encoded. This is done
+       using [`data_preparation.py:_one_hot_encoding_with_feature_tracking()`](aerial/data_preparation.py).
+    2. One-hot encoded value are then converted to vector format in the [`model.py:train()`](aerial/model.py).
+    3. If the tabular data contains numerical columns, they are pre-discretized as exemplified
+       in [Running Aerial for numerical values](#4-running-aerial-for-numerical-values).
+2. **Training stage.**
+    1. An under-complete Autoencoder with either default automatically-picked number of layers and dimension (based on
+       the dataset size and dimension) is constructed, or user-specified layers and dimension. (
+       see [Autoencoder](#autoencoder--inputdimension-featurecount-layerdimsnone-))
+    2. All the training parameters can be customized including number of epochs, batch size, learning rate etc. (
+       see [train()](#train-function))
+    3. An Autoencoder is then trained with a denoising mechanism to learn associations between input features. The full
+       Autoencoder architecture is given in our [paper](https://arxiv.org/abs/2504.19354).
+3. **Rule extraction stage.**
+    1. Association rules are then extracted from the trained Autoencoder using Aerial's rule extraction algorithm (
+       see [rule_extraction.py:generate_rules()](#generaterules)). Below figure shows an example rule extraction
+       process.
+    2. **Example**. Assume `$weather$` and `$beverage$` are features with categories `{cold, warm}`
+       and `{tea, coffee, soda}` respectively.
+       The first step is to initialize a test vector of size 5 corresponding to 5 possible categories with equal
+       probabilities per feature, `[0.5, 0.5, 0.33, 0.33, 0.33]`. Then we mark `$weather(warm)$` by assigning 1
+       to `warm` and 0 to `cold`, `[1, 0, 0.33, 0.33, 0.33]`, and call the resulting vector a *test vector*.
+
+       Assume that after a forward run, `[0.7, 0.3, 0.04, 0.1, 0.86]` is received as the output probabilities. Since
+       the probability of `$p_{weather(warm)} = 0.7$` is bigger than the given antecedent similarity
+       threshold (`$\tau_a = 0.5$`), and `$p_{beverage(soda)} = 0.86$` probability is higher than the consequent
+       similarity threshold (`$\tau_c = 0.8$`), we conclude with `$weather(warm) \rightarrow beverage(soda)$`.
+
+   ![Aerial rule extraction example](example.png)
+
+    3. Frequent itemsets (instead of rules) can also be
+       extracted ([rule_extraction.py:generate_frequent_itemsets()](#generatefrequentitemsets)).
+    4. Finally various quality criteria is then calculated for each rule as well as an overall average values, .e.g,
+       support, confidence, coverage, association strength (zhangs' metric). This is done
+       in [rule_quality.py](aerial/rule_quality.py). See [calculate_rule_stats()](#calculaterulestats)
+       and [calculate_basic_rule_stats()](#calculatebasicrulestats)
 
 ## Functions overview
 
