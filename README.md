@@ -8,7 +8,7 @@ This is a Python implementation of the Aerial scalable neurosymbolic association
 
 - [Introduction](#introduction)
 - [Installation](#installation)
-- [Usage](#usage)
+- [Usage Examples](#usage-examples)
     - [Association rule mining from categorical tabular data](#1-association-rule-mining-from-categorical-tabular-data)
     - [Setting Aerial parameters](#2-setting-aerial-parameters)
     - [Fine-tuning Autoencoder architecture and dimensions](#3-fine-tuning-autoencoder-architecture-and-dimensions)
@@ -45,7 +45,7 @@ You can easily install **pyaerial** using pip:
 pip install pyaerial
 ```
 
-## Usage
+## Usage Examples
 
 This section exemplifies the usage of Aerial with and without hyperparameter tuning.
 
@@ -74,6 +74,13 @@ Following is the partial output of above code:
 
 ```
 >>> Output:
+breast_cancer dataset:
+     age menopause tumor-size inv-nodes  ... deg-malig  breast breast-quad irradiat
+0  30-39   premeno      30-34       0-2  ...         3    left    left_low       no
+1  40-49   premeno      20-24       0-2  ...         2   right    right_up       no
+2  40-49   premeno      20-24       0-2  ...         2    left    left_low       no
+                                         ...
+
 Overall rule quality statistics: {
    "rule_count":15,
    "average_support":  0.448,
@@ -120,7 +127,7 @@ association_rules = rule_extraction.generate_rules(trained_autoencoder, ant_simi
 ### 3. Fine-tuning Autoencoder architecture and dimensions
 
 Aerial uses an under-complete Autoencoder and in default, it decides automatically how many layers to use and the
-dimensions of each layer (see [Functions and Classes](#functions-and-classes), Autoencoder).
+dimensions of each layer (see [Functions Overview](#functions-overview), Autoencoder).
 
 Alternatively, you can specify the number of layers and dimensions in the `train` method to improve performance.
 
