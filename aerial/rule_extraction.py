@@ -16,15 +16,18 @@ import logging
 logger = logging.getLogger("aerial")
 
 
-def generate_rules(autoencoder: AutoEncoder, ant_similarity=0.5, cons_similarity=0.8, max_antecedents=2,
-                   target_class=None):
+def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, ant_similarity=0.5, cons_similarity=0.8,
+                   max_antecedents=2, target_class=None):
     """
     extract rules from a trained Autoencoder using Aerial+ algorithm
-    @param target_class: if given a target class, generate rules with the target class on the right hand side only
+    :param target_class: if given a target class, generate rules with the target class on the right hand side only
     :param max_antecedents: max number of antecedents that the rules will contain
+    :param features_of_interest: list: only look for rules that have these features of interest on the antecedent side
+        accepted form ["feature1", "feature2", {"feature3": "value1}, ...], either a feature name as str, or specific value
+        of a feature in object form
     :param cons_similarity: consequent similarity threshold
     :param ant_similarity: antecedent similarity threshold
-    :param autoencoder:
+    :param autoencoder: a trained Autoencoder for ARM
     """
     if not autoencoder:
         logger.error("A trained Autoencoder has to be provided before generating rules.")
@@ -34,6 +37,10 @@ def generate_rules(autoencoder: AutoEncoder, ant_similarity=0.5, cons_similarity
 
     association_rules = []
     input_vector_size = autoencoder.encoder[0].in_features
+
+    # process features of interest
+    significant_features, insignificant_feature_values = extract_significant_features_and_ignored_indices(
+        features_of_interest, autoencoder)
 
     feature_value_indices = autoencoder.feature_value_indices
     target_range = range(input_vector_size)
@@ -46,20 +53,18 @@ def generate_rules(autoencoder: AutoEncoder, ant_similarity=0.5, cons_similarity
                 target_range = range(feature["start"], feature["end"])
                 break
 
-    low_support_antecedents = np.array([])
-
-    # Initialize input vectors
+    # Initialize input vectors with all equal probability per feature value
     unmarked_features = _initialize_input_vectors(input_vector_size, feature_value_indices)
 
     # Precompute target indices for softmax to speed things up
     feature_value_indices = [(cat['start'], cat['end']) for cat in feature_value_indices]
-    softmax_ranges = feature_value_indices
+    softmax_ranges = [(cat['start'], cat['end']) for cat in significant_features]
 
     for r in range(1, max_antecedents + 1):
         if r == 2:
             softmax_ranges = [
                 (start, end) for (start, end) in softmax_ranges
-                if not all(idx in low_support_antecedents for idx in range(start, end))
+                if not all(idx in insignificant_feature_values for idx in range(start, end))
             ]
 
         feature_combinations = list(combinations(softmax_ranges, r))  # Generate combinations
@@ -70,7 +75,7 @@ def generate_rules(autoencoder: AutoEncoder, ant_similarity=0.5, cons_similarity
 
         for category_list in feature_combinations:
             test_vectors, candidate_antecedent_list = _mark_features(unmarked_features, list(category_list),
-                                                                     low_support_antecedents)
+                                                                     insignificant_feature_values)
             if len(test_vectors) > 0:
                 batch_vectors.extend(test_vectors)
                 batch_candidate_antecedent_list.extend(candidate_antecedent_list)
@@ -87,7 +92,7 @@ def generate_rules(autoencoder: AutoEncoder, ant_similarity=0.5, cons_similarity
                 # Identify low-support antecedents
                 if any(implication_probabilities[ant] <= ant_similarity for ant in candidate_antecedents):
                     if r == 1:
-                        low_support_antecedents = np.append(low_support_antecedents, candidate_antecedents)
+                        insignificant_feature_values = np.append(insignificant_feature_values, candidate_antecedents)
                     continue
 
                 # Identify high-support consequents
@@ -106,9 +111,15 @@ def generate_rules(autoencoder: AutoEncoder, ant_similarity=0.5, cons_similarity
     return association_rules
 
 
-def generate_frequent_itemsets(autoencoder: AutoEncoder, similarity=0.5, max_length=2):
+def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest, similarity=0.5, max_length=2):
     """
     Generate frequent itemsets using the Aerial+ algorithm.
+    :param max_length: max itemset length
+    :param similarity: similarity threshold
+    :param autoencoder: a trained Autoencoder
+    :param features_of_interest: list: only look for rules that have these features of interest on the antecedent side
+        accepted form ["feature1", "feature2", {"feature3": "value1}, ...], either a feature name as str, or specific value
+        of a feature in object form
     """
     if not autoencoder:
         logger.error("A trained Autoencoder has to be provided before extracting frequent items.")
@@ -119,7 +130,9 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, similarity=0.5, max_len
     frequent_itemsets = []
     input_vector_size = len(autoencoder.feature_values)
 
-    low_support_antecedents = np.array([])
+    # process features of interest
+    significant_features, insignificant_feature_values = extract_significant_features_and_ignored_indices(
+        features_of_interest, autoencoder)
 
     feature_value_indices = autoencoder.feature_value_indices
 
@@ -128,13 +141,13 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, similarity=0.5, max_len
 
     # Precompute target indices for softmax
     feature_value_indices = [(cat['start'], cat['end']) for cat in feature_value_indices]
-    softmax_ranges = feature_value_indices
+    softmax_ranges = [(cat['start'], cat['end']) for cat in significant_features]
 
     # Iteratively process combinations of increasing size
     for r in range(1, max_length + 1):
         softmax_ranges = [
             (start, end) for (start, end) in softmax_ranges
-            if not all(idx in low_support_antecedents for idx in range(start, end))
+            if not all(idx in insignificant_feature_values for idx in range(start, end))
         ]
 
         feature_combinations = list(combinations(softmax_ranges, r))  # Generate combinations
@@ -145,7 +158,7 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, similarity=0.5, max_len
 
         for category_list in feature_combinations:
             test_vectors, candidate_antecedent_list = _mark_features(unmarked_features, list(category_list),
-                                                                     low_support_antecedents)
+                                                                     insignificant_feature_values)
             if len(test_vectors) > 0:
                 batch_vectors.extend(test_vectors)
                 batch_candidate_antecedent_list.extend(candidate_antecedent_list)
@@ -161,7 +174,7 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, similarity=0.5, max_len
                 # Identify low-support antecedents
                 if any(implication_probabilities[ant] <= similarity for ant in candidate_antecedents):
                     if r == 1:
-                        low_support_antecedents = np.append(low_support_antecedents, candidate_antecedents)
+                        insignificant_feature_values = np.append(insignificant_feature_values, candidate_antecedents)
                     continue
 
                 # Add to frequent itemsets
@@ -173,16 +186,41 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, similarity=0.5, max_len
     return frequent_itemsets
 
 
-def _mark_features(unmarked_test_vector, features, low_support_antecedents):
+def extract_significant_features_and_ignored_indices(features_of_interest, autoencoder):
+    # Normalize features_of_interest into a dict: {feature: value or None}
+    feature_value_indices = autoencoder.feature_value_indices
+    feature_values = autoencoder.feature_values
+    if not features_of_interest or len(features_of_interest) == 0:
+        return feature_value_indices, np.array(len(feature_values))
+    # Dict of features constrained to specific values
+    value_constraints = {k: v for item in features_of_interest if isinstance(item, dict) for k, v in item.items()}
+
+    # Set of all features of interest (str or dict keys)
+    interest_features = {f if isinstance(f, str) else next(iter(f)) for f in features_of_interest}
+
+    # Significant features list
+    significant_features = [f for f in feature_value_indices if f['feature'] in interest_features]
+
+    # Indices to ignore: only from features with specific value constraints
+    values_to_ignore = [
+        i for f in feature_value_indices if f['feature'] in value_constraints
+        for i in range(f['start'], f['end'])
+        if feature_values[i] != f"{f['feature']}__{value_constraints[f['feature']]}"
+    ]
+
+    return significant_features, values_to_ignore
+
+
+def _mark_features(unmarked_test_vector, features, insignificant_feature_values):
     """
     Create a list of test vectors by marking the given features in the unmarked test vector.
     This optimized version processes features in bulk using NumPy operations.
     """
     input_vector_size = unmarked_test_vector.shape[0]
 
-    # Compute valid feature ranges excluding low_support_antecedents
+    # Compute valid feature ranges excluding insignificant_feature_values
     feature_ranges = [
-        np.setdiff1d(np.arange(start, end), low_support_antecedents)
+        np.setdiff1d(np.arange(start, end), insignificant_feature_values)
         for (start, end) in features
     ]
 

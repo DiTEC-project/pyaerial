@@ -126,12 +126,17 @@ class AutoEncoder(nn.Module):
         return y
 
 
-def train(transactions: pd.DataFrame, autoencoder: AutoEncoder = None, noise_factor=0.5,
+def train(transactions: pd.DataFrame, feature_value_indices=None, autoencoder: AutoEncoder = None, noise_factor=0.5,
           lr=5e-3, epochs=1, batch_size=2, loss_function=torch.nn.BCELoss(), num_workers=1, layer_dims: list = None):
     """
     train an autoencoder for association rule mining
     """
-    input_vectors, feature_value_indices = _one_hot_encoding_with_feature_tracking(transactions, num_workers)
+    # if feature_value_indices is provided, that means the data is already one-hot encoded
+    if not feature_value_indices:
+        input_vectors, feature_value_indices = _one_hot_encoding_with_feature_tracking(transactions, num_workers)
+    else:
+        input_vectors = transactions
+
     columns = input_vectors.columns.tolist()
 
     if not autoencoder:

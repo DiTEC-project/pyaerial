@@ -10,13 +10,14 @@ This is a Python implementation of the Aerial scalable neurosymbolic association
 - [Installation](#installation)
 - [Usage Examples](#usage-examples)
     - [Association rule mining from categorical tabular data](#1-association-rule-mining-from-categorical-tabular-data)
-    - [Setting Aerial parameters](#2-setting-aerial-parameters)
-    - [Fine-tuning Autoencoder architecture and dimensions](#3-fine-tuning-autoencoder-architecture-and-dimensions)
-    - [Running Aerial for numerical values](#4-running-aerial-for-numerical-values)
-    - [Frequent itemset mining with Aerial](#5-frequent-itemset-mining-with-aerial)
-    - [Using Aerial for rule-based classification for interpretable inference](#6-using-aerial-for-rule-based-classification-for-interpretable-inference)
-    - [Fine-tuning the training parameters](#7-fine-tuning-the-training-parameters)
-    - [Setting the log levels](#8-setting-the-log-levels)
+    - [Specifying item constraints](#2-specifying-item-constraints)
+    - [Setting Aerial parameters](#3-setting-aerial-parameters)
+    - [Fine-tuning Autoencoder architecture and dimensions](#4-fine-tuning-autoencoder-architecture-and-dimensions)
+    - [Running Aerial for numerical values](#5-running-aerial-for-numerical-values)
+    - [Frequent itemset mining with Aerial](#6-frequent-itemset-mining-with-aerial)
+    - [Using Aerial for rule-based classification for interpretable inference](#7-using-aerial-for-rule-based-classification-for-interpretable-inference)
+    - [Fine-tuning the training parameters](#8-fine-tuning-the-training-parameters)
+    - [Setting the log levels](#9-setting-the-log-levels)
 - [How Aerial works?](#how-aerial-works)
 - [Functions Overview](#functions-overview)
 - [Citation](#citation)
@@ -103,7 +104,57 @@ Sample rule:
 }
 ```
 
-### 2. Setting Aerial parameters
+### 2. Specifying item constraints
+
+Instead of performing rule extraction on all features, Aerial allows you to extract rules only for
+features of interest. This is called ARM with item constraints.
+
+In ARM with item constraints, the antecedent side of the rules will contain the items of interest. However, the
+consequent
+side of the rules may still contain other feature values.
+
+`features_of_interest` parameter of
+`generate_rules()` can be used to do that (also valid for `generate_frequent_itemsets()`, see below).
+
+```
+from aerial import model, rule_extraction
+from ucimlrepo import fetch_ucirepo
+
+# categorical tabular dataset
+breast_cancer = fetch_ucirepo(id=14).data.features
+
+trained_autoencoder = model.train(breast_cancer)
+
+# features of interest, either a feature with its all values (e.g., "age") or with its certain values (e.g., premeno value of menopause feature is the only feature value of interest)
+features_of_interest = ["age", {"menopause": 'premeno'}, 'tumor-size', 'inv-nodes', {"node-caps": "yes"}]
+
+association_rules = rule_extraction.generate_rules(trained_autoencoder, features_of_interest, cons_similarity=0.5)
+```
+
+The output rules will only contain features of interest on the antecedent side:
+
+```
+>>> Output:
+association_rules: [
+   {
+      "antecedents":[
+         "menopause__premeno"
+      ],
+      "consequent":"node-caps__no",
+      ...
+   },
+   {
+      "antecedents":[
+         "menopause__premeno"
+      ],
+      "consequent":"breast__right",
+      ...
+   },
+   ...
+]
+```
+
+### 3. Setting Aerial parameters
 
 Aerial has 3 key parameters; antecedent and consequent similarity threshold, and antecedent length.
 
@@ -126,7 +177,7 @@ association_rules = rule_extraction.generate_rules(trained_autoencoder, ant_simi
 ...
 ```
 
-### 3. Fine-tuning Autoencoder architecture and dimensions
+### 4. Fine-tuning Autoencoder architecture and dimensions
 
 Aerial uses an under-complete Autoencoder and in default, it decides automatically how many layers to use and the
 dimensions of each layer (see [Functions Overview](#functions-overview), Autoencoder).
@@ -142,7 +193,7 @@ trained_autoencoder = model.train(breast_cancer, layer_dims=[2])
 ...
 ```
 
-### 4. Running Aerial for numerical values
+### 5. Running Aerial for numerical values
 
 Discretizing numerical values is required before running Aerial. We provide 2 discretization methods as part of
 the [`discretization.py`](aerial/discretization.py) script; equal-frequency and equal-width discretization. However,
@@ -180,7 +231,7 @@ Following is the partial iris dataset content before and after the discretizatio
 ...
 ```
 
-### 5. Frequent itemset mining with Aerial
+### 6. Frequent itemset mining with Aerial
 
 Aerial can also be used for frequent itemset mining besides association rules.
 
@@ -211,7 +262,7 @@ Frequent itemsets:
 Average support: 0.295
 ```
 
-### 6. Using Aerial for rule-based classification for interpretable inference
+### 7. Using Aerial for rule-based classification for interpretable inference
 
 Aerial can be used to learn rules with a class label on the consequent side, which can later be used for inference
 either by themselves or as part of rule list or rule set classifiers (e.g.,
@@ -258,12 +309,15 @@ Sample output showing rules with class labels on the right hand side:
 }
 ```
 
-### 7. Fine-tuning the training parameters
+### 8. Fine-tuning the training parameters
 
 The [`train()`](aerial/model.py) function allows programmers to specify various training parameters:
 
 - autoencoder: You can implement your own Autoencoder and use it for ARM as part of Aerial, as long as the last layer
   matches the original version (see our paper or the source code, [`model.py`](aerial/model.py))
+- feature_value_indices: if the data is already one-hot encoded using `_one_hot_encoding_with_feature_tracking()`
+  function which returns feature_value_indices that tracks features' indices in a vector, passing feature_value_indices
+  to this function won't run the one-hot encoding again
 - noise_factor `default=0.5`: amount of random noise (`+-`) added to each neuron of the denoising Autoencoder
   before the training process
 - lr `default=5e-3`: learning rate
@@ -287,7 +341,7 @@ if len(association_rules) > 0:
     stats, association_rules = rule_quality.calculate_rule_stats(association_rules, trained_autoencoder.input_vectors)
 ```
 
-### 8. Setting the log levels
+### 9. Setting the log levels
 
 Aerial source code prints extra debug statements notifying the beginning and ending of major
 functions such as the training process or rule extraction. The log levels can be changed as follows:
@@ -300,10 +354,6 @@ import aerial
 aerial.setup_logging(logging.DEBUG)
 ...
 ```
-
-### 9. How to save and load a trained Autoencoder model for ARM?
-
-ToDo: explain saving the model, loading it, and loading it into a process
 
 ## How Aerial works?
 
@@ -423,6 +473,7 @@ data.
 
     generate_rules(
         autoencoder,
+        features_of_interest=None,
         ant_similarity=0.5,
         cons_similarity=0.8,
         max_antecedents=2,
@@ -435,6 +486,10 @@ AutoEncoder using the Aerial algorithm.
 **Parameters**:
 
 - `autoencoder` (AutoEncoder): A trained autoencoder instance.
+
+- `features_of_interest` (list): only look for rules that have these features of interest on the antecedent side
+  accepted form ["feature1", "feature2", {"feature3": "value1}, ...], either a feature name as str, or specific value
+  of a feature in object form
 
 - `ant_similarity` (float): Minimum similarity threshold for an antecedent to be considered frequent.
 
@@ -458,6 +513,7 @@ AutoEncoder using the Aerial algorithm.
 
     generate_frequent_itemsets(
         autoencoder,
+        features_of_interest=None,
         similarity=0.5,
         max_length=2
     )
@@ -468,6 +524,10 @@ AutoEncoder using the same Aerial+ mechanism.
 **Parameters**:
 
 - `autoencoder` (AutoEncoder): A trained autoencoder instance.
+
+- `features_of_interest` (list): only look for rules that have these features of interest on the antecedent side
+  accepted form ["feature1", "feature2", {"feature3": "value1}, ...], either a feature name as str, or specific value
+  of a feature in object form
 
 - `similarity` (float): Minimum similarity threshold for an itemset to be considered frequent.
 
