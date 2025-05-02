@@ -4,6 +4,7 @@ Copyright (c) [2025] [Erkan Karabulut - DiTEC Project]
 Includes the Aerial algorithm's source code for association rule (and frequent itemsets) extraction from a
 trained Autoencoder (Neurosymbolic association rule mining from tabular data - https://arxiv.org/abs/2504.19354)
 """
+from collections import defaultdict
 
 import torch
 
@@ -187,25 +188,28 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest, s
 
 
 def extract_significant_features_and_ignored_indices(features_of_interest, autoencoder):
-    # Normalize features_of_interest into a dict: {feature: value or None}
     feature_value_indices = autoencoder.feature_value_indices
     feature_values = autoencoder.feature_values
-    if not features_of_interest or len(features_of_interest) == 0:
-        return feature_value_indices, np.array(len(feature_values))
-    # Dict of features constrained to specific values
-    value_constraints = {k: v for item in features_of_interest if isinstance(item, dict) for k, v in item.items()}
 
-    # Set of all features of interest (str or dict keys)
-    interest_features = {f if isinstance(f, str) else next(iter(f)) for f in features_of_interest}
+    value_constraints = defaultdict(set)
+    interest_features = set()
 
-    # Significant features list
+    for f in features_of_interest:
+        if isinstance(f, str):
+            interest_features.add(f)
+        elif isinstance(f, dict):
+            for k, v in f.items():
+                interest_features.add(k)
+                value_constraints[k].add(v)
+
+    # Step 1: Significant features
     significant_features = [f for f in feature_value_indices if f['feature'] in interest_features]
 
-    # Indices to ignore: only from features with specific value constraints
+    # Step 2: Indices to ignore from constrained features
     values_to_ignore = [
         i for f in feature_value_indices if f['feature'] in value_constraints
         for i in range(f['start'], f['end'])
-        if feature_values[i] != f"{f['feature']}__{value_constraints[f['feature']]}"
+        if feature_values[i].split('__', 1)[-1] not in value_constraints[f['feature']]
     ]
 
     return significant_features, values_to_ignore
