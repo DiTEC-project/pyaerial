@@ -161,7 +161,8 @@ def train(transactions: pd.DataFrame, feature_value_indices=None, autoencoder: A
     total_batches = len(dataloader)
     for epoch in range(epochs):
         for batch_index, (batch,) in enumerate(dataloader):
-            print(f"Autoencoder training: \rEpoch [{epoch + 1}/{epochs}], Batch [{batch_index + 1}/{total_batches}]", end="", flush=True)
+            print(f"Autoencoder training: \rEpoch [{epoch + 1}/{epochs}], Batch [{batch_index + 1}/{total_batches}]",
+                  end="", flush=True)
 
             noisy_batch = (batch + torch.randn_like(batch) * noise_factor).clamp(0, 1)
             # Forward pass
@@ -181,4 +182,5 @@ def train(transactions: pd.DataFrame, feature_value_indices=None, autoencoder: A
             total_loss.backward()
             optimizer.step()
 
+    logger.debug("Training completed.")
     return autoencoder

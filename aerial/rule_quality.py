@@ -172,6 +172,7 @@ def calculate_rule_stats(rules, transactions, max_workers=1):
         rule['support'] = rule_support
         rule['confidence'] = rule_confidence
         rule['zhangs_metric'] = calculate_zhangs_metric(rule_support, support_body, support_head)
+        rule['coverage'] = antecedent_matches / num_transactions if num_transactions else 0
 
         return antecedent_matches, rule
 
