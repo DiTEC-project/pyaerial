@@ -71,14 +71,15 @@ def calculate_average_rule_quality(rules):
     stats = []
     for rule in rules:
         stats.append([
-            rule["support"], rule["confidence"], rule["zhangs_metric"]
+            rule["rule_coverage"], rule["support"], rule["confidence"], rule["zhangs_metric"]
         ])
 
     stats = pd.DataFrame(stats).mean()
     stats = {
-        "support": stats[0],
-        "confidence": stats[1],
-        "zhangs_metric": stats[2],
+        "rule_coverage": stats[0],
+        "support": stats[1],
+        "confidence": stats[2],
+        "zhangs_metric": stats[3],
     }
     return stats
 
@@ -112,8 +113,8 @@ def calculate_basic_rule_stats(rules, transactions):
                     co_occurrence_count += 1
 
         support_body = ant_count / num_transactions
-        rule['support'] = co_occurrence_count / num_transactions
-        rule['confidence'] = rule['support'] / support_body if support_body != 0 else 0
+        rule['support'] = round(co_occurrence_count / num_transactions, 3)
+        rule['confidence'] = round(rule['support'] / support_body if support_body != 0 else 0, 3)
 
         return rule
 
@@ -169,10 +170,11 @@ def calculate_rule_stats(rules, transactions, max_workers=1):
         rule_support = co_occurrence_count / num_transactions if num_transactions else 0
         rule_confidence = rule_support / support_body if support_body != 0 else 0
 
-        rule['support'] = rule_support
-        rule['confidence'] = rule_confidence
-        rule['zhangs_metric'] = calculate_zhangs_metric(rule_support, support_body, support_head)
-        rule['coverage'] = antecedent_matches / num_transactions if num_transactions else 0
+        rule['support'] = float(round(rule_support, 3))
+        rule['confidence'] = float(round(rule_confidence, 3))
+        rule['zhangs_metric'] = float(round(calculate_zhangs_metric(rule_support, support_body, support_head), 3))
+        rule['rule_coverage'] = float(
+            round(antecedents_occurrence_count / num_transactions if num_transactions else 0, 3))
 
         return antecedent_matches, rule
 
@@ -189,8 +191,10 @@ def calculate_rule_stats(rules, transactions, max_workers=1):
         return None, None
 
     stats = calculate_average_rule_quality(updated_rules)
-    stats["coverage"] = np.sum(dataset_coverage) / num_transactions
+    stats["data_coverage"] = np.sum(dataset_coverage) / num_transactions
 
-    return {"rule_count": len(updated_rules), "average_support": stats['support'],
-            "average_confidence": stats["confidence"], "average_coverage": stats["coverage"],
-            "average_zhangs_metric": stats["zhangs_metric"]}, updated_rules
+    return {"rule_count": len(updated_rules), "average_rule_coverage": float(round(stats["rule_coverage"], 3)),
+            "average_support": float(round(stats['support'], 3)),
+            "average_confidence": float(round(stats["confidence"], 3)),
+            "average_data_coverage": float(round(stats["data_coverage"], 3)),
+            "average_zhangs_metric": float(round(stats["zhangs_metric"], 3))}, updated_rules
