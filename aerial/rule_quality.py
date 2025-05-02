@@ -196,5 +196,5 @@ def calculate_rule_stats(rules, transactions, max_workers=1):
     return {"rule_count": len(updated_rules), "average_rule_coverage": float(round(stats["rule_coverage"], 3)),
             "average_support": float(round(stats['support'], 3)),
             "average_confidence": float(round(stats["confidence"], 3)),
-            "average_data_coverage": float(round(stats["data_coverage"], 3)),
+            "data_coverage": float(round(stats["data_coverage"], 3)),
             "average_zhangs_metric": float(round(stats["zhangs_metric"], 3))}, updated_rules

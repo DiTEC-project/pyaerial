@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyaerial"
-version = "0.2.2"
+version = "0.2.3"
 description = "An implementation of the Aerial neurosymbolic association rule mining algorithm from tabular datasets."
 readme = "README.md"
 authors = [
