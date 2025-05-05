@@ -191,6 +191,9 @@ def extract_significant_features_and_ignored_indices(features_of_interest, autoe
     feature_value_indices = autoencoder.feature_value_indices
     feature_values = autoencoder.feature_values
 
+    if not (features_of_interest and type(features_of_interest) == list and len(features_of_interest) > 0):
+        return feature_value_indices, []
+
     value_constraints = defaultdict(set)
     interest_features = set()
 
