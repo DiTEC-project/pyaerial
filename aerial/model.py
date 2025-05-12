@@ -7,11 +7,13 @@ from tabular data - https://arxiv.org/abs/2504.19354)
 
 import os
 import logging
+
 import torch
 import pandas as pd
 from torch import nn
 import math
 import torch.nn.functional as F
+import numpy as np
 
 from torch.utils.data import TensorDataset, DataLoader
 
@@ -143,32 +145,30 @@ def train(transactions: pd.DataFrame, feature_value_indices=None, autoencoder: A
     if not autoencoder:
         autoencoder = AutoEncoder(input_dimension=len(columns), feature_count=len(feature_value_indices),
                                   layer_dims=layer_dims)
-
     device = torch.device(device if device else "cuda" if torch.cuda.is_available() else "cpu")
-    print("Device to use: ", device)
+    print(f"Using device: {device}")
     autoencoder = autoencoder.to(device)
-
+    autoencoder.train()
     autoencoder.input_vectors = input_vectors
 
-    input_vectors = input_vectors.to_numpy()
+    input_vectors = input_vectors.to_numpy(dtype=np.float32, copy=False)
 
     autoencoder.feature_value_indices = feature_value_indices
     autoencoder.feature_values = columns
 
     optimizer = torch.optim.Adam(autoencoder.parameters(), lr=lr, weight_decay=2e-8)
 
-    vectors_tensor = torch.tensor(input_vectors, dtype=torch.float32)
+    vectors_tensor = torch.from_numpy(input_vectors)
+
     dataset = TensorDataset(vectors_tensor)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
 
     softmax_ranges = [(cat['start'], cat['end']) for cat in feature_value_indices]
 
     total_batches = len(dataloader)
     for epoch in range(epochs):
         for batch_index, (batch,) in enumerate(dataloader):
-            print(f"Autoencoder training: \rEpoch [{epoch + 1}/{epochs}], Batch [{batch_index + 1}/{total_batches}]",
-                  end="", flush=True)
-            batch = batch.to(device)
+            batch = batch.to(device, non_blocking=True)
 
             noisy_batch = (batch + torch.randn_like(batch) * noise_factor).clamp(0, 1)
             # Forward pass
