@@ -85,7 +85,7 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
             batch_vectors = torch.tensor(np.array(batch_vectors), dtype=torch.float32)
             batch_vectors = batch_vectors.to(next(autoencoder.parameters()).device)
             # Perform a single model evaluation for the batch
-            implications_batch = autoencoder(batch_vectors, feature_value_indices).detach().numpy()
+            implications_batch = autoencoder(batch_vectors, feature_value_indices).detach().cpu().numpy()
             for test_vector, implication_probabilities, candidate_antecedents \
                     in zip(batch_vectors, implications_batch, batch_candidate_antecedent_list):
                 if len(candidate_antecedents) == 0:
@@ -168,7 +168,7 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest, s
             batch_vectors = torch.tensor(np.array(batch_vectors), dtype=torch.float32)
             batch_vectors = batch_vectors.to(next(autoencoder.parameters()).device)
             # Perform a single model evaluation for the batch
-            implications_batch = autoencoder(batch_vectors, feature_value_indices).detach().numpy()
+            implications_batch = autoencoder(batch_vectors, feature_value_indices).detach().cpu().numpy()
             for test_vector, implication_probabilities, candidate_antecedents \
                     in zip(batch_vectors, implications_batch, batch_candidate_antecedent_list):
                 if len(candidate_antecedents) == 0:
