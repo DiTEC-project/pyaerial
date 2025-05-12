@@ -10,10 +10,10 @@ logger.propagate = True
 logger.addHandler(logging.NullHandler())
 
 
-def setup_logging(level=logging.INFO, propagate=True):
+def setup_logging(level=logging.INFO, propagate=False):  # default to False
     """Configure package logging"""
-    logger.propagate = propagate
     logger.setLevel(level)
+    logger.propagate = propagate  # disable root logger propagation
 
     # Remove all existing handlers
     for handler in logger.handlers[:]:
