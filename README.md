@@ -62,7 +62,7 @@ from ucimlrepo import fetch_ucirepo
 breast_cancer = fetch_ucirepo(id=14).data.features
 
 # train an autoencoder on the loaded table
-trained_autoencoder = model.train(breast_cancer)
+trained_autoencoder = model.train(breast_cancer, device="cuda")
 
 # extract association rules from the autoencoder
 association_rules = rule_extraction.generate_rules(trained_autoencoder)
@@ -123,7 +123,7 @@ from ucimlrepo import fetch_ucirepo
 # categorical tabular dataset
 breast_cancer = fetch_ucirepo(id=14).data.features
 
-trained_autoencoder = model.train(breast_cancer)
+# trained_autoencoder = model.train(breast_cancer, device="cuda")
 
 # features of interest, either a feature with its all values (e.g., "age") or with its certain values (e.g., premeno value of menopause feature is the only feature value of interest)
 features_of_interest = ["age", {"menopause": 'premeno'}, 'tumor-size', 'inv-nodes', {"node-caps": "yes"}]
@@ -440,7 +440,8 @@ Rule Mining method.
         batch_size=2,
         loss_function=torch.nn.BCELoss(),
         num_workers=1,
-        layer_dims=None
+        layer_dims=None,
+        device=None
     )
 
 Part of the [`model.py`](aerial/model.py) script. Trains the AutoEncoder model using one-hot encoded tabular transaction
@@ -466,6 +467,9 @@ data.
 - `num_workers` (int): Number of subprocesses used for data loading.
 
 - `layer_dims` (list of int, optional): Custom hidden layer dimensions for autoencoder construction (if applicable).
+
+- `device` (str): Name of the device to run the Autoencoder model on, e.g., "cuda", "cpu" etc. The device option that is
+  set here will also be used in the rule extraction stage.
 
 **Returns**: A trained instance of the AutoEncoder.
 
