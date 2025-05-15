@@ -19,6 +19,7 @@ This is a Python implementation of the Aerial scalable neurosymbolic association
     - [Fine-tuning the training parameters](#8-fine-tuning-the-training-parameters)
     - [Setting the log levels](#9-setting-the-log-levels)
 - [How Aerial works?](#how-aerial-works)
+- [How to debug Aerial?](#how-to-debug-aerial)
 - [Functions Overview](#functions-overview)
 - [Citation](#citation)
 - [Contact](#contact)
@@ -52,6 +53,9 @@ pip install pyaerial
 
 This section exemplifies the usage of Aerial with and without hyperparameter tuning.
 
+If you encounter issues such as Aerial can't learn rules, or takes too much time to terminate, please
+see [How to debug Aerial?](#how-to-debug-aerial) section.
+
 ### 1. Association rule mining from categorical tabular data
 
 ```
@@ -62,7 +66,7 @@ from ucimlrepo import fetch_ucirepo
 breast_cancer = fetch_ucirepo(id=14).data.features
 
 # train an autoencoder on the loaded table
-trained_autoencoder = model.train(breast_cancer, device="cuda")
+trained_autoencoder = model.train(breast_cancer)
 
 # extract association rules from the autoencoder
 association_rules = rule_extraction.generate_rules(trained_autoencoder)
@@ -110,8 +114,7 @@ Instead of performing rule extraction on all features, Aerial allows you to extr
 features of interest. This is called ARM with item constraints.
 
 In ARM with item constraints, the antecedent side of the rules will contain the items of interest. However, the
-consequent
-side of the rules may still contain other feature values.
+consequent side of the rules may still contain other feature values.
 
 `features_of_interest` parameter of
 `generate_rules()` can be used to do that (also valid for `generate_frequent_itemsets()`, see below).
@@ -123,7 +126,7 @@ from ucimlrepo import fetch_ucirepo
 # categorical tabular dataset
 breast_cancer = fetch_ucirepo(id=14).data.features
 
-# trained_autoencoder = model.train(breast_cancer, device="cuda")
+trained_autoencoder = model.train(breast_cancer)
 
 # features of interest, either a feature with its all values (e.g., "age") or with its certain values (e.g., premeno value of menopause feature is the only feature value of interest)
 features_of_interest = ["age", {"menopause": 'premeno'}, 'tumor-size', 'inv-nodes', {"node-caps": "yes"}]
@@ -188,8 +191,8 @@ Alternatively, you can specify the number of layers and dimensions in the `train
 from aerial import model, rule_extraction, rule_quality
 
 ...
-# layer_dims=[2] specifies that there is gonna be 1 hidden layer with a dimension of 2
-trained_autoencoder = model.train(breast_cancer, layer_dims=[2]) 
+# layer_dims=[4, 2] specifies that there are gonna be 2 hidden layers with the dimensions 4 and 2, for encoder and decoder
+trained_autoencoder = model.train(breast_cancer, layer_dims=[4, 2]) 
 ...
 ```
 
@@ -355,6 +358,34 @@ aerial.setup_logging(logging.DEBUG)
 ...
 ```
 
+### 10. Running Aerial on GPU
+
+The `device` parameter in `train()` can be used to run Aerial on GPU. Note that Aerial only uses a shallow
+Autoencoder and therefore can also run on CPU without a major performance hindrance.
+
+Furthermore, Aerial will also use the device specified in `train()` function for rule extraction, e.g., when
+performing forward runs on the trained Autoencoder with the test vectors.
+
+```
+from aerial import model, rule_extraction, rule_quality, discretization
+from ucimlrepo import fetch_ucirepo
+
+# a categorical tabular dataset
+breast_cancer = fetch_ucirepo(id=14).data.features
+from aerial import model, rule_extraction, rule_quality, discretization
+from ucimlrepo import fetch_ucirepo
+
+# a categorical tabular dataset
+breast_cancer = fetch_ucirepo(id=14).data.features
+
+# run Aerial on GPU
+trained_autoencoder = model.train(breast_cancer, device="cuda")
+
+# during the rule extraction stage, Aerial will continue to use the device specified above
+association_rules = rule_extraction.generate_rules(trained_autoencoder)
+...
+```
+
 ## How Aerial works?
 
 The figure below shows the pipeline of operations for Aerial in 3 main stages.
@@ -398,6 +429,63 @@ The figure below shows the pipeline of operations for Aerial in 3 main stages.
        support, confidence, coverage, association strength (zhangs' metric). This is done
        in [rule_quality.py](aerial/rule_quality.py). See [calculate_rule_stats()](#calculaterulestats)
        and [calculate_basic_rule_stats()](#calculatebasicrulestats)
+
+## How to debug Aerial?
+
+To be able to debug Aerial, this section explains how each of the parameters of Aerial can impact the number and the
+quality of the rules learned.
+
+### What to do when Aerial does not learn any rules?
+
+Following are some recommendations when Aerial can not find rules, assuming that the data preparation is done
+correctly (e.g., the data is discretized).
+
+- **Longer training.** Increasing the number of epochs can make Aerial capture associations better. However,
+  training for too long may lead to overfitting, which means non-informative rules with low association strength.
+- **Adding more parameters.** Increasing the number of layers and/or dimension of the layers can again allow Aerial
+  to discover associations that was not possible with lower number of parameters. This may require training longer as
+  well.
+- **Reducing antecedent similarity threshold.** Antecedent similarity threshold in Aerial is synonymous to minimum
+  support threshold in exhaustive ARM methods. Reducing antecedent similarity threshold will result in more rules with
+  potentially lower support.
+- **Reducing consequent similarity threshold.** Consequent similarity threshold of Aerial is synoynmous to minimum
+  confidence threshold in exhaustive ARM methods. Reducing this threshold will result in more rules with potentially
+  lower confidence.
+
+### What to do when Aerial takes too much time and learns too many rules?
+
+Similar to any other ARM algorithm, when performing knowledge discovery by learning rules, it could be the case
+that the input parameters of the algorithm results in a huge search space and that the underlying hardware does not
+allow terminating in a reasonable time.
+
+To overcome this, we suggest starting with smaller search spaces and gradually increasing. In the scope of
+Aerial, this can be done as follows:
+
+1. Start with `max_antecedents=2`, observe the execution time and usefulness of the rules you learned. Then gradually
+   increase this number if necessary for the task you want to achieve.
+2. Start with `ant_similarity=0.5`, or even higher if necessary. A high antecedent similarity means you start
+   discovering the most prominent patterns in the data first, that are usually easier to discover. This parameter is
+   synonymous with the minimum support threshold of exhaustive ARM methods such as Apriori or FP-Growth (but not the
+   same).
+3. Do not set low `cons_similarity`. The consequent similarity is synonymous to a combination of minimum confidence
+   and zhang's metric thresholds. There is no reason to set this parameter low, e.g., lower than 0.5. Similar
+   to `ant_similarity`, start with a high number such as `0.9` and then gradually decrease if necessary.
+4. Train less or use less parameters. If Aerial does not terminate for an unreasonable duration, it could also mean that
+   the model over-fitted the data and is finding many non-informative rules which increase the execution time. To
+   prevent that, start with smaller number of epochs and parameters. For datasets where the number of rows `n` is much
+   bigger than the number columns `d`, such that `n >> d`, usually training for 2 epochs with 2 layers of decreasing
+   dimensions per encoder and decoder is enough.
+5. Another alternative is to apply ideas from the ARM rule explosion literature. One of the ideas is to learn rules for
+   items of interest rather than all items (columns). This can be done with Aerial as it is exemplified
+   in [Specifying item constraints](#2-specifying-item-constraints) section.
+6. If the dataset is big and you needed to create a deeper neural network with many parameters, use GPU rather than a
+   CPU. Please see [Running Aerial on GPU](#10-running-aerial-on-gpu) section for details.
+
+Note that it is also always possible that there are no prominent patterns in the data to discover.
+
+### What to do if Aerial produces error messages?
+
+Please create an issue in this repository with the error message and/or send an email to e.karabulut@uva.nl.
 
 ## Functions overview
 
