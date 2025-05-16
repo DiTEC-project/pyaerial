@@ -149,7 +149,8 @@ def calculate_rule_stats(rules, transactions, max_workers=1):
     Calculate rule quality stats for the given set of rules based on the input transactions.
     """
     if max_workers == 1:
-        logger.info("To speed up rule quality calculations, set max_workers > 1 to process rules in parallel.")
+        logger.info("To speed up rule quality calculations, set max_workers > 1 in calculate_rule_stats() "
+                    "to process rules in parallel.")
     num_transactions = len(transactions)
     vector_tracker_list = transactions.columns.tolist()
 
