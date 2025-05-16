@@ -39,7 +39,9 @@ def _one_hot_encoding_with_feature_tracking(transactions: pd.DataFrame, parallel
     if non_categorical_cols:
         logger.error(
             f"Expected all columns to be categorical or already one-hot encoded. "
-            f"The following columns do not meet that condition: {non_categorical_cols}"
+            f"The following columns do not meet that condition: {non_categorical_cols}."
+            f"You can use discretization.equal_frequency_discretization(your_dataset, n_bins=5) as one way "
+            f"to discretize your data"
         )
         return None, None
 

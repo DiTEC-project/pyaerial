@@ -135,6 +135,10 @@ def train(transactions: pd.DataFrame, autoencoder: AutoEncoder = None, noise_fac
     """
     input_vectors, feature_value_indices = _one_hot_encoding_with_feature_tracking(transactions, num_workers)
 
+    if input_vectors is None:
+        logger.error("Training stopped. Please fix the data issues first.")
+        return None
+
     columns = input_vectors.columns.tolist()
 
     if not autoencoder:
@@ -156,7 +160,8 @@ def train(transactions: pd.DataFrame, autoencoder: AutoEncoder = None, noise_fac
     vectors_tensor = torch.from_numpy(input_vectors)
 
     dataset = TensorDataset(vectors_tensor)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers,
+                            pin_memory=torch.cuda.is_available())
 
     softmax_ranges = [(cat['start'], cat['end']) for cat in feature_value_indices]
 
