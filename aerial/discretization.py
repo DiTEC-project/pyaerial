@@ -11,7 +11,7 @@ import pandas as pd
 logger = logging.getLogger("aerial")
 
 
-def equal_frequency_discretization(df: pd.DataFrame, n_bins=10):
+def equal_frequency_discretization(df: pd.DataFrame, n_bins=5):
     """
     Detect numerical columns automatically and discretize them into n_bins intervals based on equal frequency.
     Intervals are represented as strings.
@@ -34,7 +34,7 @@ def equal_frequency_discretization(df: pd.DataFrame, n_bins=10):
     return df_discretized
 
 
-def equal_width_discretization(df: pd.DataFrame, n_bins=10):
+def equal_width_discretization(df: pd.DataFrame, n_bins=5):
     """
     Detect numerical columns automatically and discretize them into n_bins intervals based on equal width.
     Intervals are represented as strings.

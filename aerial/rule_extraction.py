@@ -113,7 +113,7 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
     return association_rules
 
 
-def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest, similarity=0.5, max_length=2):
+def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=None, similarity=0.5, max_length=2):
     """
     Generate frequent itemsets using the Aerial+ algorithm.
     :param max_length: max itemset length

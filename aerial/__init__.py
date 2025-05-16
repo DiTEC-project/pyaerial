@@ -27,3 +27,6 @@ def setup_logging(level=logging.INFO, propagate=False):  # default to False
         )
         handler.setFormatter(formatter)
         logger.addHandler(handler)
+
+
+setup_logging()

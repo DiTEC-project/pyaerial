@@ -176,7 +176,7 @@ from ucimlrepo import fetch_ucirepo
 
 breast_cancer = fetch_ucirepo(id=14).data.features
 
-trained_autoencoder = model.train(table_with_labels)
+trained_autoencoder = model.train(breast_cancer)
 
 # hyperparameters of aerial can be set using the generate_rules function
 association_rules = rule_extraction.generate_rules(trained_autoencoder, ant_similarity=0.5, cons_similarity=0.8, max_antecedents=2)
@@ -213,9 +213,9 @@ from ucimlrepo import fetch_ucirepo
 iris = fetch_ucirepo(id=53).data.features
 
 # find and discretize numerical columns 
-iris_discretized = discretization.equal_frequency_discretization(iris, n_bins=10)
+iris_discretized = discretization.equal_frequency_discretization(iris, n_bins=5)
 
-trained_autoencoder = model.train(iris_discretized, layer_dims=[19], epochs=5)
+trained_autoencoder = model.train(iris_discretized, epochs=10)
 
 association_rules = rule_extraction.generate_rules(trained_autoencoder, ant_similarity=0.1, cons_similarity=0.5)
 ```
@@ -321,9 +321,6 @@ The [`train()`](aerial/model.py) function allows programmers to specify various 
 
 - autoencoder: You can implement your own Autoencoder and use it for ARM as part of Aerial, as long as the last layer
   matches the original version (see our paper or the source code, [`model.py`](aerial/model.py))
-- feature_value_indices: if the data is already one-hot encoded using `_one_hot_encoding_with_feature_tracking()`
-  function which returns feature_value_indices that tracks features' indices in a vector, passing feature_value_indices
-  to this function won't run the one-hot encoding again
 - noise_factor `default=0.5`: amount of random noise (`+-`) added to each neuron of the denoising Autoencoder
   before the training process
 - lr `default=5e-3`: learning rate
@@ -535,8 +532,13 @@ Rule Mining method.
         device=None
     )
 
-Part of the [`model.py`](aerial/model.py) script. Trains the AutoEncoder model using one-hot encoded tabular transaction
-data.
+Part of the [`model.py`](aerial/model.py) script. Trains the AutoEncoder model using a categorical tabular data in
+pandas Dataframe form.
+
+If some of the columns are one-hot encoded, the method does not further one-hot encode the data.
+
+If there are numerical features with less than 10 cardinality, it treats them as categorical features. If the
+cardinality is more than 10, then it throws an error.
 
 **Parameters**:
 
@@ -639,7 +641,7 @@ AutoEncoder using the same Aerial+ mechanism.
 
 ### equal_frequency_discretization
 
-    equal_frequency_discretization(df: pd.DataFrame, n_bins=10)
+    equal_frequency_discretization(df: pd.DataFrame, n_bins=5)
 
 Discretizes all numerical columns into equal-frequency bins and encodes the resulting intervals as string labels.
 
@@ -653,7 +655,7 @@ Discretizes all numerical columns into equal-frequency bins and encodes the resu
 
 ### equal_width_discretization
 
-`equal_width_discretization(df: pd.DataFrame, n_bins=10)`
+`equal_width_discretization(df: pd.DataFrame, n_bins=5)`
 
 Discretizes all numerical columns into equal-width bins and encodes the resulting intervals as string labels.
 

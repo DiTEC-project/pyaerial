@@ -2,11 +2,11 @@ import unittest
 import pandas as pd
 
 from aerial.model import AutoEncoder
+from aerial.data_preparation import _one_hot_encoding_with_feature_tracking
+from aerial.model import train
 from aerial.rule_extraction import (
-    _one_hot_encoding_with_feature_tracking,
     generate_rules,
     generate_frequent_itemsets,
-    train,
 )
 
 
@@ -18,10 +18,7 @@ class TestAerialFunctions(unittest.TestCase):
             'Size': ['S', 'M', 'L', 'S', 'L'],
             'Shape': ['Circle', 'Square', 'Triangle', 'Circle', 'Square']
         })
-        self.vector_list, self.feature_value_indices = _one_hot_encoding_with_feature_tracking(self.transactions)
-        self.model = train(self.vector_list, self.feature_value_indices, epochs=5)
-        self.model.feature_value_indices = self.feature_value_indices
-        self.model.feature_values = self.vector_list.columns.tolist()
+        self.model = train(self.transactions, epochs=5)
 
     def test_one_hot_encoding_with_feature_tracking(self):
         """Test one-hot vector creation from transactions"""
@@ -32,7 +29,7 @@ class TestAerialFunctions(unittest.TestCase):
 
     def test_train_autoencoder(self):
         """Test training an autoencoder model"""
-        model = train(self.vector_list, self.feature_value_indices, epochs=2)
+        model = train(self.transactions, epochs=2)
         self.assertIsInstance(model, AutoEncoder)
 
     def test_generate_rules(self):
