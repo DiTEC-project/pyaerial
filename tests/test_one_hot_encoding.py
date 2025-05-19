@@ -32,35 +32,6 @@ def test_categorical_plus_low_cardinality_numeric():
     assert pd.api.types.is_integer_dtype(encoded['Rating__1'])
 
 
-def test_categorical_plus_one_hot_encoded():
-    df = pd.DataFrame({
-        'Color': ['Red', 'Green', 'Blue'],
-        'IsAvailable': [0, 1, 0]
-    })
-    encoded = _one_hot_encoding_with_feature_tracking(df)[0]
-
-    assert encoded is not None
-    assert 'Color__Green' in encoded.columns
-    assert 'IsAvailable' in encoded.columns
-    assert pd.api.types.is_integer_dtype(encoded['IsAvailable'])
-
-
-def test_categorical_plus_one_hot_plus_low_cardinality_numeric():
-    df = pd.DataFrame({
-        'Color': ['Red', 'Green', 'Blue'],
-        'InStock': [True, False, True],
-        'Rating': [1, 2, 3]  # <= 10 unique numeric categorical
-    })
-    encoded = _one_hot_encoding_with_feature_tracking(df)[0]
-
-    assert encoded is not None
-    assert 'Color__Blue' in encoded.columns
-    assert 'InStock' in encoded.columns
-    assert 'Rating__1' in encoded.columns
-    assert pd.api.types.is_integer_dtype(encoded['InStock'])
-    assert pd.api.types.is_integer_dtype(encoded['Rating__1'])
-
-
 def test_high_cardinality_numeric_triggers_error_and_none_return():
     df = pd.DataFrame({
         'Color': ['Red', 'Green', 'Blue', 'Red', 'Green', 'Blue', 'Red', 'Green', 'Blue', 'Red', 'Green', 'Blue'],

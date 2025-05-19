@@ -217,7 +217,7 @@ iris_discretized = discretization.equal_frequency_discretization(iris, n_bins=5)
 
 trained_autoencoder = model.train(iris_discretized, epochs=10)
 
-association_rules = rule_extraction.generate_rules(trained_autoencoder, ant_similarity=0.1, cons_similarity=0.5)
+association_rules = rule_extraction.generate_rules(trained_autoencoder, ant_similarity=0.05, cons_similarity=0.8)
 ```
 
 Following is the partial iris dataset content before and after the discretization:
@@ -532,10 +532,9 @@ Rule Mining method.
         device=None
     )
 
-Part of the [`model.py`](aerial/model.py) script. Trains the AutoEncoder model using a categorical tabular data in
-pandas Dataframe form.
-
-If some of the columns are one-hot encoded, the method does not further one-hot encode the data.
+Part of the [`model.py`](aerial/model.py) script. Given a categorical tabular data in Pandas dataframe form, it one-hot
+encodes the data, vectorizes the one-hot encoded version by also keeping track of start and end indices of vectors per
+column, and then trains the AutoEncoder model using the one-hot encoded version.
 
 If there are numerical features with less than 10 cardinality, it treats them as categorical features. If the
 cardinality is more than 10, then it throws an error.

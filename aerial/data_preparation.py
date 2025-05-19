@@ -45,12 +45,8 @@ def _one_hot_encoding_with_feature_tracking(transactions: pd.DataFrame, parallel
         )
         return None, None
 
-    # 2. Identify non-one-hot columns to encode
-    one_hot_columns = [col for col in transactions.columns if is_column_one_hot(transactions[col])]
-    columns_to_encode = [col for col in transactions.columns if col not in one_hot_columns]
-
     # Collect unique values only for columns to encode
-    unique_values = {col: sorted(transactions[col].dropna().unique()) for col in columns_to_encode}
+    unique_values = {col: sorted(transactions[col].dropna().unique()) for col in transactions.columns}
 
     # Build feature index mapping
     feature_value_indices = []
@@ -64,12 +60,6 @@ def _one_hot_encoding_with_feature_tracking(transactions: pd.DataFrame, parallel
         vector_tracker.extend([f"{feature}__{value}" for value in values])
         start = end
 
-    # Add existing one-hot columns directly
-    for col in one_hot_columns:
-        feature_value_indices.append({'feature': col, 'start': start, 'end': start + 1})
-        vector_tracker.append(col)
-        start += 1
-
     # Total number of features
     value_count = len(vector_tracker)
     tracker_index_map = {key: idx for idx, key in enumerate(vector_tracker)}
@@ -82,13 +72,8 @@ def _one_hot_encoding_with_feature_tracking(transactions: pd.DataFrame, parallel
             val = transaction_row[col_idx]
             if pd.isna(val):
                 continue
-            if col in columns_to_encode:
-                key = f"{col}__{val}"
-            else:
-                key = col
-                val = int(val)  # Convert True/False to 1/0
-            if key in tracker_index_map:
-                transaction_vector[tracker_index_map[key]] = int(val) if col in one_hot_columns else 1
+            key = f"{col}__{val}"
+            transaction_vector[tracker_index_map[key]] = 1
         return transaction_idx, transaction_vector
 
     # Parallel processing
@@ -105,24 +90,13 @@ def _one_hot_encoding_with_feature_tracking(transactions: pd.DataFrame, parallel
     return vector_list, feature_value_indices
 
 
-def is_column_one_hot(col: pd.Series) -> bool:
-    """
-    Checks if a column is already one-hot encoded (only contains 0/1 or True/False)
-    """
-    unique_vals = set(col.dropna().unique())
-    valid_sets = [{0, 1}, {True, False}, {0, 1, True, False}]
-    return unique_vals in valid_sets
-
-
 def is_effectively_categorical(col: pd.Series, col_name: str, max_categories=10) -> bool:
     """
     Determine if a column should be treated as categorical.
     Logs info if a numeric column is treated as categorical due to few unique values.
     """
 
-    if pd.api.types.is_categorical_dtype(col) or pd.api.types.is_object_dtype(col):
-        return True
-    if is_column_one_hot(col):
+    if isinstance(col.dtype, pd.CategoricalDtype) or pd.api.types.is_object_dtype(col):
         return True
     if pd.api.types.is_numeric_dtype(col):
         unique_vals = col.dropna().unique()
