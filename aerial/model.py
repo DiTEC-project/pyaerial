@@ -117,7 +117,7 @@ class AutoEncoder(nn.Module):
         y = self.decoder(y)
 
         # Split the tensor into chunks based on the ranges
-        chunks = [y[:, start:end] for start, end in feature_value_indices]
+        chunks = [y[:, range.start:range.stop] for range in feature_value_indices]
 
         # Apply softmax to each chunk
         softmax_chunks = [F.softmax(chunk, dim=1) for chunk in chunks]
@@ -163,7 +163,7 @@ def train(transactions: pd.DataFrame, autoencoder: AutoEncoder = None, noise_fac
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers,
                             pin_memory=torch.cuda.is_available())
 
-    softmax_ranges = [(cat['start'], cat['end']) for cat in feature_value_indices]
+    softmax_ranges = [range(cat['start'], cat['end']) for cat in feature_value_indices]
 
     total_batches = len(dataloader)
     for epoch in range(epochs):
@@ -175,13 +175,7 @@ def train(transactions: pd.DataFrame, autoencoder: AutoEncoder = None, noise_fac
             reconstructed_batch = autoencoder(noisy_batch, softmax_ranges)
 
             # Compute loss for the entire batch
-            total_loss = sum(
-                loss_function(
-                    reconstructed_batch[:, start:end],
-                    batch[:, start:end]
-                )
-                for (start, end) in softmax_ranges
-            )
+            total_loss = loss_function(reconstructed_batch, batch)
 
             # Backpropagation and optimization step
             optimizer.zero_grad()

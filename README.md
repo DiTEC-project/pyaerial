@@ -117,7 +117,8 @@ Instead of performing rule extraction on all features, Aerial allows you to extr
 features of interest. This is called ARM with item constraints.
 
 In ARM with item constraints, the antecedent side of the rules will contain the items of interest. However, the
-consequent side of the rules may still contain other feature values.
+consequent side of the rules may still contain other feature values (to restrict the consequent side as well, see
+[Using Aerial for rule-based classification for interpretable inference](#7-using-aerial-for-rule-based-classification-for-interpretable-inference)).
 
 `features_of_interest` parameter of
 `generate_rules()` can be used to do that (also valid for `generate_frequent_itemsets()`, see below).
@@ -274,8 +275,12 @@ Aerial can be used to learn rules with a class label on the consequent side, whi
 either by themselves or as part of rule list or rule set classifiers (e.g.,
 from [imodels](https://github.com/csinva/imodels) repository).
 
-This is done by setting `target_class` parameter of the `generate_rules` function. This parameter refers to the class
-label column of the tabular data.
+This is done by setting `target_classes` parameter of the `generate_rules` function. This parameter refers to the class
+label(s) column of the tabular data.
+
+As shown in [Specifying item constraints](#2-specifying-item-constraints), we can also specify multiple target classes
+and/or their specific values. `["Class1", {"Class2": "value2"}]` array specifies that we are interested in all values of
+`Class1` and specifically `value2` of `Class2` in the consequent side of the rules.
 
 ```
 import pandas as pd
@@ -292,8 +297,8 @@ table_with_labels = pd.concat([breast_cancer, labels], axis=1)
 
 trained_autoencoder = model.train(table_with_labels)
 
-# generate rules with a target class, this learns rules that has the "target_class" column (in this case this column is called "Class") on the consequent side
-association_rules = rule_extraction.generate_rules(trained_autoencoder, target_class="Class", cons_similarity=0.5)
+# generate rules with a target class(es), this learns rules that has the "target_classes" column (in this case this column is called "Class") on the consequent side
+association_rules = rule_extraction.generate_rules(trained_autoencoder, target_classes=["Class"], cons_similarity=0.5)
 
 if len(association_rules) > 0:
     stats, association_rules = rule_quality.calculate_rule_stats(association_rules, trained_autoencoder.input_vectors)
@@ -573,7 +578,7 @@ cardinality is more than 10, then it throws an error.
         ant_similarity=0.5,
         cons_similarity=0.8,
         max_antecedents=2,
-        target_class=None
+        target_classes=None
     )
 
 Part of the [`rule_extraction.py`](aerial/rule_extraction.py) script. Extracts association rules from a trained
@@ -583,18 +588,19 @@ AutoEncoder using the Aerial algorithm.
 
 - `autoencoder` (AutoEncoder): A trained autoencoder instance.
 
-- `features_of_interest` (list): only look for rules that have these features of interest on the antecedent side
+- `features_of_interest=None` (list, optional): only look for rules that have these features of interest on the antecedent
+  side
   accepted form ["feature1", "feature2", {"feature3": "value1}, ...], either a feature name as str, or specific value
   of a feature in object form
 
-- `ant_similarity` (float): Minimum similarity threshold for an antecedent to be considered frequent.
+- `ant_similarity=0.5` (float, optional): Minimum similarity threshold for an antecedent to be considered frequent.
 
-- `cons_similarity` (float): Minimum probability threshold for a feature to qualify as a rule consequent.
+- `cons_similarity=0.8` (float, optional): Minimum probability threshold for a feature to qualify as a rule consequent.
 
-- `max_antecedents` (int): Maximum number of features allowed in the rule antecedent.
+- `max_antecedents=2` (int, optional): Maximum number of features allowed in the rule antecedent.
 
-- `target_class` (str, optional): When set, restricts rule consequents to the specified class (constraint-based rule
-  mining).
+- `target_class=None` (list, optional): When set, restricts rule consequents to the specified class(es) (constraint-based rule
+  mining). The format of the list is same as the list format of `features_of_interest`.
 
 **Returns**:
 
@@ -621,13 +627,13 @@ AutoEncoder using the same Aerial+ mechanism.
 
 - `autoencoder` (AutoEncoder): A trained autoencoder instance.
 
-- `features_of_interest` (list): only look for rules that have these features of interest on the antecedent side
+- `features_of_interest=None` (list, Optional): only look for rules that have these features of interest on the antecedent side
   accepted form ["feature1", "feature2", {"feature3": "value1}, ...], either a feature name as str, or specific value
   of a feature in object form
 
-- `similarity` (float): Minimum similarity threshold for an itemset to be considered frequent.
+- `similarity=0.8` (float, Optional): Minimum similarity threshold for an itemset to be considered frequent.
 
-- `max_length` (int): Maximum number of items in each itemset.
+- `max_length=2` (int, Optional): Maximum number of items in each itemset.
 
 **Returns**:
 

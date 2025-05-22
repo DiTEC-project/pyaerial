@@ -18,14 +18,15 @@ logger = logging.getLogger("aerial")
 
 
 def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, ant_similarity=0.5, cons_similarity=0.8,
-                   max_antecedents=2, target_class=None):
+                   max_antecedents=2, target_classes=None):
     """
     extract rules from a trained Autoencoder using Aerial+ algorithm
-    :param target_class: if given a target class, generate rules with the target class on the right hand side only
     :param max_antecedents: max number of antecedents that the rules will contain
     :param features_of_interest: list: only look for rules that have these features of interest on the antecedent side
         accepted form ["feature1", "feature2", {"feature3": "value1}, ...], either a feature name as str, or specific value
         of a feature in object form
+    :param target_classes: list: if given a list of target classes, generate rules with the target classes on the
+        right hand side only, the content of the list is as same as features_of_interest
     :param cons_similarity: consequent similarity threshold
     :param ant_similarity: antecedent similarity threshold
     :param autoencoder: a trained Autoencoder for ARM
@@ -44,28 +45,30 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
         features_of_interest, autoencoder)
 
     feature_value_indices = autoencoder.feature_value_indices
-    target_range = range(input_vector_size)
-
-    # If target_class is specified, narrow the target range and features
-    # this is to do "constraint-based rule mining"
-    if target_class:
-        for feature in feature_value_indices:
-            if feature["feature"] == target_class:
-                target_range = range(feature["start"], feature["end"])
-                break
 
     # Initialize input vectors with all equal probability per feature value
     unmarked_features = _initialize_input_vectors(input_vector_size, feature_value_indices)
 
     # Precompute target indices for softmax to speed things up
-    feature_value_indices = [(cat['start'], cat['end']) for cat in feature_value_indices]
-    softmax_ranges = [(cat['start'], cat['end']) for cat in significant_features]
+    softmax_ranges = [range(cat['start'], cat['end']) for cat in significant_features]
+
+    # If target_classes are specified, narrow the target range and features to constrain the consequent side of a rule
+    significant_consequents, insignificant_consequent_values = extract_significant_features_and_ignored_indices(
+        target_classes, autoencoder)
+    significant_consequent_indices = [
+        index
+        for feature in significant_consequents
+        for index in range(feature['start'], feature['end'])
+        if index not in insignificant_consequent_values
+    ]
+
+    feature_value_indices = [range(cat['start'], cat['end']) for cat in feature_value_indices]
 
     for r in range(1, max_antecedents + 1):
         if r == 2:
             softmax_ranges = [
-                (start, end) for (start, end) in softmax_ranges
-                if not all(idx in insignificant_feature_values for idx in range(start, end))
+                feature_range for feature_range in softmax_ranges if
+                not all(idx in insignificant_feature_values for idx in range(feature_range.start, feature_range.stop))
             ]
 
         feature_combinations = list(combinations(softmax_ranges, r))  # Generate combinations
@@ -99,7 +102,7 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
 
                 # Identify high-support consequents
                 consequent_list = [
-                    prob_index for prob_index in target_range
+                    prob_index for prob_index in significant_consequent_indices
                     if prob_index not in candidate_antecedents and
                        implication_probabilities[prob_index] >= cons_similarity
                 ]
@@ -229,8 +232,8 @@ def _mark_features(unmarked_test_vector, features, insignificant_feature_values)
 
     # Compute valid feature ranges excluding insignificant_feature_values
     feature_ranges = [
-        np.setdiff1d(np.arange(start, end), insignificant_feature_values)
-        for (start, end) in features
+        np.setdiff1d(np.array(feature_range), insignificant_feature_values)
+        for feature_range in features
     ]
 
     # Create all combinations of feature indices
@@ -242,7 +245,7 @@ def _mark_features(unmarked_test_vector, features, insignificant_feature_values)
     candidate_antecedents = [[] for _ in range(n_combinations)]
 
     # Vectorized marking of test_vectors
-    for i, (start, end) in enumerate(features):
+    for i, feature_range in enumerate(features):
         # Get the feature range
         valid_indices = combinations[:, i]
 
@@ -251,7 +254,7 @@ def _mark_features(unmarked_test_vector, features, insignificant_feature_values)
 
         # Mark test_vectors based on valid indices for the current feature
         for j, idx in enumerate(valid_indices):
-            test_vectors[j, start:end] = 0  # Set feature range to 0
+            test_vectors[j, feature_range.start:feature_range.stop] = 0  # Set feature range to 0
             test_vectors[j, idx] = 1  # Mark the valid index with 1
             candidate_antecedents[j].append(idx)  # Append the index to the j-th test vector's antecedents
 
