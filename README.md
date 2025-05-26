@@ -2,7 +2,7 @@
 
 ------------------------------
 
-This is a Python implementation of the Aerial scalable neurosymbolic association rule miner for tabular data.
+This is a Python implementation of the Aerial+ scalable neurosymbolic association rule miner for tabular data.
 
 ## Table of Contents
 
@@ -11,18 +11,18 @@ This is a Python implementation of the Aerial scalable neurosymbolic association
 - [Usage Examples](#usage-examples)
     - [Association rule mining from categorical tabular data](#1-association-rule-mining-from-categorical-tabular-data)
     - [Specifying item constraints](#2-specifying-item-constraints)
-    - [Setting Aerial parameters](#3-setting-aerial-parameters)
+    - [Setting Aerial+ parameters](#3-setting-aerial-parameters)
     - [Fine-tuning Autoencoder architecture and dimensions](#4-fine-tuning-autoencoder-architecture-and-dimensions)
-    - [Running Aerial for numerical values](#5-running-aerial-for-numerical-values)
-    - [Frequent itemset mining with Aerial](#6-frequent-itemset-mining-with-aerial)
-    - [Using Aerial for rule-based classification for interpretable inference](#7-using-aerial-for-rule-based-classification-for-interpretable-inference)
+    - [Running Aerial+ for numerical values](#5-running-aerial-for-numerical-values)
+    - [Frequent itemset mining with Aerial+](#6-frequent-itemset-mining-with-aerial)
+    - [Using Aerial+ for rule-based classification for interpretable inference](#7-using-aerial-for-rule-based-classification-for-interpretable-inference)
     - [Fine-tuning the training parameters](#8-fine-tuning-the-training-parameters)
     - [Setting the log levels](#9-setting-the-log-levels)
-- [How Aerial works?](#how-aerial-works)
-- [How to debug Aerial?](#how-to-debug-aerial)
-    - [What to do when Aerial does not learn any rules?](#what-to-do-when-aerial-does-not-learn-any-rules)
-    - [What to do when Aerial takes too much time and learns too many rules?](#what-to-do-when-aerial-takes-too-much-time-and-learns-too-many-rules)
-    - [What to do if Aerial produces error messages?](#what-to-do-if-aerial-produces-error-messages)
+- [How Aerial+ works?](#how-aerial-works)
+- [How to debug Aerial+?](#how-to-debug-aerial)
+    - [What to do when Aerial+ does not learn any rules?](#what-to-do-when-aerial-does-not-learn-any-rules)
+    - [What to do when Aerial+ takes too much time and learns too many rules?](#what-to-do-when-aerial-takes-too-much-time-and-learns-too-many-rules)
+    - [What to do if Aerial+ produces error messages?](#what-to-do-if-aerial-produces-error-messages)
 - [Functions Overview](#functions-overview)
 - [Citation](#citation)
 - [Contact](#contact)
@@ -32,13 +32,13 @@ This is a Python implementation of the Aerial scalable neurosymbolic association
 
 ## Introduction
 
-Aerial is a scalable Neurosymbolic association rule mining (ARM) method for tabular data. It aims to address the rule
-explosion and execution time problems in ARM and it is fully compatible with the existing solutions. Aerial
+Aerial+ is a scalable Neurosymbolic association rule mining (ARM) method for tabular data. It aims to address the rule
+explosion and execution time problems in ARM and it is fully compatible with the existing solutions. Aerial+
 first creates a neural representation of a given tabular data using an Autoencoder, and then extracts association rules
 from the neural representation.
 
-See [How Aerial works?](#how-aerial-works) section or our paper for the details of Autoencoder architecture, training
-and rule extraction algorithm. If you use Aerial in your
+See [How Aerial+ works?](#how-aerial-works) section or our paper for the details of Autoencoder architecture, training
+and rule extraction algorithm. If you use Aerial+ in your
 work, please [cite](#citation) our paper.
 
 ---
@@ -53,10 +53,10 @@ pip install pyaerial
 
 ## Usage Examples
 
-This section exemplifies the usage of Aerial with and without hyperparameter tuning.
+This section exemplifies the usage of Aerial+ with and without hyperparameter tuning.
 
-If you encounter issues such as Aerial can't learn rules, or takes too much time to terminate, please
-see [How to debug Aerial?](#how-to-debug-aerial) section.
+If you encounter issues such as Aerial+ can't learn rules, or takes too much time to terminate, please
+see [How to debug Aerial+?](#how-to-debug-aerial) section.
 
 ### 1. Association rule mining from categorical tabular data
 
@@ -112,12 +112,12 @@ Sample rule:
 
 ### 2. Specifying item constraints
 
-Instead of performing rule extraction on all features, Aerial allows you to extract rules only for
+Instead of performing rule extraction on all features, Aerial+ allows you to extract rules only for
 features of interest. This is called ARM with item constraints.
 
 In ARM with item constraints, the antecedent side of the rules will contain the items of interest. However, the
 consequent side of the rules may still contain other feature values (to restrict the consequent side as well, see
-[Using Aerial for rule-based classification for interpretable inference](#7-using-aerial-for-rule-based-classification-for-interpretable-inference)).
+[Using Aerial+ for rule-based classification for interpretable inference](#7-using-aerial-for-rule-based-classification-for-interpretable-inference)).
 
 `features_of_interest` parameter of
 `generate_rules()` can be used to do that (also valid for `generate_frequent_itemsets()`, see below).
@@ -160,9 +160,9 @@ association_rules: [
 ]
 ```
 
-### 3. Setting Aerial parameters
+### 3. Setting Aerial+ parameters
 
-Aerial has 3 key parameters; antecedent and consequent similarity threshold, and antecedent length.
+Aerial+ has 3 key parameters; antecedent and consequent similarity threshold, and antecedent length.
 
 As shown in the paper, higher antecedent thresholds results in lower number of higher support rules, while
 higher consequent thresholds results in lower number of higher confidence rules.
@@ -185,7 +185,7 @@ association_rules = rule_extraction.generate_rules(trained_autoencoder, ant_simi
 
 ### 4. Fine-tuning Autoencoder architecture and dimensions
 
-Aerial uses an under-complete Autoencoder and in default, it decides automatically how many layers to use and the
+Aerial+ uses an under-complete Autoencoder and in default, it decides automatically how many layers to use and the
 dimensions of each layer (see [Functions Overview](#functions-overview), Autoencoder).
 
 Alternatively, you can specify the number of layers and dimensions in the `train` method to improve performance.
@@ -199,11 +199,11 @@ trained_autoencoder = model.train(breast_cancer, layer_dims=[4, 2])
 ...
 ```
 
-### 5. Running Aerial for numerical values
+### 5. Running Aerial+ for numerical values
 
-Discretizing numerical values is required before running Aerial. We provide 2 discretization methods as part of
+Discretizing numerical values is required before running Aerial+. We provide 2 discretization methods as part of
 the [`discretization.py`](aerial/discretization.py) script; equal-frequency and equal-width discretization. However,
-Aerial can work with any other discretization method of your choice as well.
+Aerial+ can work with any other discretization method of your choice as well.
 
 ```
 from aerial import model, rule_extraction, rule_quality, discretization
@@ -237,9 +237,9 @@ Following is the partial iris dataset content before and after the discretizatio
 ...
 ```
 
-### 6. Frequent itemset mining with Aerial
+### 6. Frequent itemset mining with Aerial+
 
-Aerial can also be used for frequent itemset mining besides association rules.
+Aerial+ can also be used for frequent itemset mining besides association rules.
 
 ```
 from aerial import model, rule_extraction, rule_quality
@@ -268,9 +268,9 @@ Frequent itemsets:
 Average support: 0.295
 ```
 
-### 7. Using Aerial for rule-based classification for interpretable inference
+### 7. Using Aerial+ for rule-based classification for interpretable inference
 
-Aerial can be used to learn rules with a class label on the consequent side, which can later be used for inference
+Aerial+ can be used to learn rules with a class label on the consequent side, which can later be used for inference
 either by themselves or as part of rule list or rule set classifiers (e.g.,
 from [imodels](https://github.com/csinva/imodels) repository).
 
@@ -323,7 +323,7 @@ Sample output showing rules with class labels on the right hand side:
 
 The [`train()`](aerial/model.py) function allows programmers to specify various training parameters:
 
-- autoencoder: You can implement your own Autoencoder and use it for ARM as part of Aerial, as long as the last layer
+- autoencoder: You can implement your own Autoencoder and use it for ARM as part of Aerial+, as long as the last layer
   matches the original version (see our paper or the source code, [`model.py`](aerial/model.py))
 - noise_factor `default=0.5`: amount of random noise (`+-`) added to each neuron of the denoising Autoencoder
   before the training process
@@ -350,7 +350,7 @@ if len(association_rules) > 0:
 
 ### 9. Setting the log levels
 
-Aerial source code prints extra debug statements notifying the beginning and ending of major
+Aerial+ source code prints extra debug statements notifying the beginning and ending of major
 functions such as the training process or rule extraction. The log levels can be changed as follows:
 
 ```
@@ -362,12 +362,12 @@ aerial.setup_logging(logging.DEBUG)
 ...
 ```
 
-### 10. Running Aerial on GPU
+### 10. Running Aerial+ on GPU
 
-The `device` parameter in `train()` can be used to run Aerial on GPU. Note that Aerial only uses a shallow
+The `device` parameter in `train()` can be used to run Aerial+ on GPU. Note that Aerial+ only uses a shallow
 Autoencoder and therefore can also run on CPU without a major performance hindrance.
 
-Furthermore, Aerial will also use the device specified in `train()` function for rule extraction, e.g., when
+Furthermore, Aerial+ will also use the device specified in `train()` function for rule extraction, e.g., when
 performing forward runs on the trained Autoencoder with the test vectors.
 
 ```
@@ -382,26 +382,26 @@ from ucimlrepo import fetch_ucirepo
 # a categorical tabular dataset
 breast_cancer = fetch_ucirepo(id=14).data.features
 
-# run Aerial on GPU
+# run Aerial+ on GPU
 trained_autoencoder = model.train(breast_cancer, device="cuda")
 
-# during the rule extraction stage, Aerial will continue to use the device specified above
+# during the rule extraction stage, Aerial+ will continue to use the device specified above
 association_rules = rule_extraction.generate_rules(trained_autoencoder)
 ...
 ```
 
-## How Aerial works?
+## How Aerial+ works?
 
-The figure below shows the pipeline of operations for Aerial in 3 main stages.
+The figure below shows the pipeline of operations for Aerial+ in 3 main stages.
 
-![Aerial neurosymbolic association rule mining pipeline](pipeline.png)
+![Aerial+ neurosymbolic association rule mining pipeline](pipeline.png)
 
 1. **Data preparation.**
     1. Tabular data is first one-hot encoded. This is done
        using [`data_preparation.py:_one_hot_encoding_with_feature_tracking()`](aerial/data_preparation.py).
     2. One-hot encoded value are then converted to vector format in the [`model.py:train()`](aerial/model.py).
     3. If the tabular data contains numerical columns, they are pre-discretized as exemplified
-       in [Running Aerial for numerical values](#4-running-aerial-for-numerical-values).
+       in [Running Aerial+ for numerical values](#4-running-aerial-for-numerical-values).
 2. **Training stage.**
     1. An under-complete Autoencoder with either default automatically-picked number of layers and dimension (based on
        the dataset size and dimension) is constructed, or user-specified layers and dimension. (
@@ -411,7 +411,7 @@ The figure below shows the pipeline of operations for Aerial in 3 main stages.
     3. An Autoencoder is then trained with a denoising mechanism to learn associations between input features. The full
        Autoencoder architecture is given in our paper.
 3. **Rule extraction stage.**
-    1. Association rules are then extracted from the trained Autoencoder using Aerial's rule extraction algorithm (
+    1. Association rules are then extracted from the trained Autoencoder using Aerial+'s rule extraction algorithm (
        see [rule_extraction.py:generate_rules()](#generaterules)). Below figure shows an example rule extraction
        process.
     2. **Example**. Assume `$weather$` and `$beverage$` are features with categories `{cold, warm}`
@@ -425,7 +425,7 @@ The figure below shows the pipeline of operations for Aerial in 3 main stages.
        threshold (`$\tau_a = 0.5$`), and `$p_{beverage(soda)} = 0.86$` probability is higher than the consequent
        similarity threshold (`$\tau_c = 0.8$`), we conclude with `$weather(warm) \rightarrow beverage(soda)$`.
 
-   ![Aerial rule extraction example](example.png)
+   ![Aerial+ rule extraction example](example.png)
 
     3. Frequent itemsets (instead of rules) can also be
        extracted ([rule_extraction.py:generate_frequent_itemsets()](#generatefrequentitemsets)).
@@ -434,36 +434,36 @@ The figure below shows the pipeline of operations for Aerial in 3 main stages.
        in [rule_quality.py](aerial/rule_quality.py). See [calculate_rule_stats()](#calculaterulestats)
        and [calculate_basic_rule_stats()](#calculatebasicrulestats)
 
-## How to debug Aerial?
+## How to debug Aerial+?
 
-To be able to debug Aerial, this section explains how each of the parameters of Aerial can impact the number and the
+To be able to debug Aerial+, this section explains how each of the parameters of Aerial+ can impact the number and the
 quality of the rules learned.
 
-### What to do when Aerial does not learn any rules?
+### What to do when Aerial+ does not learn any rules?
 
-Following are some recommendations when Aerial can not find rules, assuming that the data preparation is done
+Following are some recommendations when Aerial+ can not find rules, assuming that the data preparation is done
 correctly (e.g., the data is discretized).
 
-- **Longer training.** Increasing the number of epochs can make Aerial capture associations better. However,
+- **Longer training.** Increasing the number of epochs can make Aerial+ capture associations better. However,
   training for too long may lead to overfitting, which means non-informative rules with low association strength.
-- **Adding more parameters.** Increasing the number of layers and/or dimension of the layers can again allow Aerial
+- **Adding more parameters.** Increasing the number of layers and/or dimension of the layers can again allow Aerial+
   to discover associations that was not possible with lower number of parameters. This may require training longer as
   well.
-- **Reducing antecedent similarity threshold.** Antecedent similarity threshold in Aerial is synonymous to minimum
+- **Reducing antecedent similarity threshold.** Antecedent similarity threshold in Aerial+ is synonymous to minimum
   support threshold in exhaustive ARM methods. Reducing antecedent similarity threshold will result in more rules with
   potentially lower support.
-- **Reducing consequent similarity threshold.** Consequent similarity threshold of Aerial is synoynmous to minimum
+- **Reducing consequent similarity threshold.** Consequent similarity threshold of Aerial+ is synoynmous to minimum
   confidence threshold in exhaustive ARM methods. Reducing this threshold will result in more rules with potentially
   lower confidence.
 
-### What to do when Aerial takes too much time and learns too many rules?
+### What to do when Aerial+ takes too much time and learns too many rules?
 
 Similar to any other ARM algorithm, when performing knowledge discovery by learning rules, it could be the case
 that the input parameters of the algorithm results in a huge search space and that the underlying hardware does not
 allow terminating in a reasonable time.
 
 To overcome this, we suggest starting with smaller search spaces and gradually increasing. In the scope of
-Aerial, this can be done as follows:
+Aerial+, this can be done as follows:
 
 1. Start with `max_antecedents=2`, observe the execution time and usefulness of the rules you learned. Then gradually
    increase this number if necessary for the task you want to achieve.
@@ -474,26 +474,26 @@ Aerial, this can be done as follows:
 3. Do not set low `cons_similarity`. The consequent similarity is synonymous to a combination of minimum confidence
    and zhang's metric thresholds. There is no reason to set this parameter low, e.g., lower than 0.5. Similar
    to `ant_similarity`, start with a high number such as `0.9` and then gradually decrease if necessary.
-4. Train less or use less parameters. If Aerial does not terminate for an unreasonable duration, it could also mean that
+4. Train less or use less parameters. If Aerial+ does not terminate for an unreasonable duration, it could also mean that
    the model over-fitted the data and is finding many non-informative rules which increase the execution time. To
    prevent that, start with smaller number of epochs and parameters. For datasets where the number of rows `n` is much
    bigger than the number columns `d`, such that `n >> d`, usually training for 2 epochs with 2 layers of decreasing
    dimensions per encoder and decoder is enough.
 5. Another alternative is to apply ideas from the ARM rule explosion literature. One of the ideas is to learn rules for
-   items of interest rather than all items (columns). This can be done with Aerial as it is exemplified
+   items of interest rather than all items (columns). This can be done with Aerial+ as it is exemplified
    in [Specifying item constraints](#2-specifying-item-constraints) section.
 6. If the dataset is big and you needed to create a deeper neural network with many parameters, use GPU rather than a
-   CPU. Please see [Running Aerial on GPU](#10-running-aerial-on-gpu) section for details.
+   CPU. Please see [Running Aerial+ on GPU](#10-running-aerial-on-gpu) section for details.
 
 Note that it is also always possible that there are no prominent patterns in the data to discover.
 
-### What to do if Aerial produces error messages?
+### What to do if Aerial+ produces error messages?
 
 Please create an issue in this repository with the error message and/or send an email to [removed for ANONYMITY].
 
 ## Functions overview
 
-This section lists the important classes and functions as part of the Aerial package.
+This section lists the important classes and functions as part of the Aerial+ package.
 
 ### AutoEncoder(input_dimension, feature_count, layer_dims=None)
 
@@ -581,7 +581,7 @@ cardinality is more than 10, then it throws an error.
     )
 
 Part of the [`rule_extraction.py`](aerial/rule_extraction.py) script. Extracts association rules from a trained
-AutoEncoder using the Aerial algorithm.
+AutoEncoder using the Aerial+ algorithm.
 
 **Parameters**:
 
@@ -620,7 +620,7 @@ AutoEncoder using the Aerial algorithm.
     )
 
 Part of the [`rule_extraction.py`](aerial/rule_extraction.py) script. Generates frequent itemsets from a trained
-AutoEncoder using the same Aerial+ mechanism.
+AutoEncoder using the same Aerial++ mechanism.
 
 **Parameters**:
 

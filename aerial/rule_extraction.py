@@ -14,7 +14,7 @@ logger = logging.getLogger("aerial")
 def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, ant_similarity=0.5, cons_similarity=0.8,
                    max_antecedents=2, target_classes=None):
     """
-    extract rules from a trained Autoencoder using Aerial+ algorithm
+    extract rules from a trained Autoencoder using Aerial++ algorithm
     :param max_antecedents: max number of antecedents that the rules will contain
     :param features_of_interest: list: only look for rules that have these features of interest on the antecedent side
         accepted form ["feature1", "feature2", {"feature3": "value1}, ...], either a feature name as str, or specific value
@@ -112,7 +112,7 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
 
 def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=None, similarity=0.5, max_length=2):
     """
-    Generate frequent itemsets using the Aerial+ algorithm.
+    Generate frequent itemsets using the Aerial++ algorithm.
     :param max_length: max itemset length
     :param similarity: similarity threshold
     :param autoencoder: a trained Autoencoder

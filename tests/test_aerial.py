@@ -10,7 +10,7 @@ from aerial.rule_extraction import (
 )
 
 
-class TestAerialFunctions(unittest.TestCase):
+class TestAerial+Functions(unittest.TestCase):
     def setUp(self):
         """Create sample transactions and train an AutoEncoder"""
         self.transactions = pd.DataFrame({
