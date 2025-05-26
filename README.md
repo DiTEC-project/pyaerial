@@ -38,8 +38,7 @@ first creates a neural representation of a given tabular data using an Autoencod
 from the neural representation.
 
 See [How Aerial works?](#how-aerial-works) section or our paper for the details of Autoencoder architecture, training
-and rule extraction algorithm
-[Neurosymbolic Association Rule Mining from Tabular Data](https://arxiv.org/abs/2504.19354). If you use Aerial in your
+and rule extraction algorithm. If you use Aerial in your
 work, please [cite](#citation) our paper.
 
 ---
@@ -410,7 +409,7 @@ The figure below shows the pipeline of operations for Aerial in 3 main stages.
     2. All the training parameters can be customized including number of epochs, batch size, learning rate etc. (
        see [train()](#train-function))
     3. An Autoencoder is then trained with a denoising mechanism to learn associations between input features. The full
-       Autoencoder architecture is given in our [paper](https://arxiv.org/abs/2504.19354).
+       Autoencoder architecture is given in our paper.
 3. **Rule extraction stage.**
     1. Association rules are then extracted from the trained Autoencoder using Aerial's rule extraction algorithm (
        see [rule_extraction.py:generate_rules()](#generaterules)). Below figure shows an example rule extraction
