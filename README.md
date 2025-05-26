@@ -24,8 +24,6 @@ This is a Python implementation of the Aerial+ scalable neurosymbolic associatio
     - [What to do when Aerial+ takes too much time and learns too many rules?](#what-to-do-when-aerial-takes-too-much-time-and-learns-too-many-rules)
     - [What to do if Aerial+ produces error messages?](#what-to-do-if-aerial-produces-error-messages)
 - [Functions Overview](#functions-overview)
-- [Citation](#citation)
-- [Contact](#contact)
 - [Contributing](#contributing)
 
 ---
@@ -720,18 +718,6 @@ Runs in parallel with joblib.
 - A dictionary of average metrics (support, confidence, zhangs_metric, coverage)
 
 - A list of updated rules
-
-## Citation
-
-If you use pyaerial in your work, please cite the following paper:
-
-** The citation is removed for ANONYMITY!
-
-## Contact
-
-For questions, suggestions, or collaborations, please contact: 
-
-** E-mail address is removed for ANONYMITY!
 
 ## Contributing
 
