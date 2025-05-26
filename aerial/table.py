@@ -1,8 +1,3 @@
-"""
-Copyright (c) [2025] [Erkan Karabulut - DiTEC Project]
-This script includes table operations relevant to association rule mining
-"""
-
 import pandas as pd
 
 

@@ -1,8 +1,3 @@
-"""
-Copyright (c) [2025] [Erkan Karabulut - DiTEC Project]
-
-This script include different discretization methods for tabular data
-"""
 import logging
 
 import numpy as np

@@ -1,7 +1,3 @@
-"""
-Copyright (c) [2025] [Erkan Karabulut - DiTEC Project]
-This script implements helper functions relevant to logical association rule quality metrics
-"""
 from concurrent.futures import ThreadPoolExecutor
 
 import logging

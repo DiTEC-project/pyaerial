@@ -1,10 +1,3 @@
-"""
-Copyright (c) [2025] [Erkan Karabulut - DiTEC Project]
-
-Construct an Autoencoder for association rule mining as described in the paper (Neurosymbolic association rule mining
-from tabular data - https://arxiv.org/abs/2504.19354)
-"""
-
 import os
 import logging
 

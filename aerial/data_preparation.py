@@ -1,9 +1,3 @@
-"""
-Copyright (c) [2025] [Erkan Karabulut - DiTEC Project]
-
-This script implements data preparation functions for tabular for association rule mining with Aerial
-"""
-
 import concurrent
 import logging
 import numpy as np

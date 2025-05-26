@@ -1,6 +1,4 @@
 import pandas as pd
-import pytest
-from unittest.mock import patch
 
 from aerial.data_preparation import _one_hot_encoding_with_feature_tracking
 

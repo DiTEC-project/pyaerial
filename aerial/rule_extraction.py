@@ -1,9 +1,3 @@
-"""
-Copyright (c) [2025] [Erkan Karabulut - DiTEC Project]
-
-Includes the Aerial algorithm's source code for association rule (and frequent itemsets) extraction from a
-trained Autoencoder (Neurosymbolic association rule mining from tabular data - https://arxiv.org/abs/2504.19354)
-"""
 from collections import defaultdict
 
 import torch

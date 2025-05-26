@@ -490,7 +490,7 @@ Note that it is also always possible that there are no prominent patterns in the
 
 ### What to do if Aerial produces error messages?
 
-Please create an issue in this repository with the error message and/or send an email to e.karabulut@uva.nl.
+Please create an issue in this repository with the error message and/or send an email to [removed for ANONYMITY].
 
 ## Functions overview
 
@@ -726,24 +726,13 @@ Runs in parallel with joblib.
 
 If you use pyaerial in your work, please cite the following paper:
 
-```
-@misc{karabulut2025neurosymbolic,
-    title={Neurosymbolic Association Rule Mining from Tabular Data},
-    author={Erkan Karabulut and Paul Groth and Victoria Degeler},
-    year={2025},
-    eprint={2504.19354},
-    archivePrefix={arXiv},
-    primaryClass={cs.AI}
-}
-```
+** The citation is removed for ANONYMITY!
 
 ## Contact
 
-For questions, suggestions, or collaborations, please contact:
+For questions, suggestions, or collaborations, please contact: 
 
-    Erkan Karabulut
-    📧 e.karabulut@uva.nl
-    📧 erkankkarabulut@gmail.com
+** E-mail address is removed for ANONYMITY!
 
 ## Contributing
 
