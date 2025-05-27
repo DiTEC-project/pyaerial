@@ -36,8 +36,7 @@ first creates a neural representation of a given tabular data using an Autoencod
 from the neural representation.
 
 See [How Aerial+ works?](#how-aerial-works) section or our paper for the details of Autoencoder architecture, training
-and rule extraction algorithm. If you use Aerial+ in your
-work, please [cite](#citation) our paper.
+and rule extraction algorithm.
 
 ---
 
