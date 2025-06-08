@@ -145,14 +145,14 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=No
     unmarked_features = _initialize_input_vectors(input_vector_size, feature_value_indices)
 
     # Precompute target indices for softmax
-    feature_value_indices = [(cat['start'], cat['end']) for cat in feature_value_indices]
-    softmax_ranges = [(cat['start'], cat['end']) for cat in significant_features]
+    feature_value_indices = [range(cat['start'], cat['end']) for cat in feature_value_indices]
+    softmax_ranges = [range(cat['start'], cat['end']) for cat in significant_features]
 
     # Iteratively process combinations of increasing size
     for r in range(1, max_length + 1):
         softmax_ranges = [
-            (start, end) for (start, end) in softmax_ranges
-            if not all(idx in insignificant_feature_values for idx in range(start, end))
+            feature_range for feature_range in softmax_ranges if
+            not all(idx in insignificant_feature_values for idx in range(feature_range.start, feature_range.stop))
         ]
 
         feature_combinations = list(combinations(softmax_ranges, r))  # Generate combinations
