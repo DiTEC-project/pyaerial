@@ -1,5 +1,5 @@
 torch~=2.7.0
 numpy~=2.2.5
 joblib~=1.4.2
-setuptools~=76.0.0
+setuptools~=80.9.0
 pytest~=8.3.5
