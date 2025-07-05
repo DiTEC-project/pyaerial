@@ -87,42 +87,37 @@ def calculate_average_rule_quality(rules):
     return stats
 
 
-def calculate_basic_rule_stats(rules, transactions):
+def calculate_basic_rule_stats(rules, transactions, num_workers=1):
     """
-    Calculate support and confidence in parallel.
-    :param rules: List of rules to process.
-    :param transactions: List of transactions.
-    :return: Updated rules with support and confidence.
+    Calculate support and confidence for rules in parallel using vectorized operations.
+    :param rules: List of rules, each a dict with 'antecedents' and 'consequent'.
+    :param transactions: DataFrame with binary transaction data.
+    :param num_workers: Number of parallel threads to use.
+    :return: Updated list of rules with support and confidence.
     """
-    num_transactions = transactions.shape[0]
+    num_transactions = len(transactions)
+    transaction_array = transactions.to_numpy()
     columns = transactions.columns.tolist()
+    column_indices = {col: i for i, col in enumerate(columns)}
 
     def process_rule(rule):
-        ant_count = 0
-        cons_count = 0
-        co_occurrence_count = 0
+        antecedent_indices = [column_indices[a] for a in rule['antecedents']]
+        consequent_index = column_indices[rule['consequent']]
 
-        for index in range(num_transactions):
-            encoded_transaction = transactions.iloc[index]
-            antecedent_match = all(
-                encoded_transaction.iloc[columns.index(antecedent)] == 1
-                for antecedent in rule['antecedents']
-            )
-            if antecedent_match:
-                ant_count += 1
-            if encoded_transaction.iloc[columns.index(rule['consequent'])] == 1:
-                cons_count += 1
-                if antecedent_match:
-                    co_occurrence_count += 1
+        # Vectorized masks
+        antecedent_mask = np.all(transaction_array[:, antecedent_indices] == 1, axis=1)
+        consequent_mask = transaction_array[:, consequent_index] == 1
+        co_occurrence_mask = antecedent_mask & consequent_mask
 
-        support_body = ant_count / num_transactions
-        rule['support'] = round(co_occurrence_count / num_transactions, 3)
-        rule['confidence'] = round(rule['support'] / support_body if support_body != 0 else 0, 3)
+        ant_count = np.sum(antecedent_mask)
+        co_occurrence_count = np.sum(co_occurrence_mask)
+
+        rule['support'] = co_occurrence_count / num_transactions
+        rule['confidence'] = rule['support'] / (ant_count / num_transactions) if ant_count != 0 else 0
 
         return rule
 
-    # Use ThreadPoolExecutor to process rules in parallel
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=num_workers) as executor:
         rules = list(executor.map(process_rule, rules))
 
     return rules if rules else None

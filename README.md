@@ -588,7 +588,8 @@ AutoEncoder using the Aerial algorithm.
 
 - `autoencoder` (AutoEncoder): A trained autoencoder instance.
 
-- `features_of_interest=None` (list, optional): only look for rules that have these features of interest on the antecedent
+- `features_of_interest=None` (list, optional): only look for rules that have these features of interest on the
+  antecedent
   side
   accepted form ["feature1", "feature2", {"feature3": "value1}, ...], either a feature name as str, or specific value
   of a feature in object form
@@ -599,7 +600,8 @@ AutoEncoder using the Aerial algorithm.
 
 - `max_antecedents=2` (int, optional): Maximum number of features allowed in the rule antecedent.
 
-- `target_class=None` (list, optional): When set, restricts rule consequents to the specified class(es) (constraint-based rule
+- `target_class=None` (list, optional): When set, restricts rule consequents to the specified class(es) (
+  constraint-based rule
   mining). The format of the list is same as the list format of `features_of_interest`.
 
 **Returns**:
@@ -627,7 +629,8 @@ AutoEncoder using the same Aerial+ mechanism.
 
 - `autoencoder` (AutoEncoder): A trained autoencoder instance.
 
-- `features_of_interest=None` (list, Optional): only look for rules that have these features of interest on the antecedent side
+- `features_of_interest=None` (list, Optional): only look for rules that have these features of interest on the
+  antecedent side
   accepted form ["feature1", "feature2", {"feature3": "value1}, ...], either a feature name as str, or specific value
   of a feature in object form
 
@@ -674,7 +677,7 @@ Discretizes all numerical columns into equal-width bins and encodes the resultin
 
 ### calculate_basic_rule_stats
 
-`calculate_basic_rule_stats(rules, transactions)`
+`calculate_basic_rule_stats(rules, transactions, num_workers)`
 
 Computes support and confidence for a list of rules using parallel processing.
 
@@ -683,6 +686,8 @@ Computes support and confidence for a list of rules using parallel processing.
 - `rules`: List of rule dictionaries with 'antecedents' and 'consequent'.
 
 - `transactions`: A pandas DataFrame of one-hot encoded transactions.
+
+- `num_workers`: Number of parallel workers
 
 **Returns**: A list of rules enriched with support and confidence values.
 
