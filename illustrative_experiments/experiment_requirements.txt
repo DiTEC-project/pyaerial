@@ -1,0 +1,4 @@
+arulespy~=0.1.4
+mlxtend~=0.23.1
+pyeclat~=1.0.2
+niaarm~=0.4.3
