@@ -1,6 +1,6 @@
 # PyAerial: Scalable Association Rule Mining
 
-<!-- Badge Panel -->
+<div align="center">
 [![Python Version](https://img.shields.io/badge/python-3.9%2C3.10%2C3.11%2C3.12-blue)](https://www.python.org/)
 [![PyPI Version](https://img.shields.io/pypi/v/pyaerial)](https://pypi.org/project/pyaerial/)
 [![Build Status](https://github.com/DiTEC-project/pyaerial/actions/workflows/tests.yml/badge.svg)](https://github.com/DiTEC-project/pyaerial/actions/workflows/test.yml)
@@ -10,10 +10,12 @@
 [![Tested on Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange)](https://ubuntu.com/)
 [![Tested on macOS](https://img.shields.io/badge/macOS-Monterey%2012.6.7-lightgrey)](https://www.apple.com/macos/)
 
+</div>
+
 ---
 
-PyAerial is a **Python implementation** of the Aerial scalable neurosymbolic association rule miner for tabular data.  
-It combines deep learning and symbolic reasoning to extract interpretable association rules efficiently from large
+PyAerial is a **Python implementation** of the Aerial scalable neurosymbolic association rule miner for tabular data. It
+combines deep learning and symbolic reasoning to extract interpretable association rules efficiently from large
 datasets.
 
 ---
