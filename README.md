@@ -1,4 +1,4 @@
-# PyAerial: scalable association rule mining
+# pyaerial: scalable association rule mining
 
 ---
 <div align="center">
@@ -79,7 +79,9 @@ It addresses the **rule explosion** and **execution time** issues in classical A
 Learn more about the architecture, training, and rule extraction in our paper:  
 [Neurosymbolic Association Rule Mining from Tabular Data](https://arxiv.org/abs/2504.19354)
 
-If you use PyAerial in your research, please consider [citing our work](#citation).
+If you use PyAerial in your research, please [cite our work](#citation).
+
+---
 
 **Tested Platforms**
 
