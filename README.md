@@ -1,8 +1,19 @@
-# pyaerial: scalable association rule mining
+# PyAerial: Scalable Association Rule Mining
 
-------------------------------
 
-This is a Python implementation of the Aerial scalable neurosymbolic association rule miner for tabular data.
+[![Python Version](https://img.shields.io/badge/python-3.9%2C3.10%2C3.11%2C3.12-blue)](https://www.python.org/)
+[![PyPI Version](https://img.shields.io/pypi/v/pyaerial)](https://pypi.org/project/pyaerial/)
+[![Build Status](https://github.com/DiTEC-project/pyaerial/actions/workflows/tests.yml/badge.svg)](https://github.com/DiTEC-project/pyaerial/actions/workflows/test.yml)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/DiTEC-project/pyaerial/blob/main/LICENSE)
+[![Tested on Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange)](https://ubuntu.com/)
+[![Tested on macOS](https://img.shields.io/badge/macOS-Monterey%2012.6.7-lightgrey)](https://www.apple.com/macos/)
+
+---
+
+PyAerial is a **Python implementation** of the Aerial scalable neurosymbolic association rule miner for tabular data.  
+It combines deep learning and symbolic reasoning to extract interpretable association rules efficiently from large datasets.
+
+---
 
 ## Table of Contents
 
@@ -34,15 +45,17 @@ This is a Python implementation of the Aerial scalable neurosymbolic association
 
 ## Introduction
 
-Aerial is a scalable Neurosymbolic association rule mining (ARM) method for tabular data. It aims to address the rule
-explosion and execution time problems in ARM and it is fully compatible with the existing solutions. Aerial
-first creates a neural representation of a given tabular data using an Autoencoder, and then extracts association rules
-from the neural representation.
+Aerial is a **scalable neurosymbolic association rule mining (ARM) method** for tabular data.  
 
-See [How Aerial works?](#how-aerial-works) section or our paper for the details of Autoencoder architecture, training
-and rule extraction algorithm
-[Neurosymbolic Association Rule Mining from Tabular Data](https://arxiv.org/abs/2504.19354). If you use Aerial in your
-work, please [cite](#citation) our paper.
+It addresses the **rule explosion** and **execution time** issues in classical ARM by combining:
+
+- **Autoencoder-based neural representation** of tabular data
+- **Rule extraction** from learned neural embeddings
+
+Learn more about the architecture, training, and rule extraction in our paper:  
+[Neurosymbolic Association Rule Mining from Tabular Data](https://arxiv.org/abs/2504.19354)  
+
+If you use PyAerial in your research, please consider [citing our work](#citation).  
 
 ---
 
