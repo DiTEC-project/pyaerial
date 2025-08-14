@@ -1,8 +1,43 @@
-# pyaerial: scalable association rule mining
+# PyAerial: scalable association rule mining
 
-------------------------------
+---
+<div align="center">
 
-This is a Python implementation of the Aerial scalable neurosymbolic association rule miner for tabular data.
+  <img src="https://img.shields.io/badge/python-3.9%2C3.10%2C3.11%2C3.12-blue" alt="Python Versions">
+
+  <img src="https://img.shields.io/pypi/v/pyaerial.svg" alt="PyPI Version">
+
+  <img src="https://github.com/DiTEC-project/pyaerial/actions/workflows/tests.yml/badge.svg" alt="Build Status">
+
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
+
+  <img src="https://img.shields.io/github/stars/DiTEC-project/pyaerial.svg?style=social&label=Stars" alt="GitHub Stars">
+
+  <img src="https://img.shields.io/github/last-commit/DiTEC-project/pyaerial" alt="Last commit">
+
+  <img src="https://img.shields.io/pypi/pyversions/pyaerial.svg" alt="Python Versions">
+
+  <img src="https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange" alt="Tested on Ubuntu 24.04 LTS">
+
+  <img src="https://img.shields.io/badge/macOS-Monterey%2012.6.7-lightgrey" alt="Tested on MacOS Monterey 12.6.7">
+</div>
+
+---
+<p align="center">
+  <a href="#installation">📥 Install</a> |
+  <a href="#usage-examples">📙 Usage</a> |
+  <a href="#functions-overview">🤹‍♂️ Functions</a> |
+  <a href="#how-to-debug-aerial">🐞 Debug</a> |
+  <a href="#citation">📄 Cite</a> |
+  <a href="LICENSE">🔑 License</a> |
+  <a href="#contribute">❤️ Contribute</a>
+</p>
+
+PyAerial is a **Python implementation** of the Aerial scalable neurosymbolic association rule miner for tabular data. It
+combines deep learning and symbolic reasoning to extract interpretable association rules efficiently from large
+datasets.
+
+---
 
 ## Table of Contents
 
@@ -28,21 +63,29 @@ This is a Python implementation of the Aerial scalable neurosymbolic association
 - [Functions Overview](#functions-overview)
 - [Citation](#citation)
 - [Contact](#contact)
-- [Contributing](#contributing)
+- [Contribute](#contribute)
 
 ---
 
 ## Introduction
 
-Aerial is a scalable Neurosymbolic association rule mining (ARM) method for tabular data. It aims to address the rule
-explosion and execution time problems in ARM and it is fully compatible with the existing solutions. Aerial
-first creates a neural representation of a given tabular data using an Autoencoder, and then extracts association rules
-from the neural representation.
+Aerial is a **scalable neurosymbolic association rule mining (ARM) method** for tabular data.
 
-See [How Aerial works?](#how-aerial-works) section or our paper for the details of Autoencoder architecture, training
-and rule extraction algorithm
-[Neurosymbolic Association Rule Mining from Tabular Data](https://arxiv.org/abs/2504.19354). If you use Aerial in your
-work, please [cite](#citation) our paper.
+It addresses the **rule explosion** and **execution time** issues in classical ARM by combining:
+
+- **Autoencoder-based neural representation** of tabular data
+- **Rule extraction** from learned neural embeddings
+
+Learn more about the architecture, training, and rule extraction in our paper:  
+[Neurosymbolic Association Rule Mining from Tabular Data](https://arxiv.org/abs/2504.19354)
+
+If you use PyAerial in your research, please consider [citing our work](#citation).
+
+**Tested Platforms**
+
+- **Ubuntu 24.04 LTS**
+- **macOS Monterey 12.6.7**
+- Python 3.9, 3.10, 3.11 and 3.12
 
 ---
 
@@ -799,9 +842,10 @@ For questions, suggestions, or collaborations, please contact:
     📧 e.karabulut@uva.nl
     📧 erkankkarabulut@gmail.com
 
-## Contributing
+## Contribute
 
 Contributions, feedback, and issue reports are very welcome!
 
-Feel free to open a pull request or create an issue if you have ideas for improvements.
+Feel free to contact, open a pull request or create an issue if you have ideas for improvements. The profiles
+of all contributors will be visible on this README file.
 
