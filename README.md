@@ -825,5 +825,6 @@ For questions, suggestions, or collaborations, please contact:
 
 Contributions, feedback, and issue reports are very welcome!
 
-Feel free to open a pull request or create an issue if you have ideas for improvements.
+Feel free to contact, open a pull request or create an issue if you have ideas for improvements. The profiles
+of all contributors will be visible on this README file.
 
