@@ -23,27 +23,15 @@
 </div>
 
 ---
-
-  <p style="display:flex; flex-wrap:wrap; justify-content:center; gap:8px;">
-    <a href="#installation" style="margin:4px; padding:6px 12px; text-decoration:none; display:inline-flex; align-items:center; background-color:#4CAF50; color:white; border-radius:20px; font-weight:bold;">
-      <img src="https://img.icons8.com/color/24/000000/download--v1.png" alt="Installation" style="margin-right:6px;"> Installation
-    </a>
-    <a href="#usage-examples" style="margin:4px; padding:6px 12px; text-decoration:none; display:inline-flex; align-items:center; background-color:#2196F3; color:white; border-radius:20px; font-weight:bold;">
-      <img src="https://img.icons8.com/color/24/000000/book.png" alt="Usage" style="margin-right:6px;"> Usage
-    </a>
-    <a href="#functions-overview" style="margin:4px; padding:6px 12px; text-decoration:none; display:inline-flex; align-items:center; background-color:#FF9800; color:white; border-radius:20px; font-weight:bold;">
-      <img src="https://img.icons8.com/color/24/000000/code.png" alt="Functions" style="margin-right:6px;"> Functions
-    </a>
-    <a href="#how-to-debug-aerial" style="margin:4px; padding:6px 12px; text-decoration:none; display:inline-flex; align-items:center; background-color:#f44336; color:white; border-radius:20px; font-weight:bold;">
-      <img src="https://img.icons8.com/color/24/000000/bug.png" alt="How to debug?" style="margin-right:6px;"> How to debug?
-    </a>
-    <a href="#citation" style="margin:4px; padding:6px 12px; text-decoration:none; display:inline-flex; align-items:center; background-color:#9C27B0; color:white; border-radius:20px; font-weight:bold;">
-      <img src="https://img.icons8.com/color/24/000000/book.png" alt="Cite PyAerial" style="margin-right:6px;"> Cite PyAerial
-    </a>
-    <a href="#contributing" style="margin:4px; padding:6px 12px; text-decoration:none; display:inline-flex; align-items:center; background-color:#FF5722; color:white; border-radius:20px; font-weight:bold;">
-      <img src="https://img.icons8.com/color/24/000000/add-user-group-man-man.png" alt="Contribute" style="margin-right:6px;"> Contribute
-    </a>
-  </p>
+<p align="center">
+  <a href="#installation">📥 Install</a> |
+  <a href="#usage-examples">📙 Usage</a> |
+  <a href="#functions-overview">🤹‍♂️ Functions</a> |
+  <a href="#how-to-debug-aerial">🐞 Debug</a>
+  <a href="#citation">📄 Cite</a> |
+  <a href="LICENSE">🔑 License</a> |
+  <a href="#contribute">❤️ Contribute</a>
+</p>
 
 PyAerial is a **Python implementation** of the Aerial scalable neurosymbolic association rule miner for tabular data. It
 combines deep learning and symbolic reasoning to extract interpretable association rules efficiently from large
@@ -75,7 +63,7 @@ datasets.
 - [Functions Overview](#functions-overview)
 - [Citation](#citation)
 - [Contact](#contact)
-- [Contributing](#contributing)
+- [Contribute](#contribute)
 
 ---
 
@@ -854,7 +842,7 @@ For questions, suggestions, or collaborations, please contact:
     📧 e.karabulut@uva.nl
     📧 erkankkarabulut@gmail.com
 
-## Contributing
+## Contribute
 
 Contributions, feedback, and issue reports are very welcome!
 
