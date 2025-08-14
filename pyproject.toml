@@ -10,7 +10,8 @@ readme = "README.md"
 authors = [
     { name = "Erkan Karabulut", email = "e.karabulut@uva.nl" }
 ]
-license = { text = "MIT" }
+license-files = ["LICENSE"]
+
 dependencies = [
     "torch~=2.7.0",
     "numpy~=2.2.5",
@@ -23,6 +24,9 @@ requires-python = ">=3.7"
 [tool.setuptools_scm]
 # Optionally write a version file your package can import:
 write_to = "aerial/_version.py"
+
+[tool.setuptools.packages.find]
+include = ["aerial"]
 
 [project.urls]
 Homepage = "https://github.com/DiTEC-project/pyaerial"
