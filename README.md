@@ -24,7 +24,7 @@
 
 ---
 
-  <p align="center">
+  <p style="display:flex; flex-wrap:wrap; justify-content:center; gap:8px;">
     <a href="#installation" style="margin:4px; padding:6px 12px; text-decoration:none; display:inline-flex; align-items:center; background-color:#4CAF50; color:white; border-radius:20px; font-weight:bold;">
       <img src="https://img.icons8.com/color/24/000000/download--v1.png" alt="Installation" style="margin-right:6px;"> Installation
     </a>
