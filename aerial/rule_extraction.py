@@ -210,10 +210,10 @@ def extract_significant_features_and_ignored_indices(features_of_interest, autoe
                 interest_features.add(k)
                 value_constraints[k].add(v)
 
-    # Step 1: Significant features
+    # Significant features
     significant_features = [f for f in feature_value_indices if f['feature'] in interest_features]
 
-    # Step 2: Indices to ignore from constrained features
+    # Indices to ignore from constrained features
     values_to_ignore = [
         i for f in feature_value_indices if f['feature'] in value_constraints
         for i in range(f['start'], f['end'])
@@ -228,6 +228,23 @@ def _mark_features(unmarked_test_vector, features, insignificant_feature_values)
     Create a list of test vectors by marking the given features in the unmarked test vector.
     This optimized version processes features in bulk using NumPy operations.
     """
+    if unmarked_test_vector is None:
+        return np.empty((0, 0), dtype=float), []
+
+    unmarked = np.asarray(unmarked_test_vector)
+    if unmarked.ndim != 1:
+        raise ValueError("`unmarked_test_vector` must be a 1D array-like.")
+    input_vector_size = unmarked.shape[0]
+
+    if not features:  # None or empty
+        return np.empty((0, input_vector_size), dtype=unmarked.dtype), []
+
+    # Normalize insignificant indices
+    if insignificant_feature_values is None:
+        insignificant_feature_values = np.array([], dtype=int)
+    else:
+        insignificant_feature_values = np.asarray(insignificant_feature_values, dtype=int).ravel()
+
     input_vector_size = unmarked_test_vector.shape[0]
 
     # Compute valid feature ranges excluding insignificant_feature_values
