@@ -18,6 +18,8 @@ This is a Python implementation of the Aerial scalable neurosymbolic association
     - [Using Aerial for rule-based classification for interpretable inference](#7-using-aerial-for-rule-based-classification-for-interpretable-inference)
     - [Fine-tuning the training parameters](#8-fine-tuning-the-training-parameters)
     - [Setting the log levels](#9-setting-the-log-levels)
+    - [Running PyAerial on GPU](#10-running-aerial-on-gpu)
+    - [Visualizing association rules](#11-visualizing-association-rules)
 - [How Aerial works?](#how-aerial-works)
 - [How to debug Aerial?](#how-to-debug-aerial)
     - [What to do when Aerial does not learn any rules?](#what-to-do-when-aerial-does-not-learn-any-rules)
@@ -391,6 +393,42 @@ association_rules = rule_extraction.generate_rules(trained_autoencoder)
 ...
 ```
 
+### 11. Visualizing Association Rules
+
+Rules learned by PyAerial can be visualized using [NiaARM](https://github.com/firefly-cpp/NiaARM) library.
+In the following, `visualizable_rule_list()` function converts PyAerial's rule format to NiaARM `RuleList()`
+format. And then visualizes the rules on a scatter plot using the visualization module of NiaARM
+
+```
+...
+from niaarm.visualize import scatter_plot
+from niaarm import RuleList, Feature, Rule
+
+def visualizable_rule_list(aerial_rules: dict, dataset: pd.DataFrame):
+    rule_list = RuleList()
+    for rule in aerial_rules:
+        antecedents = [Feature(k, "cat", categories=[v]) for k, v in (i.split("__", 1) for i in rule["antecedents"])]
+        ck, cv = rule["consequent"].split("__", 1)
+        rule_list.append(Rule(antecedents, [Feature(ck, "cat", categories=[cv])], transactions=dataset))
+    return rule_list
+
+# learn rules with PyAerial as before
+breast_cancer = fetch_ucirepo(id=14).data.features
+trained_autoencoder = model.train(breast_cancer)
+association_rules = rule_extraction.generate_rules(trained_autoencoder, ant_similarity=0.1)
+
+# get rules in NiaARM RuleList format
+visualizable_rules = visualizable_rule_list(association_rules, breast_cancer)
+figure = scatter_plot(rules=visualizable_rules, metrics=('support', 'confidence', 'lift'), interactive=False)
+figure.show()
+```
+
+Visualization of the PyAerial rules as a scatter plot showing their quality metrics:
+
+![visualization.png](visualization.png)
+
+Please see NiaARM for more visualization options: https://github.com/firefly-cpp/NiaARM?tab=readme-ov-file#visualization
+
 ## How Aerial works?
 
 The figure below shows the pipeline of operations for Aerial in 3 main stages.
@@ -729,16 +767,27 @@ Runs in parallel with joblib.
 
 ## Citation
 
-If you use pyaerial in your work, please cite the following paper:
+If you use PyAerial in your work, please cite our research and software papers:
 
 ```
-@misc{karabulut2025neurosymbolic,
-    title={Neurosymbolic Association Rule Mining from Tabular Data},
-    author={Erkan Karabulut and Paul Groth and Victoria Degeler},
-    year={2025},
-    eprint={2504.19354},
-    archivePrefix={arXiv},
-    primaryClass={cs.AI}
+@inproceedings{aerial,
+  author       = {Karabulut, E. and Groth, P. T. and Degeler, V. O.},
+  title        = {Neurosymbolic Association Rule Mining from Tabular Data},
+  booktitle    = {Proceedings of the 19th International Conference on Neurosymbolic Learning and Reasoning (NeSy)},
+  year         = {2025},
+  note         = {Accepted/In Press},
+  howpublished = {\url{https://doi.org/10.48550/arXiv.2504.19354}},
+  archivePrefix= {arXiv},
+  eprint       = {2504.19354}
+}
+
+@misc{karabulut2025pyaerial,
+  author       = {Karabulut, Erkan and Groth, Paul and Degeler, Victoria},
+  title        = {Pyaerial: Scalable Association Rule Mining from Tabular Data},
+  year         = {2025},
+  howpublished = {\url{https://ssrn.com/abstract=5356320}},
+  doi          = {10.2139/ssrn.5356320},
+  note         = {Available at SSRN: \url{https://ssrn.com/abstract=5356320} or \url{http://dx.doi.org/10.2139/ssrn.5356320}. Under review at \emph{SoftwareX} journal}
 }
 ```
 

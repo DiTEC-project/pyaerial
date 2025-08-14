@@ -129,7 +129,7 @@ class AutoEncoder(nn.Module):
 
 
 def train(transactions: pd.DataFrame, autoencoder: AutoEncoder = None, noise_factor=0.5, lr=5e-3, epochs=2,
-          batch_size=16, loss_function=torch.nn.BCELoss(), num_workers=1, layer_dims: list = None, device=None):
+          batch_size=2, loss_function=torch.nn.BCELoss(), num_workers=1, layer_dims: list = None, device=None):
     """
     train an autoencoder for association rule mining
     """
