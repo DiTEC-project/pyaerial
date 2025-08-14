@@ -27,7 +27,7 @@
   <a href="#installation">📥 Install</a> |
   <a href="#usage-examples">📙 Usage</a> |
   <a href="#functions-overview">🤹‍♂️ Functions</a> |
-  <a href="#how-to-debug-aerial">🐞 Debug</a>
+  <a href="#how-to-debug-aerial">🐞 Debug</a> |
   <a href="#citation">📄 Cite</a> |
   <a href="LICENSE">🔑 License</a> |
   <a href="#contribute">❤️ Contribute</a>
