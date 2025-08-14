@@ -1,18 +1,49 @@
-# PyAerial: Scalable Association Rule Mining
+# PyAerial: scalable association rule mining
 
+---
 <div align="center">
-[![Python Version](https://img.shields.io/badge/python-3.9%2C3.10%2C3.11%2C3.12-blue)](https://www.python.org/)
-[![PyPI Version](https://img.shields.io/pypi/v/pyaerial)](https://pypi.org/project/pyaerial/)
-[![Build Status](https://github.com/DiTEC-project/pyaerial/actions/workflows/tests.yml/badge.svg)](https://github.com/DiTEC-project/pyaerial/actions/workflows/test.yml)
-[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/DiTEC-project/pyaerial/blob/main/LICENSE)
-[![GitHub Stars](https://img.shields.io/github/stars/DiTEC-project/pyaerial?style=social)](https://github.com/DiTEC-project/pyaerial/stargazers)
-[![Last Commit](https://img.shields.io/github/last-commit/DiTEC-project/pyaerial)](https://github.com/DiTEC-project/pyaerial/commits/main)
-[![Tested on Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange)](https://ubuntu.com/)
-[![Tested on macOS](https://img.shields.io/badge/macOS-Monterey%2012.6.7-lightgrey)](https://www.apple.com/macos/)
 
+  <img src="https://img.shields.io/badge/python-3.9%2C3.10%2C3.11%2C3.12-blue" alt="Python Versions">
+
+  <img src="https://img.shields.io/pypi/v/pyaerial.svg" alt="PyPI Version">
+
+  <img src="https://github.com/DiTEC-project/pyaerial/actions/workflows/tests.yml/badge.svg" alt="Build Status">
+
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
+
+  <img src="https://img.shields.io/github/stars/DiTEC-project/pyaerial.svg?style=social&label=Stars" alt="GitHub Stars">
+
+  <img src="https://img.shields.io/github/last-commit/DiTEC-project/pyaerial" alt="Last commit">
+
+  <img src="https://img.shields.io/pypi/pyversions/pyaerial.svg" alt="Python Versions">
+
+  <img src="https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange" alt="Tested on Ubuntu 24.04 LTS">
+
+  <img src="https://img.shields.io/badge/macOS-Monterey%2012.6.7-lightgrey" alt="Tested on MacOS Monterey 12.6.7">
 </div>
 
 ---
+
+  <p align="center">
+    <a href="#installation" style="margin:4px; padding:6px 12px; text-decoration:none; display:inline-flex; align-items:center; background-color:#4CAF50; color:white; border-radius:20px; font-weight:bold;">
+      <img src="https://img.icons8.com/color/24/000000/download--v1.png" alt="Installation" style="margin-right:6px;"> Installation
+    </a>
+    <a href="#usage-examples" style="margin:4px; padding:6px 12px; text-decoration:none; display:inline-flex; align-items:center; background-color:#2196F3; color:white; border-radius:20px; font-weight:bold;">
+      <img src="https://img.icons8.com/color/24/000000/book.png" alt="Usage" style="margin-right:6px;"> Usage
+    </a>
+    <a href="#functions-overview" style="margin:4px; padding:6px 12px; text-decoration:none; display:inline-flex; align-items:center; background-color:#FF9800; color:white; border-radius:20px; font-weight:bold;">
+      <img src="https://img.icons8.com/color/24/000000/code.png" alt="Functions" style="margin-right:6px;"> Functions
+    </a>
+    <a href="#how-to-debug-aerial" style="margin:4px; padding:6px 12px; text-decoration:none; display:inline-flex; align-items:center; background-color:#f44336; color:white; border-radius:20px; font-weight:bold;">
+      <img src="https://img.icons8.com/color/24/000000/bug.png" alt="How to debug?" style="margin-right:6px;"> How to debug?
+    </a>
+    <a href="#citation" style="margin:4px; padding:6px 12px; text-decoration:none; display:inline-flex; align-items:center; background-color:#9C27B0; color:white; border-radius:20px; font-weight:bold;">
+      <img src="https://img.icons8.com/color/24/000000/book.png" alt="Cite PyAerial" style="margin-right:6px;"> Cite PyAerial
+    </a>
+    <a href="#contributing" style="margin:4px; padding:6px 12px; text-decoration:none; display:inline-flex; align-items:center; background-color:#FF5722; color:white; border-radius:20px; font-weight:bold;">
+      <img src="https://img.icons8.com/color/24/000000/add-user-group-man-man.png" alt="Contribute" style="margin-right:6px;"> Contribute
+    </a>
+  </p>
 
 PyAerial is a **Python implementation** of the Aerial scalable neurosymbolic association rule miner for tabular data. It
 combines deep learning and symbolic reasoning to extract interpretable association rules efficiently from large
