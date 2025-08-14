@@ -1,17 +1,20 @@
 # PyAerial: Scalable Association Rule Mining
 
-
+<!-- Badge Panel -->
 [![Python Version](https://img.shields.io/badge/python-3.9%2C3.10%2C3.11%2C3.12-blue)](https://www.python.org/)
 [![PyPI Version](https://img.shields.io/pypi/v/pyaerial)](https://pypi.org/project/pyaerial/)
 [![Build Status](https://github.com/DiTEC-project/pyaerial/actions/workflows/tests.yml/badge.svg)](https://github.com/DiTEC-project/pyaerial/actions/workflows/test.yml)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/DiTEC-project/pyaerial/blob/main/LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/DiTEC-project/pyaerial?style=social)](https://github.com/DiTEC-project/pyaerial/stargazers)
+[![Last Commit](https://img.shields.io/github/last-commit/DiTEC-project/pyaerial)](https://github.com/DiTEC-project/pyaerial/commits/main)
 [![Tested on Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange)](https://ubuntu.com/)
 [![Tested on macOS](https://img.shields.io/badge/macOS-Monterey%2012.6.7-lightgrey)](https://www.apple.com/macos/)
 
 ---
 
 PyAerial is a **Python implementation** of the Aerial scalable neurosymbolic association rule miner for tabular data.  
-It combines deep learning and symbolic reasoning to extract interpretable association rules efficiently from large datasets.
+It combines deep learning and symbolic reasoning to extract interpretable association rules efficiently from large
+datasets.
 
 ---
 
@@ -45,7 +48,7 @@ It combines deep learning and symbolic reasoning to extract interpretable associ
 
 ## Introduction
 
-Aerial is a **scalable neurosymbolic association rule mining (ARM) method** for tabular data.  
+Aerial is a **scalable neurosymbolic association rule mining (ARM) method** for tabular data.
 
 It addresses the **rule explosion** and **execution time** issues in classical ARM by combining:
 
@@ -53,9 +56,15 @@ It addresses the **rule explosion** and **execution time** issues in classical A
 - **Rule extraction** from learned neural embeddings
 
 Learn more about the architecture, training, and rule extraction in our paper:  
-[Neurosymbolic Association Rule Mining from Tabular Data](https://arxiv.org/abs/2504.19354)  
+[Neurosymbolic Association Rule Mining from Tabular Data](https://arxiv.org/abs/2504.19354)
 
-If you use PyAerial in your research, please consider [citing our work](#citation).  
+If you use PyAerial in your research, please consider [citing our work](#citation).
+
+**Tested Platforms**
+
+- **Ubuntu 24.04 LTS**
+- **macOS Monterey 12.6.7**
+- Python 3.9, 3.10, 3.11 and 3.12
 
 ---
 
