@@ -11,15 +11,13 @@
 
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
 
-  <img src="https://img.shields.io/github/stars/DiTEC-project/pyaerial.svg?style=social&label=Stars" alt="GitHub Stars">
-
   <img src="https://img.shields.io/github/last-commit/DiTEC-project/pyaerial" alt="Last commit">
-
-  <img src="https://img.shields.io/pypi/pyversions/pyaerial.svg" alt="Python Versions">
 
   <img src="https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange" alt="Tested on Ubuntu 24.04 LTS">
 
   <img src="https://img.shields.io/badge/macOS-Monterey%2012.6.7-lightgrey" alt="Tested on MacOS Monterey 12.6.7">
+  
+  <img src="https://img.shields.io/github/stars/DiTEC-project/pyaerial.svg?style=social&label=Stars" alt="GitHub Stars">
 </div>
 
 ---
