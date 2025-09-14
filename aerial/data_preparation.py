@@ -102,7 +102,7 @@ def is_effectively_categorical(col: pd.Series, col_name: str, max_categories=10)
         unique_vals = col.dropna().unique()
         # if a column has less than max_categories different numbers in it, we can treat that as categorical
         if len(unique_vals) <= max_categories:
-            logger.info(
+            logger.debug(
                 f"Column '{col_name}' is numeric with few unique values ({len(unique_vals)}). "
                 "Treating it as categorical."
             )

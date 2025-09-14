@@ -31,9 +31,9 @@
   <a href="#contribute">❤️ Contribute</a>
 </p>
 
-PyAerial is a **Python implementation** of the Aerial scalable neurosymbolic association rule miner for tabular data. It
-combines deep learning and symbolic reasoning to extract interpretable association rules efficiently from large
-datasets.
+PyAerial is a **Python implementation** of the Aerial scalable neurosymbolic association rule miner for tabular data.
+It utilizes an under-complete denoising Autoencoder to learn a compact representation of tabular data, and extracts
+a concise set of high-quality association rules with full data coverage.
 
 ---
 
@@ -824,13 +824,15 @@ If you use PyAerial in your work, please cite our research and software papers:
   eprint       = {2504.19354}
 }
 
-@misc{karabulut2025pyaerial,
-  author       = {Karabulut, Erkan and Groth, Paul and Degeler, Victoria},
-  title        = {Pyaerial: Scalable Association Rule Mining from Tabular Data},
-  year         = {2025},
-  howpublished = {\url{https://ssrn.com/abstract=5356320}},
-  doi          = {10.2139/ssrn.5356320},
-  note         = {Available at SSRN: \url{https://ssrn.com/abstract=5356320} or \url{http://dx.doi.org/10.2139/ssrn.5356320}. Under review at \emph{SoftwareX} journal}
+@article{pyaerial,
+    title = {PyAerial: Scalable association rule mining from tabular data},
+    journal = {SoftwareX},
+    volume = {31},
+    pages = {102341},
+    year = {2025},
+    issn = {2352-7110},
+    doi = {https://doi.org/10.1016/j.softx.2025.102341},
+    author = {Erkan Karabulut and Paul Groth and Victoria Degeler},
 }
 ```
 

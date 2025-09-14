@@ -95,6 +95,10 @@ def calculate_basic_rule_stats(rules, transactions, num_workers=1):
     :param num_workers: Number of parallel threads to use.
     :return: Updated list of rules with support and confidence.
     """
+
+    logger.debug(
+        f"Calculating support and confidence metrics for {len(rules)} rules over {len(transactions)} transactions...")
+
     num_transactions = len(transactions)
     transaction_array = transactions.to_numpy()
     columns = transactions.columns.tolist()
@@ -143,6 +147,8 @@ def calculate_rule_stats(rules, transactions, max_workers=1):
     """
     Calculate rule quality stats for the given set of rules based on the input transactions.
     """
+    logger.debug(f"Calculating rule quality metrics for {len(rules)} rules over {len(transactions)} transactions ...")
+
     if max_workers == 1:
         logger.info("To speed up rule quality calculations, set max_workers > 1 in calculate_rule_stats() "
                     "to process rules in parallel.")
