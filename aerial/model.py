@@ -129,7 +129,8 @@ class AutoEncoder(nn.Module):
 
 
 def train(transactions: pd.DataFrame, autoencoder: AutoEncoder = None, noise_factor=0.5, lr=5e-3, epochs=2,
-          batch_size=2, loss_function=torch.nn.BCELoss(), num_workers=1, layer_dims: list = None, device=None):
+          batch_size=2, loss_function=torch.nn.BCELoss(), num_workers=1, layer_dims: list = None, device=None,
+          patience: int = 20, delta: float = 1e-4):
     """
     train an autoencoder for association rule mining
     """
@@ -165,22 +166,37 @@ def train(transactions: pd.DataFrame, autoencoder: AutoEncoder = None, noise_fac
 
     softmax_ranges = [range(cat['start'], cat['end']) for cat in feature_value_indices]
 
+    best_loss = float("inf")
+    patience_counter = 0
+
     total_batches = len(dataloader)
     for epoch in range(epochs):
+        epoch_loss = 0.0
         for batch_index, (batch,) in enumerate(dataloader):
             batch = batch.to(device, non_blocking=True)
 
             noisy_batch = (batch + torch.randn_like(batch) * noise_factor).clamp(0, 1)
-            # Forward pass
             reconstructed_batch = autoencoder(noisy_batch, softmax_ranges)
 
-            # Compute loss for the entire batch
             total_loss = loss_function(reconstructed_batch, batch)
 
-            # Backpropagation and optimization step
             optimizer.zero_grad()
             total_loss.backward()
             optimizer.step()
+
+            epoch_loss += total_loss.item()
+
+        epoch_loss /= total_batches
+
+        # --- Early stopping ---
+        if epoch_loss < best_loss - delta:
+            best_loss = epoch_loss
+            patience_counter = 0
+        else:
+            patience_counter += 1
+            if patience_counter >= patience:
+                logger.debug(f"Early stopping triggered at epoch {epoch + 1}")
+                break
 
     logger.debug("Training completed.")
     return autoencoder
