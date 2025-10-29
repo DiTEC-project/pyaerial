@@ -38,8 +38,8 @@ concise set of high-quality association rules with full data coverage.
 
 Unlike traditional exhaustive methods (e.g., Apriori, FP-Growth), Aerial addresses the **rule explosion** problem by
 learning neural representations and extracting only the most relevant patterns, making it suitable for large-scale
-datasets. PyAerial supports **GPU acceleration**, **numerical data discretization**, **item constraints**, and *
-*classification rule extraction** and **rule visualization**
+datasets. PyAerial supports **GPU acceleration**, **numerical data discretization**, **item constraints**, and
+**classification rule extraction** and **rule visualization**
 via [NiaARM](https://github.com/firefly-cpp/NiaARM?tab=readme-ov-file#visualization) library (see [Features](#features)
 for complete list).
 
