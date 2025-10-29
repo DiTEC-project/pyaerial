@@ -130,6 +130,42 @@ PyAerial provides a comprehensive toolkit for association rule mining with advan
 
 ---
 
+## How Aerial Works?
+
+Aerial employs a three-stage neurosymbolic pipeline to extract high-quality association rules from tabular data:
+
+### 1. Data Preparation
+Categorical data is one-hot encoded while tracking feature relationships. Numerical columns require pre-discretization (equal-frequency or equal-width methods available). The encoded values are transformed into vector format for neural processing.
+
+### 2. Autoencoder Training
+An under-complete denoising autoencoder learns a compact representation of the data:
+- **Architecture**: Logarithmic reduction (base 16) automatically configures layers, or use custom dimensions
+- **Bottleneck design**: The encoder compresses input to the original feature count, forcing the network to learn meaningful associations
+- **Denoising mechanism**: Random noise during training improves robustness and generalization
+
+<div align="center">
+  <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/example.png" alt="Rule extraction example" width="600">
+  <p><i>Example: Rule extraction process using weather and beverage features</i></p>
+</div>
+
+### 3. Rule Extraction
+Rules emerge from analyzing the trained autoencoder using test vectors:
+1. Test vectors are created with equal probabilities across categories
+2. Specific features are set to 1 (antecedents) while others remain at baseline
+3. Forward passes through the network produce output probabilities
+4. Rules are extracted when probabilities exceed similarity thresholds
+5. Quality metrics (support, confidence, coverage, Zhang's metric) are calculated
+
+<div align="center">
+  <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/pipeline.png" alt="Aerial pipeline" width="700">
+  <p><i>Complete three-stage pipeline: data preparation → training → rule extraction</i></p>
+</div>
+
+**Learn more:** For detailed explanations of the architecture, theoretical foundations, and experimental results, see our paper:
+[Neurosymbolic Association Rule Mining from Tabular Data](https://proceedings.mlr.press/v284/karabulut25a.html)
+
+---
+
 ## Documentation
 
 For detailed usage examples, API reference, and advanced topics, visit our comprehensive documentation:
@@ -151,29 +187,28 @@ If you use PyAerial in your work, please cite our research and software papers:
 
 ```bibtex
 @InProceedings{pmlr-v284-karabulut25a,
-  title = {Neurosymbolic Association Rule Mining from Tabular Data},
-  author = {Karabulut, Erkan and Groth, Paul and Degeler, Victoria},
-  booktitle = {Proceedings of The 19th International Conference on Neurosymbolic Learning and Reasoning},
-  pages = {565--588},
-  year = {2025},
-  editor = {H. Gilpin, Leilani and Giunchiglia, Eleonora and Hitzler, Pascal and van Krieken, Emile},
-  volume = {284},
-  series = {Proceedings of Machine Learning Research},
-  month = {08--10 Sep},
-  publisher = {PMLR},
-  pdf = {https://raw.githubusercontent.com/mlresearch/v284/main/assets/karabulut25a/karabulut25a.pdf},
-  url = {https://proceedings.mlr.press/v284/karabulut25a.html}
+  title         = {Neurosymbolic Association Rule Mining from Tabular Data},
+  author        = {Karabulut, Erkan and Groth, Paul and Degeler, Victoria},
+  booktitle     = {Proceedings of The 19th International Conference on Neurosymbolic Learning and Reasoning},
+  pages         = {565--588},
+  year          = {2025},
+  editor        = {H. Gilpin, Leilani and Giunchiglia, Eleonora and Hitzler, Pascal and van Krieken, Emile},
+  volume        = {284},
+  series        = {Proceedings of Machine Learning Research},
+  month         = {08--10 Sep},
+  publisher     = {PMLR},
+  url           = {https://proceedings.mlr.press/v284/karabulut25a.html}
 }
 
 @article{pyaerial,
-  title = {PyAerial: Scalable association rule mining from tabular data},
-  journal = {SoftwareX},
-  volume = {31},
-  pages = {102341},
-  year = {2025},
-  issn = {2352-7110},
-  doi = {https://doi.org/10.1016/j.softx.2025.102341},
-  author = {Erkan Karabulut and Paul Groth and Victoria Degeler},
+  title         = {PyAerial: Scalable association rule mining from tabular data},
+  journal       = {SoftwareX},
+  volume        = {31},
+  pages         = {102341},
+  year          = {2025},
+  issn          = {2352-7110},
+  doi           = {https://doi.org/10.1016/j.softx.2025.102341},
+  author        = {Erkan Karabulut and Paul Groth and Victoria Degeler},
 }
 ```
 
