@@ -44,7 +44,7 @@ via [NiaARM](https://github.com/firefly-cpp/NiaARM?tab=readme-ov-file#visualizat
 for complete list).
 
 Learn more about the architecture, training, and rule extraction in our paper:
-[Neurosymbolic Association Rule Mining from Tabular Data](https://arxiv.org/abs/2504.19354)
+[Neurosymbolic Association Rule Mining from Tabular Data](https://proceedings.mlr.press/v284/karabulut25a.html)
 
 ---
 
