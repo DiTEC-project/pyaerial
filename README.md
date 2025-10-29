@@ -126,6 +126,10 @@ confidence) that `node-caps` equals `no`. The rule covers 70.2% of the dataset.
 }
 ```
 
+**Can't get results you looked for?**
+See [_Debugging_](https://pyaerial.readthedocs.io/en/latest/advanced_topics.html#debugging) in our
+documentation.
+
 ---
 
 ## Features
