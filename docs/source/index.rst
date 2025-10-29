@@ -8,7 +8,7 @@ PyAerial is a **Python implementation** of the Aerial scalable neurosymbolic ass
 Unlike traditional exhaustive methods (e.g., Apriori, FP-Growth), Aerial addresses the **rule explosion** problem by learning neural representations and extracting only the most relevant patterns, making it suitable for large-scale datasets.
 
 Learn more about the architecture, training, and rule extraction in our paper:
-`Neurosymbolic Association Rule Mining from Tabular Data <https://arxiv.org/abs/2504.19354>`_
+`Neurosymbolic Association Rule Mining from Tabular Data <https://proceedings.mlr.press/v284/karabulut25a.html>`_
 
 .. toctree::
    :maxdepth: 2

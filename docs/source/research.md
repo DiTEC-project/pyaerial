@@ -10,7 +10,7 @@ It addresses the **rule explosion** and **execution time** issues in classical A
 - **Rule extraction** from learned neural embeddings
 
 Learn more about the architecture, training, and rule extraction in our paper:
-[Neurosymbolic Association Rule Mining from Tabular Data](https://arxiv.org/abs/2504.19354)
+[Neurosymbolic Association Rule Mining from Tabular Data](https://proceedings.mlr.press/v284/karabulut25a.html)
 
 ## Pipeline Overview
 
@@ -28,7 +28,7 @@ The figure below shows the pipeline of operations for Aerial in 3 main stages.
 
 1. An under-complete Autoencoder with either default automatically-picked number of layers and dimension (based on the dataset size and dimension) is constructed, or user-specified layers and dimension. (see [AutoEncoder](api_reference.md#autoencoder))
 2. All the training parameters can be customized including number of epochs, batch size, learning rate etc. (see [train() function](api_reference.md#train))
-3. An Autoencoder is then trained with a denoising mechanism to learn associations between input features. The full Autoencoder architecture is given in our [paper](https://arxiv.org/abs/2504.19354).
+3. An Autoencoder is then trained with a denoising mechanism to learn associations between input features. The full Autoencoder architecture is given in our [paper](https://proceedings.mlr.press/v284/karabulut25a.html).
 
 ### 3. Rule Extraction Stage
 

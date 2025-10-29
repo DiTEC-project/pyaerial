@@ -269,6 +269,16 @@ or sharing feedback, your help is appreciated.
 Feel free to open an issue or pull request on [GitHub](https://github.com/DiTEC-project/pyaerial), or reach out
 directly!
 
+### Contributors
+
+All contributors to this project are recognized and appreciated! The profiles of contributors will be listed here:
+
+<a href="https://github.com/DiTEC-project/pyaerial/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=DiTEC-project/pyaerial" />
+</a>
+
+*Made with [contrib.rocks](https://contrib.rocks).*
+
 ---
 
 ## License
