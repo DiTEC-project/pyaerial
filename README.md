@@ -44,7 +44,7 @@ via [NiaARM](https://github.com/firefly-cpp/NiaARM?tab=readme-ov-file#visualizat
 for complete list).
 
 Learn more about the architecture, training, and rule extraction in our paper:
-[Neurosymbolic Association Rule Mining from Tabular Data](https://arxiv.org/abs/2504.19354)
+[Neurosymbolic Association Rule Mining from Tabular Data](https://proceedings.mlr.press/v284/karabulut25a.html)
 
 ---
 
@@ -125,6 +125,10 @@ confidence) that `node-caps` equals `no`. The rule covers 70.2% of the dataset.
     "average_zhangs_metric": 0.318
 }
 ```
+
+**Can't get results you looked for?**
+See [_Debugging_](https://pyaerial.readthedocs.io/en/latest/advanced_topics.html#debugging) in our
+documentation.
 
 ---
 
@@ -264,6 +268,16 @@ or sharing feedback, your help is appreciated.
 
 Feel free to open an issue or pull request on [GitHub](https://github.com/DiTEC-project/pyaerial), or reach out
 directly!
+
+### Contributors
+
+All contributors to this project are recognized and appreciated! The profiles of contributors will be listed here:
+
+<a href="https://github.com/DiTEC-project/pyaerial/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=DiTEC-project/pyaerial" />
+</a>
+
+*Made with [contrib.rocks](https://contrib.rocks).*
 
 ---
 
