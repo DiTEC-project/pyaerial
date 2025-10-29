@@ -32,9 +32,16 @@
   <a href="LICENSE">🔑 License</a>
 </p>
 
-PyAerial is a **Python implementation** of the Aerial scalable neurosymbolic association rule miner for tabular data. It utilizes an under-complete denoising Autoencoder to learn a compact representation of tabular data, and extracts a concise set of high-quality association rules with full data coverage.
+PyAerial is a **Python implementation** of the Aerial scalable neurosymbolic association rule miner for tabular data. It
+utilizes an under-complete denoising Autoencoder to learn a compact representation of tabular data, and extracts a
+concise set of high-quality association rules with full data coverage.
 
-Unlike traditional exhaustive methods (e.g., Apriori, FP-Growth), Aerial addresses the **rule explosion** problem by learning neural representations and extracting only the most relevant patterns, making it suitable for large-scale datasets. PyAerial supports **GPU acceleration**, **numerical data discretization**, **item constraints**, and **classification rule extraction** (see [Features](#features) for complete list).
+Unlike traditional exhaustive methods (e.g., Apriori, FP-Growth), Aerial addresses the **rule explosion** problem by
+learning neural representations and extracting only the most relevant patterns, making it suitable for large-scale
+datasets. PyAerial supports **GPU acceleration**, **numerical data discretization**, **item constraints**, and *
+*classification rule extraction** and **rule visualization**
+via [NiaARM](https://github.com/firefly-cpp/NiaARM?tab=readme-ov-file#visualization) library (see [Features](#features)
+for complete list).
 
 Learn more about the architecture, training, and rule extraction in our paper:
 [Neurosymbolic Association Rule Mining from Tabular Data](https://arxiv.org/abs/2504.19354)
@@ -80,34 +87,42 @@ if len(association_rules) > 0:
 ```
 
 **Output:**
-```python
-Extracted 15 rules
 
-Sample Rule: {
-  "antecedents": ["inv-nodes__0-2"],
-  "consequent": "node-caps__no",
-  "support": 0.702,
-  "confidence": 0.943,
-  "zhangs_metric": 0.69
+```python
+Extracted
+15
+rules
+
+Sample
+Rule: {
+    "antecedents": ["inv-nodes__0-2"],
+    "consequent": "node-caps__no",
+    "support": 0.702,
+    "confidence": 0.943,
+    "zhangs_metric": 0.69
 }
 ```
 
 **Interpretation:**
-This rule indicates that when the `inv-nodes` feature has a value between `0-2`, there is a strong likelihood (94.3% confidence) that `node-caps` equals `no`. The rule covers 70.2% of the dataset.
+This rule indicates that when the `inv-nodes` feature has a value between `0-2`, there is a strong likelihood (94.3%
+confidence) that `node-caps` equals `no`. The rule covers 70.2% of the dataset.
 
 **Quality metrics explained:**
+
 - **Support**: Frequency of the rule in the dataset (how often the pattern occurs)
 - **Confidence**: How often the consequent is true when antecedent is true (rule reliability)
-- **Zhang's Metric**: Correlation measure between antecedent and consequent (-1 to 1; positive values indicate positive correlation)
+- **Zhang's Metric**: Correlation measure between antecedent and consequent (-1 to 1; positive values indicate positive
+  correlation)
 
 **Overall statistics across all 15 rules:**
+
 ```python
 {
-   "rule_count": 15,
-   "average_support": 0.448,
-   "average_confidence": 0.881,
-   "average_coverage": 0.860,
-   "average_zhangs_metric": 0.318
+    "rule_count": 15,
+    "average_support": 0.448,
+    "average_confidence": 0.881,
+    "average_coverage": 0.860,
+    "average_zhangs_metric": 0.318
 }
 ```
 
@@ -135,12 +150,18 @@ PyAerial provides a comprehensive toolkit for association rule mining with advan
 Aerial employs a three-stage neurosymbolic pipeline to extract high-quality association rules from tabular data:
 
 ### 1. Data Preparation
-Categorical data is one-hot encoded while tracking feature relationships. Numerical columns require pre-discretization (equal-frequency or equal-width methods available). The encoded values are transformed into vector format for neural processing.
+
+Categorical data is one-hot encoded while tracking feature relationships. Numerical columns require pre-discretization (
+equal-frequency or equal-width methods available). The encoded values are transformed into vector format for neural
+processing.
 
 ### 2. Autoencoder Training
+
 An under-complete denoising autoencoder learns a compact representation of the data:
+
 - **Architecture**: Logarithmic reduction (base 16) automatically configures layers, or use custom dimensions
-- **Bottleneck design**: The encoder compresses input to the original feature count, forcing the network to learn meaningful associations
+- **Bottleneck design**: The encoder compresses input to the original feature count, forcing the network to learn
+  meaningful associations
 - **Denoising mechanism**: Random noise during training improves robustness and generalization
 
 <div align="center">
@@ -149,7 +170,9 @@ An under-complete denoising autoencoder learns a compact representation of the d
 </div>
 
 ### 3. Rule Extraction
+
 Rules emerge from analyzing the trained autoencoder using test vectors:
+
 1. Test vectors are created with equal probabilities across categories
 2. Specific features are set to 1 (antecedents) while others remain at baseline
 3. Forward passes through the network produce output probabilities
@@ -161,7 +184,8 @@ Rules emerge from analyzing the trained autoencoder using test vectors:
   <p><i>Complete three-stage pipeline: data preparation → training → rule extraction</i></p>
 </div>
 
-**Learn more:** For detailed explanations of the architecture, theoretical foundations, and experimental results, see our paper:
+**Learn more:** For detailed explanations of the architecture, theoretical foundations, and experimental results, see
+our paper:
 [Neurosymbolic Association Rule Mining from Tabular Data](https://proceedings.mlr.press/v284/karabulut25a.html)
 
 ---
@@ -173,6 +197,7 @@ For detailed usage examples, API reference, and advanced topics, visit our compr
 **[📚 Read the full documentation on ReadTheDocs](https://pyaerial.readthedocs.io)**
 
 Documentation includes:
+
 - **Getting Started** - Installation and basic usage
 - **User Guide** - Detailed examples for all features
 - **API Reference** - Complete function and class documentation
@@ -226,16 +251,19 @@ For questions, suggestions, or collaborations, please contact:
 
 ## Contribute
 
-We welcome contributions from the community! Whether you're fixing bugs, adding new features, improving documentation, or sharing feedback, your help is appreciated.
+We welcome contributions from the community! Whether you're fixing bugs, adding new features, improving documentation,
+or sharing feedback, your help is appreciated.
 
 **How to contribute:**
+
 - 🐛 **Report bugs** - Open an issue describing the problem
 - 💡 **Suggest features** - Share your ideas for improvements
 - 📝 **Improve docs** - Help us make the documentation clearer
 - 🔧 **Submit PRs** - Fork the repo and create a pull request
 - 💬 **Share feedback** - Contact us with your experience using PyAerial
 
-Feel free to open an issue or pull request on [GitHub](https://github.com/DiTEC-project/pyaerial), or reach out directly!
+Feel free to open an issue or pull request on [GitHub](https://github.com/DiTEC-project/pyaerial), or reach out
+directly!
 
 ---
 
