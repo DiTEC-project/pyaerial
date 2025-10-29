@@ -6,8 +6,8 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 project = 'PyAerial'
-copyright = '2025, Erkan Karabulut, Paul Groth, Victoria Degeler'
-author = 'Erkan Karabulut, Paul Groth, Victoria Degeler'
+copyright = '2025, DiTEC Project'
+author = 'Erkan Karabulut'
 
 # Get version dynamically from the package
 try:
@@ -16,7 +16,7 @@ try:
     version = '.'.join(__version__.split('.')[:2])  # Short version (e.g., "1.0")
 except ImportError:
     # Fallback if _version.py doesn't exist yet
-    release = '1.0.4'
+    release = '1.0.5'
     version = '1.0'
 
 # -- General configuration ---------------------------------------------------
