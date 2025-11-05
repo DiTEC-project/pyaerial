@@ -141,6 +141,12 @@ for rule in association_rules:
 
 ---
 
+**Can't get results you looked for?**
+See [_Debugging_](https://pyaerial.readthedocs.io/en/latest/advanced_topics.html#debugging) in our
+documentation.
+
+---
+
 ### Working with Numerical Data
 
 For datasets with numerical columns, use PyAerial's built-in discretization:
@@ -250,12 +256,6 @@ classification_rules = rule_extraction.generate_rules(
 
 These rules can be used for **interpretable inference** or integrated with rule-based classifiers
 from [imodels](https://github.com/csinva/imodels).
-
----
-
-**Can't get results you looked for?**
-See [_Debugging_](https://pyaerial.readthedocs.io/en/latest/advanced_topics.html#debugging) in our
-documentation.
 
 ---
 

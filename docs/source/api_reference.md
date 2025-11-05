@@ -56,7 +56,7 @@ If there are numerical features with less than 10 cardinality, it treats them as
 - `batch_size` (int): Number of samples per training batch.
 - `loss_function` (torch.nn.Module): Loss function to apply (default is BCELoss).
 - `num_workers` (int): Number of subprocesses used for data loading.
-- `layer_dims` (list of int, optional): Custom hidden layer dimensions for autoencoder construction (if applicable).
+- `layer_dims` (list of int, optional): Custom hidden layer dimensions for autoencoder construction.
 - `device` (str): Name of the device to run the Autoencoder model on, e.g., "cuda", "cpu" etc. The device option that is set here will also be used in the rule extraction stage.
 
 **Returns**: A trained instance of the AutoEncoder.
