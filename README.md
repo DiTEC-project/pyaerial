@@ -56,6 +56,13 @@ Install PyAerial using pip:
 pip install pyaerial
 ```
 
+> **Note:** Examples in the documentation use `ucimlrepo` to fetch sample datasets. Install it to run the examples:
+> ```bash
+> pip install ucimlrepo
+> ```
+
+> **Data Requirements:** PyAerial works with **categorical data**. You don't need to one-hot encode your data—PyAerial handles encoding automatically.
+
 ---
 
 ## Quick Start
