@@ -60,7 +60,7 @@ pip install pyaerial
 > pip install ucimlrepo
 > ```
 
-> **Data Requirements:** PyAerial works with **categorical data**. You don't need to one-hot encode your data—PyAerial handles encoding automatically.
+> **Data Requirements:** PyAerial works with **categorical data**. Numerical columns must be discretized first, but you don't need to one-hot encode your data—PyAerial handles that automatically (unlike libraries like mlxtend that require manual one-hot encoding).
 
 ---
 
@@ -138,6 +138,38 @@ for rule in association_rules:
 - **Confidence**: How often the consequent is true when antecedent is true (rule reliability)
 - **Zhang's Metric**: Correlation measure between antecedent and consequent (-1 to 1; positive values indicate positive
   correlation)
+
+---
+
+### Working with Numerical Data
+
+For datasets with numerical columns, use PyAerial's built-in discretization:
+
+```python
+from aerial import model, rule_extraction, discretization
+from ucimlrepo import fetch_ucirepo
+
+# Load a numerical dataset (e.g., Iris)
+iris = fetch_ucirepo(id=53).data.features
+
+# Discretize numerical columns into categorical bins
+iris_discretized = discretization.equal_frequency_discretization(iris, n_bins=3)
+
+# Train and extract rules as usual
+trained_autoencoder = model.train(iris_discretized)
+association_rules = rule_extraction.generate_rules(trained_autoencoder)
+```
+
+**Example discretization output:**
+
+```
+# Before: sepal_length = 5.1, 4.9, 7.0, ...
+# After:  sepal_length (ranges of values) = (4.8, 5.5], (4.8, 5.5], (6.4, 7.9], ...
+```
+
+PyAerial provides `equal_frequency_discretization` and `equal_width_discretization` methods. See
+the [User Guide](https://pyaerial.readthedocs.io/en/latest/user_guide.html#running-aerial-for-numerical-values) for
+more discretization options.
 
 ---
 
