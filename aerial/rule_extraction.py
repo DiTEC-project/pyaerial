@@ -298,13 +298,19 @@ def _get_rule(antecedents, consequents, feature_values):
     :param consequents: an index in the test vector marking the consequent location
     :param feature_values: a list of string that keeps track of which neuron in the Autoencoder input corresponds
         to which feature value in the tabular data
-    :return:
+    :return: a rule dictionary with antecedents and consequents in dictionary format
+        Example: {
+            'antecedents': [{'feature': 'age', 'value': '30-39'}, ...],
+            'consequents': [{'feature': 'node-caps', 'value': 'no'}, ...]
+        }
     """
     rule = {'antecedents': [], 'consequents': []}
     for antecedent in antecedents:
-        rule['antecedents'].append(feature_values[antecedent])
+        feature_name, feature_value = feature_values[antecedent].split('__', 1)
+        rule['antecedents'].append({'feature': feature_name, 'value': feature_value})
 
     for consequent in consequents:
-        rule['consequents'].append(feature_values[consequent])
+        feature_name, feature_value = feature_values[consequent].split('__', 1)
+        rule['consequents'].append({'feature': feature_name, 'value': feature_value})
 
     return rule

@@ -71,9 +71,9 @@ Overall rule quality statistics: {
 Sample rule:
 {
    "antecedents":[
-      "inv-nodes__0-2" # meaning column "inv-nodes" has the value between "0-2"
+      {"feature": "inv-nodes", "value": "0-2"}
    ],
-   "consequent":"node-caps__no", # meaing column "node-caps" has the value "no"
+   "consequent": {"feature": "node-caps", "value": "no"},
    "support": 0.702,
    "confidence": 0.943,
    "zhangs_metric": 0.69

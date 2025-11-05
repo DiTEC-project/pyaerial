@@ -49,13 +49,34 @@ Overall rule quality statistics: {
 Sample rule:
 {
    "antecedents":[
-      "inv-nodes__0-2" # meaning column "inv-nodes" has the value between "0-2"
+      {"feature": "inv-nodes", "value": "0-2"}
    ],
-   "consequent":"node-caps__no", # meaing column "node-caps" has the value "no"
+   "consequent": {"feature": "node-caps", "value": "no"},
    "support": 0.702,
    "confidence": 0.943,
    "zhangs_metric": 0.69
 }
+```
+
+**Working with rules:**
+
+Rules are returned in a structured dictionary format for easy access:
+
+```python
+# Accessing rule components
+for rule in association_rules:
+    # Access antecedent features
+    for ant in rule['antecedents']:
+        feature_name = ant['feature']  # e.g., "inv-nodes"
+        feature_value = ant['value']   # e.g., "0-2"
+
+    # Access consequent
+    cons_feature = rule['consequent']['feature']  # e.g., "node-caps"
+    cons_value = rule['consequent']['value']      # e.g., "no"
+
+    # Access quality metrics
+    support = rule['support']
+    confidence = rule['confidence']
 ```
 
 ### 2. Specifying Item Constraints
@@ -88,16 +109,16 @@ The output rules will only contain features of interest on the antecedent side:
 association_rules: [
    {
       "antecedents":[
-         "menopause__premeno"
+         {"feature": "menopause", "value": "premeno"}
       ],
-      "consequent":"node-caps__no",
+      "consequent": {"feature": "node-caps", "value": "no"},
       ...
    },
    {
       "antecedents":[
-         "menopause__premeno"
+         {"feature": "menopause", "value": "premeno"}
       ],
-      "consequent":"breast__right",
+      "consequent": {"feature": "breast", "value": "right"},
       ...
    },
    ...
@@ -244,12 +265,12 @@ Sample output showing rules with class labels on the right hand side:
 
 {
    "antecedents":[
-      "menopause__premeno"
+      {"feature": "menopause", "value": "premeno"}
    ],
-   "consequent":"Class__no-recurrence-events", # consequent has the class label (column) named "Class" with the value "no-recurrence-events"
-   "support":np.float64(0.35664335664335667),
-   "confidence":np.float64(0.68),
-   "zhangs_metric":np.float64(-0.06585858585858577)
+   "consequent": {"feature": "Class", "value": "no-recurrence-events"},
+   "support": 0.357,
+   "confidence": 0.68,
+   "zhangs_metric": -0.066
 }
 ```
 
@@ -326,9 +347,10 @@ from niaarm import RuleList, Feature, Rule
 def visualizable_rule_list(aerial_rules: dict, dataset: pd.DataFrame):
     rule_list = RuleList()
     for rule in aerial_rules:
-        antecedents = [Feature(k, "cat", categories=[v]) for k, v in (i.split("__", 1) for i in rule["antecedents"])]
-        ck, cv = rule["consequent"].split("__", 1)
-        rule_list.append(Rule(antecedents, [Feature(ck, "cat", categories=[cv])], transactions=dataset))
+        # Convert dictionary format to NiaARM Feature format
+        antecedents = [Feature(ant['feature'], "cat", categories=[ant['value']]) for ant in rule["antecedents"]]
+        consequent = Feature(rule["consequent"]['feature'], "cat", categories=[rule["consequent"]['value']])
+        rule_list.append(Rule(antecedents, [consequent], transactions=dataset))
     return rule_list
 
 # learn rules with PyAerial as before

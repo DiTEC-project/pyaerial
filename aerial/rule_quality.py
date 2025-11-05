@@ -90,7 +90,7 @@ def calculate_average_rule_quality(rules):
 def calculate_basic_rule_stats(rules, transactions, num_workers=1):
     """
     Calculate support and confidence for rules in parallel using vectorized operations.
-    :param rules: List of rules, each a dict with 'antecedents' and 'consequent'.
+    :param rules: List of rules, each a dict with 'antecedents' (list of dicts) and 'consequent' (dict).
     :param transactions: DataFrame with binary transaction data.
     :param num_workers: Number of parallel threads to use.
     :return: Updated list of rules with support and confidence.
@@ -105,8 +105,12 @@ def calculate_basic_rule_stats(rules, transactions, num_workers=1):
     column_indices = {col: i for i, col in enumerate(columns)}
 
     def process_rule(rule):
-        antecedent_indices = [column_indices[a] for a in rule['antecedents']]
-        consequent_index = column_indices[rule['consequent']]
+        # Convert dictionary format to column names
+        antecedent_cols = [f"{a['feature']}__{a['value']}" for a in rule['antecedents']]
+        consequent_col = f"{rule['consequent']['feature']}__{rule['consequent']['value']}"
+
+        antecedent_indices = [column_indices[a] for a in antecedent_cols]
+        consequent_index = column_indices[consequent_col]
 
         # Vectorized masks
         antecedent_mask = np.all(transaction_array[:, antecedent_indices] == 1, axis=1)
@@ -146,6 +150,9 @@ def calculate_freq_item_support(freq_items, transactions):
 def calculate_rule_stats(rules, transactions, max_workers=1):
     """
     Calculate rule quality stats for the given set of rules based on the input transactions.
+    :param rules: List of rules with antecedents (list of dicts) and consequent (dict) in dictionary format
+    :param transactions: DataFrame with binary transaction data
+    :param max_workers: Number of parallel workers
     """
     logger.debug(f"Calculating rule quality metrics for {len(rules)} rules over {len(transactions)} transactions ...")
 
@@ -158,8 +165,12 @@ def calculate_rule_stats(rules, transactions, max_workers=1):
     dataset_coverage = np.zeros(num_transactions, dtype=bool)
 
     def process_rule(rule):
-        antecedents_indices = [vector_tracker_list.index(ant) for ant in rule['antecedents']]
-        consequent_index = vector_tracker_list.index(rule['consequent'])
+        # Convert dictionary format to column names
+        antecedent_cols = [f"{a['feature']}__{a['value']}" for a in rule['antecedents']]
+        consequent_col = f"{rule['consequent']['feature']}__{rule['consequent']['value']}"
+
+        antecedents_indices = [vector_tracker_list.index(ant) for ant in antecedent_cols]
+        consequent_index = vector_tracker_list.index(consequent_col)
 
         # Find transactions where all antecedents are present
         antecedent_matches = np.all(transactions.iloc[:, antecedents_indices] == 1, axis=1)
