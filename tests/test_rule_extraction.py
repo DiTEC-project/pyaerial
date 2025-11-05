@@ -58,8 +58,8 @@ class TestAerialFunctions(unittest.TestCase):
         rules = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001, target_classes=target_classes)
 
         for r in rules:
-            # Extract column name from consequent
-            consequent_col = r['consequent'].split("__")[0]
+            # Extract column name from consequent (now in dictionary format)
+            consequent_col = r['consequent']['feature']
             # Check that the consequent column is in the target_classes
             self.assertIn(consequent_col, target_classes)
 
@@ -85,7 +85,9 @@ class TestAerialFunctions(unittest.TestCase):
 
         for r in rules:
             for ant in r['antecedents']:
-                feature_name, feature_value = ant.split("__")
+                # antecedents are now dictionaries with 'feature' and 'value' keys
+                feature_name = ant['feature']
+                feature_value = ant['value']
                 # Check if either the feature name is in the list or the specific value is allowed
                 self.assertTrue(
                     feature_name in features_of_interest or {feature_name: feature_value} in features_of_interest
@@ -124,12 +126,19 @@ class TestAerialFunctions(unittest.TestCase):
         itemsets = generate_frequent_itemsets(small_model)
         self.assertTrue(itemsets is None or isinstance(itemsets, list))
 
-    def test_rule_strings_pattern_rule_learning(self):
+    def test_rule_dict_structure_rule_learning(self):
+        """Test that rules have the proper dictionary structure"""
         rules = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001)
         for r in rules:
             for ant in r['antecedents']:
-                self.assertRegex(ant, r".+__.+")
-            self.assertRegex(r['consequent'], r".+__.+")
+                # Check that antecedents are dictionaries with 'feature' and 'value' keys
+                self.assertIsInstance(ant, dict)
+                self.assertIn('feature', ant)
+                self.assertIn('value', ant)
+            # Check that consequent is a dictionary with 'feature' and 'value' keys
+            self.assertIsInstance(r['consequent'], dict)
+            self.assertIn('feature', r['consequent'])
+            self.assertIn('value', r['consequent'])
 
     def test_rule_strings_pattern_frequent_itemset_learning(self):
         itemsets = generate_frequent_itemsets(self.model, similarity=0.001)
@@ -144,7 +153,8 @@ class TestAerialFunctions(unittest.TestCase):
             self.assertIn('antecedents', r)
             self.assertIn('consequent', r)
             self.assertIsInstance(r['antecedents'], list)
-            self.assertIsInstance(r['consequent'], str)
+            # Consequent is now a dictionary instead of a string
+            self.assertIsInstance(r['consequent'], dict)
 
     def test_empty_target_classes_or_features_of_interest_rule_learning(self):
         rules = generate_rules(self.model, target_classes=[], features_of_interest=[], ant_similarity=0.001,
@@ -234,7 +244,7 @@ class TestAerialFunctions(unittest.TestCase):
         sig_feats, ignored = extract_significant_features_and_ignored_indices(features, self.model)
         for idx in ignored:
             self.assertTrue('__' in self.model.feature_values[idx])
-            self.assertNotEqual(self.model.feature_values[idx].split('__')[1], 'Red')
+            self.assertNotEqual(self.model.feature_values[idx].split('__', 1)[1], 'Red')
 
     # Test "_mark_features()" function of the rule_extraction.py
     def test_single_feature_marks_correctly(self):

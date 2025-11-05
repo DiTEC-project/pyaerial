@@ -40,8 +40,7 @@ Unlike traditional exhaustive methods (e.g., Apriori, FP-Growth), Aerial address
 learning neural representations and extracting only the most relevant patterns, making it suitable for large-scale
 datasets. PyAerial supports **GPU acceleration**, **numerical data discretization**, **item constraints**, and
 **classification rule extraction** and **rule visualization**
-via [NiaARM](https://github.com/firefly-cpp/NiaARM?tab=readme-ov-file#visualization) library (see [Features](#features)
-for complete list).
+via [NiaARM](https://github.com/firefly-cpp/NiaARM?tab=readme-ov-file#visualization) library.
 
 Learn more about the architecture, training, and rule extraction in our paper:
 [Neurosymbolic Association Rule Mining from Tabular Data](https://proceedings.mlr.press/v284/karabulut25a.html)
@@ -56,9 +55,21 @@ Install PyAerial using pip:
 pip install pyaerial
 ```
 
+> **Note:** Examples in the documentation use `ucimlrepo` to fetch sample datasets. Install it to run the examples:
+> ```bash
+> pip install ucimlrepo
+> ```
+
+> **Data Requirements:** PyAerial works with **categorical data**. Numerical columns must be discretized first, but you don't need to one-hot encode your data—PyAerial handles that automatically (unlike libraries like mlxtend that require manual one-hot encoding).
+
 ---
 
 ## Quick Start
+
+The following are basic example usages of PyAerial. 📚 **[See full feature list](#features)** | **[Read the complete documentation](https://pyaerial.readthedocs.io)**, to see the
+full capabilities
+
+### Basic Association Rule Mining
 
 ```python
 from aerial import model, rule_extraction, rule_quality
@@ -79,33 +90,47 @@ if len(association_rules) > 0:
         association_rules,
         trained_autoencoder.input_vectors
     )
-    print(f"Extracted {stats['rule_count']} rules\n")
-
-    # Display a sample rule
-    sample_rule = association_rules[0]
-    print(f"Sample Rule: {sample_rule}")
+    print(f"Overall statistics: {stats}\n")
+    print(f"Sample rule: {association_rules[0]}")
 ```
 
 **Output:**
 
 ```python
-Extracted
-15
-rules
+Overall statistics: {
+    "rule_count": 15,
+    "average_support": 0.448,
+    "average_confidence": 0.881,
+    "average_coverage": 0.860,
+    "average_zhangs_metric": 0.318
+}
 
-Sample
-Rule: {
-    "antecedents": ["inv-nodes__0-2"],
-    "consequent": "node-caps__no",
+Sample rule: {
+    "antecedents": [{"feature": "inv-nodes", "value": "0-2"}],
+    "consequent": {"feature": "node-caps", "value": "no"},
     "support": 0.702,
     "confidence": 0.943,
     "zhangs_metric": 0.69
 }
 ```
 
-**Interpretation:**
-This rule indicates that when the `inv-nodes` feature has a value between `0-2`, there is a strong likelihood (94.3%
-confidence) that `node-caps` equals `no`. The rule covers 70.2% of the dataset.
+**Interpretation:** When `inv-nodes` is between `0-2`, there's 94.3% confidence that `node-caps` equals `no`, covering
+70.2% of the dataset.
+
+**Working with rules:** Access rule components easily using the dictionary format:
+
+```python
+# Example: Print all rules in a readable format
+for rule in association_rules:
+    antecedents_str = " AND ".join([f"{a['feature']}={a['value']}" for a in rule['antecedents']])
+    consequent_str = f"{rule['consequent']['feature']}={rule['consequent']['value']}"
+    print(f"IF {antecedents_str} THEN {consequent_str} (conf: {rule['confidence']:.2f})")
+
+# Sample output:
+# IF inv-nodes=0-2 THEN node-caps=no (conf: 0.94)
+# IF age=30-39 AND menopause=premeno THEN breast=left (conf: 0.75)
+# IF tumor-size=30-34 THEN deg-malig=2 (conf: 0.82)
+```
 
 **Quality metrics explained:**
 
@@ -114,17 +139,119 @@ confidence) that `node-caps` equals `no`. The rule covers 70.2% of the dataset.
 - **Zhang's Metric**: Correlation measure between antecedent and consequent (-1 to 1; positive values indicate positive
   correlation)
 
-**Overall statistics across all 15 rules:**
+---
+
+### Working with Numerical Data
+
+For datasets with numerical columns, use PyAerial's built-in discretization:
+
+```python
+from aerial import model, rule_extraction, discretization
+from ucimlrepo import fetch_ucirepo
+
+# Load a numerical dataset (e.g., Iris)
+iris = fetch_ucirepo(id=53).data.features
+
+# Discretize numerical columns into categorical bins
+iris_discretized = discretization.equal_frequency_discretization(iris, n_bins=3)
+
+# Train and extract rules as usual
+trained_autoencoder = model.train(iris_discretized)
+association_rules = rule_extraction.generate_rules(trained_autoencoder)
+```
+
+**Example discretization output:**
+
+```
+# Before: sepal_length = 5.1, 4.9, 7.0, ...
+# After:  sepal_length (ranges of values) = (4.8, 5.5], (4.8, 5.5], (6.4, 7.9], ...
+```
+
+PyAerial provides `equal_frequency_discretization` and `equal_width_discretization` methods. See
+the [User Guide](https://pyaerial.readthedocs.io/en/latest/user_guide.html#running-aerial-for-numerical-values) for
+more discretization options.
+
+---
+
+### ARM with Item Constraints
+
+**Focus rule mining on specific features of interest** instead of exploring the entire feature space:
+
+```python
+from aerial import model, rule_extraction
+from ucimlrepo import fetch_ucirepo
+
+breast_cancer = fetch_ucirepo(id=14).data.features
+trained_autoencoder = model.train(breast_cancer)
+
+# Define features of interest for the antecedent side
+features_of_interest = ["age", {"menopause": 'premeno'}, {"node-caps": "yes"}]
+
+# Extract rules focusing only on specified features
+association_rules = rule_extraction.generate_rules(
+    trained_autoencoder,
+    features_of_interest,
+    cons_similarity=0.5
+)
+```
+
+**Output:** Rules with specified features on the antecedent side (left side of an if-else rule):
 
 ```python
 {
-    "rule_count": 15,
-    "average_support": 0.448,
-    "average_confidence": 0.881,
-    "average_coverage": 0.860,
-    "average_zhangs_metric": 0.318
+    "antecedents": [{"feature": "menopause", "value": "premeno"}],
+    "consequent": {"feature": "node-caps", "value": "no"},
+    ...
 }
 ```
+
+This is ideal for **domain-specific exploration** where you want to understand relationships involving particular
+features.
+
+---
+
+### Classification Rules for Interpretable Inference
+
+**Learn rules with target class labels** on the consequent side for interpretable classification:
+
+```python
+import pandas as pd
+from aerial import model, rule_extraction, rule_quality
+from ucimlrepo import fetch_ucirepo
+
+# Load dataset with class labels
+breast_cancer = fetch_ucirepo(id=14)
+labels = breast_cancer.data.targets
+features = breast_cancer.data.features
+
+# Combine features with labels
+table_with_labels = pd.concat([features, labels], axis=1)
+
+trained_autoencoder = model.train(table_with_labels)
+
+# Generate classification rules with target class on consequent side
+classification_rules = rule_extraction.generate_rules(
+    trained_autoencoder,
+    target_classes=["Class"],
+    cons_similarity=0.5
+)
+```
+
+**Output:** Rules predicting class labels:
+
+```python
+{
+    "antecedents": [{"feature": "menopause", "value": "premeno"}],
+    "consequent": {"feature": "Class", "value": "no-recurrence-events"},
+    "support": 0.357,
+    "confidence": 0.68
+}
+```
+
+These rules can be used for **interpretable inference** or integrated with rule-based classifiers
+from [imodels](https://github.com/csinva/imodels).
+
+---
 
 **Can't get results you looked for?**
 See [_Debugging_](https://pyaerial.readthedocs.io/en/latest/advanced_topics.html#debugging) in our
