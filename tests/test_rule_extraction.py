@@ -51,6 +51,11 @@ class TestAerialFunctions(unittest.TestCase):
         self.assertIsInstance(itemsets, list)
         if itemsets:
             self.assertIsInstance(itemsets[0], list)
+            # Each item in itemset should be a dict with 'feature' and 'value' keys
+            for item in itemsets[0]:
+                self.assertIsInstance(item, dict)
+                self.assertIn('feature', item)
+                self.assertIn('value', item)
 
     def test_rules_target_classes(self):
         """Test that only specified target classes appear in consequents"""
@@ -94,13 +99,15 @@ class TestAerialFunctions(unittest.TestCase):
                 )
 
     def test_rules_features_of_interest_in_frequent_itemset_learning(self):
-        """Test that antecedents contain only features of interest"""
+        """Test that itemsets contain only features of interest"""
         features_of_interest = ['Size', {'Color': 'Red'}]
         itemsets = generate_frequent_itemsets(self.model, similarity=0.001, features_of_interest=features_of_interest)
 
         for itemset in itemsets:
             for item in itemset:
-                feature_name, feature_value = item.split("__")
+                # Items are now dictionaries with 'feature' and 'value' keys
+                feature_name = item['feature']
+                feature_value = item['value']
                 # Check if either the feature name is in the list or the specific value is allowed
                 self.assertTrue(
                     feature_name in features_of_interest or {feature_name: feature_value} in features_of_interest
@@ -140,11 +147,15 @@ class TestAerialFunctions(unittest.TestCase):
             self.assertIn('feature', r['consequent'])
             self.assertIn('value', r['consequent'])
 
-    def test_rule_strings_pattern_frequent_itemset_learning(self):
+    def test_rule_dict_structure_frequent_itemset_learning(self):
+        """Test that itemsets have the proper dictionary structure"""
         itemsets = generate_frequent_itemsets(self.model, similarity=0.001)
         for itemset in itemsets:
             for item in itemset:
-                self.assertRegex(item, r".+__.+")
+                # Check that items are dictionaries with 'feature' and 'value' keys
+                self.assertIsInstance(item, dict)
+                self.assertIn('feature', item)
+                self.assertIn('value', item)
 
     def test_consistent_rule_structure(self):
         rules = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001)

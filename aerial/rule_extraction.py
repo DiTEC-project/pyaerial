@@ -122,9 +122,11 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=No
     :param max_length: max itemset length
     :param similarity: similarity threshold
     :param autoencoder: a trained Autoencoder
-    :param features_of_interest: list: only look for rules that have these features of interest on the antecedent side
+    :param features_of_interest: list: only look for itemsets that have these features of interest
         accepted form ["feature1", "feature2", {"feature3": "value1}, ...], either a feature name as str, or specific value
         of a feature in object form
+    :return: list of frequent itemsets, where each itemset is a list of dictionaries with 'feature' and 'value' keys
+        Example: [[{'feature': 'age', 'value': '30-39'}], [{'feature': 'age', 'value': '30-39'}, {'feature': 'tumor-size', 'value': '20-24'}], ...]
     """
     if not autoencoder:
         logger.error("A trained Autoencoder has to be provided before extracting frequent items.")
@@ -184,9 +186,12 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=No
                     continue
 
                 # Add to frequent itemsets
-                frequent_itemsets.append(
-                    [autoencoder.feature_values[idx] for idx in candidate_antecedents]
-                )
+                itemset = [
+                    {'feature': autoencoder.feature_values[idx].split('__', 1)[0],
+                     'value': autoencoder.feature_values[idx].split('__', 1)[1]}
+                    for idx in candidate_antecedents
+                ]
+                frequent_itemsets.append(itemset)
 
     logger.debug("%d frequent itemsets extracted.", len(frequent_itemsets))
     return frequent_itemsets

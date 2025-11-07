@@ -214,7 +214,8 @@ trained_autoencoder = model.train(breast_cancer, epochs=5, lr=1e-3)
 frequent_itemsets = rule_extraction.generate_frequent_itemsets(trained_autoencoder)
 
 # calculate support values of the frequent itemsets
-support_values, average_support = rule_quality.calculate_freq_item_support(frequent_itemsets, breast_cancer)
+# use max_workers > 1 for parallel processing on large datasets
+support_values, average_support = rule_quality.calculate_freq_item_support(frequent_itemsets, breast_cancer, max_workers=4)
 ```
 
 Note that we pass the original dataset (`breast_cancer`) to the `calculate_freq_item_support()` in this case. The following is a sample output:
@@ -223,7 +224,24 @@ Note that we pass the original dataset (`breast_cancer`) to the `calculate_freq_
 >>> Output:
 
 Frequent itemsets:
-{('menopause__premeno',): 0.524, ('menopause__ge40',): 0.451, ... }
+[
+   [{'feature': 'menopause', 'value': 'premeno'}],
+   [{'feature': 'menopause', 'value': 'ge40'}],
+   ...
+]
+
+Support values returned as list of dicts:
+[
+   {
+      'itemset': [{'feature': 'menopause', 'value': 'premeno'}],
+      'support': 0.524
+   },
+   {
+      'itemset': [{'feature': 'menopause', 'value': 'ge40'}],
+      'support': 0.451
+   },
+   ...
+]
 
 Average support: 0.295
 ```
