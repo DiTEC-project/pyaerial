@@ -131,20 +131,53 @@ def calculate_basic_rule_stats(rules, transactions, num_workers=1):
     return rules if rules else None
 
 
-def calculate_freq_item_support(freq_items, transactions):
+def calculate_freq_item_support(freq_items, transactions, max_workers=1):
+    """
+    Calculate support for frequent itemsets in dict format with optimized parallel performance.
+    :param freq_items: List of itemsets, each itemset is a list of dicts with 'feature' and 'value' keys
+    :param transactions: DataFrame with categorical transaction data
+    :param max_workers: Number of parallel workers for computation (default=1)
+    :return: List of dicts with 'itemset' and 'support' keys, and average support
+    """
+    logger.debug(f"Calculating support for {len(freq_items)} frequent itemsets over {len(transactions)} transactions...")
+
+    if max_workers == 1:
+        logger.info("To speed up support calculations, set max_workers > 1 in calculate_freq_item_support() "
+                    "to process itemsets in parallel.")
+
     num_rows = len(transactions)
-    support_values = {}
 
-    for item in freq_items:
-        conditions = {pair.split("__")[0]: pair.split("__")[1] for pair in item}
-        mask = pd.Series(True, index=transactions.index)
-        for feature, value in conditions.items():
-            mask &= (transactions[feature] == value)
+    # Convert DataFrame to numpy for faster operations
+    trans_array = transactions.to_numpy() if hasattr(transactions, 'to_numpy') else transactions.values
+    columns = transactions.columns.tolist()
 
-        support_values[tuple(item)] = mask.sum() / num_rows
+    # Pre-compute all possible feature-value to column index mapping for O(1) lookup
+    col_map = {col: idx for idx, col in enumerate(columns)}
 
-    average_support = sum(support_values.values()) / len(support_values) if support_values else 0
-    return support_values, average_support
+    def process_itemset(item):
+        """Process a single itemset and return its support"""
+        # Build mask using numpy operations for speed
+        mask = np.ones(num_rows, dtype=bool)
+
+        for pair in item:
+            feature = pair['feature']
+            value = pair['value']
+            col_idx = col_map.get(feature)
+
+            if col_idx is not None:
+                # For categorical data, direct comparison
+                mask &= (trans_array[:, col_idx] == value)
+
+        support = np.sum(mask) / num_rows
+
+        # Return itemset and support in dict format
+        return {'itemset': item, 'support': float(support)}
+
+    # Parallel processing of itemsets
+    results = Parallel(n_jobs=max_workers)(delayed(process_itemset)(item) for item in freq_items)
+
+    average_support = sum(r['support'] for r in results) / len(results) if results else 0
+    return results, average_support
 
 
 def calculate_rule_stats(rules, transactions, max_workers=1):
