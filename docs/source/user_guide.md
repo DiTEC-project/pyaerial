@@ -18,13 +18,13 @@ breast_cancer = fetch_ucirepo(id=14).data.features
 # train an autoencoder on the loaded table
 trained_autoencoder = model.train(breast_cancer)
 
-# extract association rules from the autoencoder
-association_rules = rule_extraction.generate_rules(trained_autoencoder)
+# extract association rules with quality metrics calculated automatically
+result = rule_extraction.generate_rules(trained_autoencoder)
 
-# calculate rule quality statistics (support, confidence, zhangs metric) for each rule
-if len(association_rules) > 0:
-    stats, association_rules = rule_quality.calculate_rule_stats(association_rules, trained_autoencoder.input_vectors)
-    print(stats, association_rules[:1])
+# access rules and statistics
+if len(result['rules']) > 0:
+    print(result['statistics'])
+    print(result['rules'][0])
 ```
 
 Following is the partial output of above code:
@@ -38,33 +38,35 @@ breast_cancer dataset:
 2  40-49   premeno      20-24       0-2  ...         2    left    left_low       no
                                          ...
 
-Overall rule quality statistics: {
-   "rule_count":15,
-   "average_support":  0.448,
+Overall statistics: {
+   "rule_count": 15,
+   "average_support": 0.448,
    "average_confidence": 0.881,
    "average_coverage": 0.860,
+   "data_coverage": 0.923,
    "average_zhangs_metric": 0.318
 }
 
 Sample rule:
 {
-   "antecedents":[
+   "antecedents": [
       {"feature": "inv-nodes", "value": "0-2"}
    ],
    "consequent": {"feature": "node-caps", "value": "no"},
    "support": 0.702,
    "confidence": 0.943,
-   "zhangs_metric": 0.69
+   "zhangs_metric": 0.69,
+   "rule_coverage": 0.744
 }
 ```
 
 **Working with rules:**
 
-Rules are returned in a structured dictionary format for easy access:
+Rules are returned in a structured dictionary format with quality metrics included:
 
 ```python
-# Accessing rule components
-for rule in association_rules:
+# Accessing rule components and quality metrics
+for rule in result['rules']:
     # Access antecedent features
     for ant in rule['antecedents']:
         feature_name = ant['feature']  # e.g., "inv-nodes"
@@ -74,9 +76,11 @@ for rule in association_rules:
     cons_feature = rule['consequent']['feature']  # e.g., "node-caps"
     cons_value = rule['consequent']['value']      # e.g., "no"
 
-    # Access quality metrics
+    # Access quality metrics (automatically calculated)
     support = rule['support']
     confidence = rule['confidence']
+    zhangs_metric = rule['zhangs_metric']
+    rule_coverage = rule['rule_coverage']  # antecedent support
 ```
 
 ### 2. Specifying Item Constraints
@@ -99,27 +103,33 @@ trained_autoencoder = model.train(breast_cancer)
 # features of interest, either a feature with its all values (e.g., "age") or with its certain values (e.g., premeno value of menopause feature is the only feature value of interest)
 features_of_interest = ["age", {"menopause": 'premeno'}, 'tumor-size', 'inv-nodes', {"node-caps": "yes"}]
 
-association_rules = rule_extraction.generate_rules(trained_autoencoder, features_of_interest, cons_similarity=0.5)
+result = rule_extraction.generate_rules(trained_autoencoder, features_of_interest, cons_similarity=0.5)
 ```
 
 The output rules will only contain features of interest on the antecedent side:
 
 ```
 >>> Output:
-association_rules: [
+result['rules']: [
    {
-      "antecedents":[
+      "antecedents": [
          {"feature": "menopause", "value": "premeno"}
       ],
       "consequent": {"feature": "node-caps", "value": "no"},
-      ...
+      "support": 0.357,
+      "confidence": 0.68,
+      "zhangs_metric": -0.066,
+      "rule_coverage": 0.525
    },
    {
-      "antecedents":[
+      "antecedents": [
          {"feature": "menopause", "value": "premeno"}
       ],
       "consequent": {"feature": "breast", "value": "right"},
-      ...
+      "support": 0.245,
+      "confidence": 0.72,
+      "zhangs_metric": 0.124,
+      "rule_coverage": 0.525
    },
    ...
 ]
@@ -174,11 +184,12 @@ from ucimlrepo import fetch_ucirepo
 iris = fetch_ucirepo(id=53).data.features
 
 # find and discretize numerical columns
-iris_discretized = discretization.equal_frequency_discretization(iris, n_bins=5)
+iris_discretized = discretization.equal_frequency_discretization(iris, n_bins=3)
 
 trained_autoencoder = model.train(iris_discretized, epochs=10)
 
-association_rules = rule_extraction.generate_rules(trained_autoencoder, ant_similarity=0.05, cons_similarity=0.8)
+result = rule_extraction.generate_rules(trained_autoencoder, ant_similarity=0.1, cons_similarity=0.8)
+print(f"Found {result['statistics']['rule_count']} rules")
 ```
 
 Following is the partial iris dataset content before and after the discretization:
@@ -210,27 +221,23 @@ from ucimlrepo import fetch_ucirepo
 breast_cancer = fetch_ucirepo(id=14).data.features
 trained_autoencoder = model.train(breast_cancer, epochs=5, lr=1e-3)
 
-# extract frequent itemsets
-frequent_itemsets = rule_extraction.generate_frequent_itemsets(trained_autoencoder)
+# extract frequent itemsets with support values calculated automatically
+result = rule_extraction.generate_frequent_itemsets(trained_autoencoder)
 
-# calculate support values of the frequent itemsets
-# use max_workers > 1 for parallel processing on large datasets
-support_values, average_support = rule_quality.calculate_freq_item_support(frequent_itemsets, breast_cancer, max_workers=4)
+# access itemsets and statistics
+print(f"Found {result['statistics']['itemset_count']} itemsets")
+print(f"Average support: {result['statistics']['average_support']}")
 ```
 
-Note that we pass the original dataset (`breast_cancer`) to the `calculate_freq_item_support()` in this case. The following is a sample output:
+The following is a sample output:
 
 ```
 >>> Output:
 
-Frequent itemsets:
-[
-   [{'feature': 'menopause', 'value': 'premeno'}],
-   [{'feature': 'menopause', 'value': 'ge40'}],
-   ...
-]
+Found 15 itemsets
+Average support: 0.295
 
-Support values returned as list of dicts:
+Itemsets with support values:
 [
    {
       'itemset': [{'feature': 'menopause', 'value': 'premeno'}],
@@ -240,10 +247,12 @@ Support values returned as list of dicts:
       'itemset': [{'feature': 'menopause', 'value': 'ge40'}],
       'support': 0.451
    },
+   {
+      'itemset': [{'feature': 'menopause', 'value': 'premeno'}, {'feature': 'age', 'value': '30-39'}],
+      'support': 0.312
+   },
    ...
 ]
-
-Average support: 0.295
 ```
 
 ### 7. Using Aerial for Rule-Based Classification for Interpretable Inference
@@ -270,10 +279,11 @@ table_with_labels = pd.concat([breast_cancer, labels], axis=1)
 trained_autoencoder = model.train(table_with_labels)
 
 # generate rules with a target class(es), this learns rules that has the "target_classes" column (in this case this column is called "Class") on the consequent side
-association_rules = rule_extraction.generate_rules(trained_autoencoder, target_classes=["Class"], cons_similarity=0.5)
+result = rule_extraction.generate_rules(trained_autoencoder, target_classes=["Class"], cons_similarity=0.5)
 
-if len(association_rules) > 0:
-    stats, association_rules = rule_quality.calculate_rule_stats(association_rules, trained_autoencoder.input_vectors)
+if len(result['rules']) > 0:
+    print(f"Generated {result['statistics']['rule_count']} classification rules")
+    print(f"Average confidence: {result['statistics']['average_confidence']}")
 ```
 
 Sample output showing rules with class labels on the right hand side:
@@ -281,14 +291,19 @@ Sample output showing rules with class labels on the right hand side:
 ```
 >>> Output:
 
+Generated 12 classification rules
+Average confidence: 0.742
+
+Sample rule:
 {
-   "antecedents":[
+   "antecedents": [
       {"feature": "menopause", "value": "premeno"}
    ],
    "consequent": {"feature": "Class", "value": "no-recurrence-events"},
    "support": 0.357,
    "confidence": 0.68,
-   "zhangs_metric": -0.066
+   "zhangs_metric": -0.066,
+   "rule_coverage": 0.525
 }
 ```
 
@@ -314,9 +329,10 @@ breast_cancer = fetch_ucirepo(id=14).data.features
 # increasing epochs to 5, note that longer training may lead to overfitting which results in rules with low association strength (zhangs' metric)
 trained_autoencoder = model.train(breast_cancer, epochs=5, lr=1e-3)
 
-association_rules = rule_extraction.generate_rules(trained_autoencoder)
-if len(association_rules) > 0:
-    stats, association_rules = rule_quality.calculate_rule_stats(association_rules, trained_autoencoder.input_vectors)
+result = rule_extraction.generate_rules(trained_autoencoder)
+if len(result['rules']) > 0:
+    print(f"Found {result['statistics']['rule_count']} rules")
+    print(f"Average Zhang's metric: {result['statistics']['average_zhangs_metric']}")
 ```
 
 ### 9. Setting the Log Levels
@@ -349,8 +365,8 @@ breast_cancer = fetch_ucirepo(id=14).data.features
 trained_autoencoder = model.train(breast_cancer, device="cuda")
 
 # during the rule extraction stage, Aerial will continue to use the device specified above
-association_rules = rule_extraction.generate_rules(trained_autoencoder)
-...
+result = rule_extraction.generate_rules(trained_autoencoder)
+print(f"Mined {result['statistics']['rule_count']} rules on GPU")
 ```
 
 ### 11. Visualizing Association Rules
@@ -362,9 +378,9 @@ Rules learned by PyAerial can be visualized using [NiaARM](https://github.com/fi
 from niaarm.visualize import scatter_plot
 from niaarm import RuleList, Feature, Rule
 
-def visualizable_rule_list(aerial_rules: dict, dataset: pd.DataFrame):
+def visualizable_rule_list(aerial_result: dict, dataset: pd.DataFrame):
     rule_list = RuleList()
-    for rule in aerial_rules:
+    for rule in aerial_result['rules']:
         # Convert dictionary format to NiaARM Feature format
         antecedents = [Feature(ant['feature'], "cat", categories=[ant['value']]) for ant in rule["antecedents"]]
         consequent = Feature(rule["consequent"]['feature'], "cat", categories=[rule["consequent"]['value']])
@@ -374,10 +390,10 @@ def visualizable_rule_list(aerial_rules: dict, dataset: pd.DataFrame):
 # learn rules with PyAerial as before
 breast_cancer = fetch_ucirepo(id=14).data.features
 trained_autoencoder = model.train(breast_cancer)
-association_rules = rule_extraction.generate_rules(trained_autoencoder, ant_similarity=0.1)
+result = rule_extraction.generate_rules(trained_autoencoder, ant_similarity=0.1)
 
 # get rules in NiaARM RuleList format
-visualizable_rules = visualizable_rule_list(association_rules, breast_cancer)
+visualizable_rules = visualizable_rule_list(result, breast_cancer)
 figure = scatter_plot(rules=visualizable_rules, metrics=('support', 'confidence', 'lift'), interactive=False)
 figure.show()
 ```

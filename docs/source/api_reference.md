@@ -80,11 +80,12 @@ generate_rules(
     ant_similarity=0.5,
     cons_similarity=0.8,
     max_antecedents=2,
-    target_classes=None
+    target_classes=None,
+    quality_metrics=['support', 'confidence', 'zhangs_metric']
 )
 ```
 
-Extracts association rules from a trained AutoEncoder using the Aerial algorithm.
+Extracts association rules from a trained AutoEncoder using the Aerial algorithm, with quality metrics calculated automatically.
 
 **Parameters**:
 
@@ -99,16 +100,46 @@ Extracts association rules from a trained AutoEncoder using the Aerial algorithm
 - `max_antecedents` (int, optional): Maximum number of features allowed in the rule antecedent. Default=2
 - `target_classes` (list, optional): When set, restricts rule consequents to the specified class(es) (constraint-based
   rule mining). The format of the list is same as the list format of `features_of_interest`.
+- `quality_metrics` (list, optional): Quality metrics to calculate for each rule. Default=['support', 'confidence', 'zhangs_metric'].
+  Available metrics: 'support', 'confidence', 'lift', 'conviction', 'zhangs_metric', 'yules_q', 'interestingness'
 
 **Returns**:
 
-A list of extracted rules in the form:
+A dictionary containing:
 
 ```python
-[
-    {"antecedents": [...], "consequent": ...},
-    ...
-]
+{
+    "rules": [
+        {
+            "antecedents": [...],
+            "consequent": {...},
+            "support": 0.702,
+            "confidence": 0.943,
+            "zhangs_metric": 0.69,
+            "rule_coverage": 0.744,
+            ...  # additional metrics based on quality_metrics parameter
+        },
+        ...
+    ],
+    "statistics": {
+        "rule_count": 15,
+        "average_support": 0.448,
+        "average_confidence": 0.881,
+        "average_coverage": 0.860,
+        "data_coverage": 0.923,
+        "average_zhangs_metric": 0.318,
+        ...  # additional statistics for calculated metrics
+    }
+}
+```
+
+**Example**:
+
+```python
+result = rule_extraction.generate_rules(trained_autoencoder)
+print(f"Found {result['statistics']['rule_count']} rules")
+for rule in result['rules']:
+    print(f"Support: {rule['support']}, Confidence: {rule['confidence']}")
 ```
 
 ### generate_frequent_itemsets
@@ -122,7 +153,7 @@ generate_frequent_itemsets(
 )
 ```
 
-Generates frequent itemsets from a trained AutoEncoder using the same Aerial+ mechanism.
+Generates frequent itemsets from a trained AutoEncoder using the same Aerial+ mechanism, with support values calculated automatically.
 
 **Parameters**:
 
@@ -135,23 +166,86 @@ Generates frequent itemsets from a trained AutoEncoder using the same Aerial+ me
 
 **Returns**:
 
-A list of frequent itemsets, where each itemset is a list of dictionaries with 'feature' and 'value' keys:
+A dictionary containing:
 
 ```python
-[
-    [{'feature': 'gender', 'value': 'Male'}, {'feature': 'income', 'value': 'High'}],
-    [{'feature': 'age', 'value': '30-39'}],
-    ...
-]
+{
+    "itemsets": [
+        {
+            "itemset": [{'feature': 'gender', 'value': 'Male'}, {'feature': 'income', 'value': 'High'}],
+            "support": 0.524
+        },
+        {
+            "itemset": [{'feature': 'age', 'value': '30-39'}],
+            "support": 0.451
+        },
+        ...
+    ],
+    "statistics": {
+        "itemset_count": 15,
+        "average_support": 0.295
+    }
+}
+```
+
+**Example**:
+
+```python
+result = rule_extraction.generate_frequent_itemsets(trained_autoencoder)
+print(f"Found {result['statistics']['itemset_count']} itemsets")
+for item in result['itemsets']:
+    print(f"Support: {item['support']}")
 ```
 
 ## Rule Quality Module
 
-### calculate_basic_rule_stats
+**Note**: Quality metrics are now calculated automatically by `generate_rules()` and `generate_frequent_itemsets()`. The functions below are maintained for backward compatibility and advanced use cases.
+
+### Available Quality Metrics
+
+The `rule_quality` module provides the following constants and metrics:
+
+- `AVAILABLE_METRICS`: List of all supported quality metrics
+  - 'support', 'confidence', 'lift', 'conviction', 'zhangs_metric', 'yules_q', 'interestingness'
+- `DEFAULT_RULE_METRICS`: Default metrics calculated by `generate_rules()`
+  - ['support', 'confidence', 'zhangs_metric']
+
+### Individual Metric Functions
+
+Calculate specific quality metrics for individual rules:
+
+```python
+# Support: Frequency of the rule in the dataset
+support = rule_quality.calculate_support(rule, data)
+
+# Confidence: Conditional probability P(consequent|antecedent)
+confidence = rule_quality.calculate_confidence(rule, data)
+
+# Lift: Ratio of observed to expected support under independence
+lift = rule_quality.calculate_lift(rule, data)
+
+# Conviction: Measure of implication strength
+conviction = rule_quality.calculate_conviction(rule, data)
+
+# Zhang's Metric: Symmetric correlation measure (-1 to 1)
+zhangs = rule_quality.calculate_zhangs_metric(rule, data)
+
+# Yule's Q: Symmetric association measure based on odds ratio
+yules_q = rule_quality.calculate_yules_q(rule, data)
+
+# Interestingness: Measure of rule interestingness
+interestingness = rule_quality.calculate_interestingness(rule, data)
+```
+
+### Legacy Functions (for backward compatibility)
+
+#### calculate_basic_rule_stats
 
 ```python
 calculate_basic_rule_stats(rules, transactions, num_workers)
 ```
+
+**Deprecated**: Use `generate_rules()` instead, which calculates metrics automatically.
 
 Computes support and confidence for a list of rules using parallel processing.
 
@@ -163,11 +257,13 @@ Computes support and confidence for a list of rules using parallel processing.
 
 **Returns**: A list of rules enriched with support and confidence values.
 
-### calculate_freq_item_support
+#### calculate_freq_item_support
 
 ```python
 calculate_freq_item_support(freq_items, transactions, max_workers=1)
 ```
+
+**Deprecated**: Use `generate_frequent_itemsets()` instead, which calculates support automatically.
 
 Calculates the support for a list of frequent itemsets using optimized vectorized operations with parallel processing support.
 
@@ -181,26 +277,13 @@ Calculates the support for a list of frequent itemsets using optimized vectorize
 - A list of dictionaries, each containing 'itemset' and 'support' keys
 - Average support across all itemsets
 
-Example return format:
-```python
-[
-    {
-        'itemset': [{'feature': 'age', 'value': '30-39'}],
-        'support': 0.524
-    },
-    {
-        'itemset': [{'feature': 'menopause', 'value': 'ge40'}],
-        'support': 0.451
-    },
-    ...
-], 0.295
-```
-
-### calculate_rule_stats
+#### calculate_rule_stats
 
 ```python
 calculate_rule_stats(rules, transactions, max_workers=1)
 ```
+
+**Deprecated**: Use `generate_rules()` instead, which calculates metrics automatically.
 
 Evaluates rules with extended metrics including: Support, Confidence, Zhang's Metric, Dataset Coverage.
 

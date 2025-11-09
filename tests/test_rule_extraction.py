@@ -38,21 +38,28 @@ class TestAerialFunctions(unittest.TestCase):
     def test_generate_rules(self):
         """Test rule generation"""
         # pass low similarity thresholds to guarantee rule generation
-        rules = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001)
-        self.assertIsInstance(rules, list)
-        if rules:
-            self.assertIn('antecedents', rules[0])
-            self.assertIn('consequent', rules[0])
+        result = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001)
+        self.assertIsInstance(result, dict)
+        self.assertIn('rules', result)
+        self.assertIn('statistics', result)
+        if result['rules']:
+            self.assertIn('antecedents', result['rules'][0])
+            self.assertIn('consequent', result['rules'][0])
 
     def test_generate_frequent_itemsets(self):
         """Test frequent itemset generation"""
         # pass low similarity threshold to guarantee frequent itemset generation
-        itemsets = generate_frequent_itemsets(self.model, similarity=0.001)
-        self.assertIsInstance(itemsets, list)
-        if itemsets:
-            self.assertIsInstance(itemsets[0], list)
+        result = generate_frequent_itemsets(self.model, similarity=0.001)
+        self.assertIsInstance(result, dict)
+        self.assertIn('itemsets', result)
+        self.assertIn('statistics', result)
+        if result['itemsets']:
+            # Each itemset is now a dict with 'itemset' and 'support'
+            self.assertIsInstance(result['itemsets'][0], dict)
+            self.assertIn('itemset', result['itemsets'][0])
+            self.assertIn('support', result['itemsets'][0])
             # Each item in itemset should be a dict with 'feature' and 'value' keys
-            for item in itemsets[0]:
+            for item in result['itemsets'][0]['itemset']:
                 self.assertIsInstance(item, dict)
                 self.assertIn('feature', item)
                 self.assertIn('value', item)
@@ -60,9 +67,9 @@ class TestAerialFunctions(unittest.TestCase):
     def test_rules_target_classes(self):
         """Test that only specified target classes appear in consequents"""
         target_classes = ['Color']  # Only generate rules predicting Color
-        rules = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001, target_classes=target_classes)
+        result = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001, target_classes=target_classes)
 
-        for r in rules:
+        for r in result['rules']:
             # Extract column name from consequent (now in dictionary format)
             consequent_col = r['consequent']['feature']
             # Check that the consequent column is in the target_classes
@@ -72,23 +79,23 @@ class TestAerialFunctions(unittest.TestCase):
         """Test that antecedents do not exceed max_antecedents"""
         max_antecedents = 2
         # pass a very low ant_similarity to ensure that the method will return rules
-        rules = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001, max_antecedents=max_antecedents)
+        result = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001, max_antecedents=max_antecedents)
 
-        for r in rules:
+        for r in result['rules']:
             self.assertLessEqual(len(r['antecedents']), max_antecedents)
 
         # Also test for single antecedent limit
-        rules_single = generate_rules(self.model, max_antecedents=1)
-        for r in rules_single:
+        result_single = generate_rules(self.model, max_antecedents=1)
+        for r in result_single['rules']:
             self.assertLessEqual(len(r['antecedents']), 1)
 
     def test_rules_features_of_interest_in_rule_learning(self):
         """Test that antecedents contain only features of interest"""
         features_of_interest = ['Size', {'Color': 'Red'}]
-        rules = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001,
+        result = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001,
                                features_of_interest=features_of_interest)
 
-        for r in rules:
+        for r in result['rules']:
             for ant in r['antecedents']:
                 # antecedents are now dictionaries with 'feature' and 'value' keys
                 feature_name = ant['feature']
@@ -101,10 +108,10 @@ class TestAerialFunctions(unittest.TestCase):
     def test_rules_features_of_interest_in_frequent_itemset_learning(self):
         """Test that itemsets contain only features of interest"""
         features_of_interest = ['Size', {'Color': 'Red'}]
-        itemsets = generate_frequent_itemsets(self.model, similarity=0.001, features_of_interest=features_of_interest)
+        result = generate_frequent_itemsets(self.model, similarity=0.001, features_of_interest=features_of_interest)
 
-        for itemset in itemsets:
-            for item in itemset:
+        for itemset_obj in result['itemsets']:
+            for item in itemset_obj['itemset']:
                 # Items are now dictionaries with 'feature' and 'value' keys
                 feature_name = item['feature']
                 feature_value = item['value']
@@ -124,19 +131,19 @@ class TestAerialFunctions(unittest.TestCase):
     def test_small_dataset_returns_rules_or_empty_rule_learning(self):
         small_transactions = self.transactions.iloc[:1]
         small_model = train(small_transactions, epochs=1)
-        rules = generate_rules(small_model)
-        self.assertTrue(rules is None or isinstance(rules, list))
+        result = generate_rules(small_model)
+        self.assertTrue(result is None or isinstance(result, dict))
 
     def test_small_dataset_returns_rules_or_empty_frequent_itemset_learning(self):
         small_transactions = self.transactions.iloc[:1]
         small_model = train(small_transactions, epochs=1)
-        itemsets = generate_frequent_itemsets(small_model)
-        self.assertTrue(itemsets is None or isinstance(itemsets, list))
+        result = generate_frequent_itemsets(small_model)
+        self.assertTrue(result is None or isinstance(result, dict))
 
     def test_rule_dict_structure_rule_learning(self):
         """Test that rules have the proper dictionary structure"""
-        rules = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001)
-        for r in rules:
+        result = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001)
+        for r in result['rules']:
             for ant in r['antecedents']:
                 # Check that antecedents are dictionaries with 'feature' and 'value' keys
                 self.assertIsInstance(ant, dict)
@@ -149,17 +156,17 @@ class TestAerialFunctions(unittest.TestCase):
 
     def test_rule_dict_structure_frequent_itemset_learning(self):
         """Test that itemsets have the proper dictionary structure"""
-        itemsets = generate_frequent_itemsets(self.model, similarity=0.001)
-        for itemset in itemsets:
-            for item in itemset:
+        result = generate_frequent_itemsets(self.model, similarity=0.001)
+        for itemset_obj in result['itemsets']:
+            for item in itemset_obj['itemset']:
                 # Check that items are dictionaries with 'feature' and 'value' keys
                 self.assertIsInstance(item, dict)
                 self.assertIn('feature', item)
                 self.assertIn('value', item)
 
     def test_consistent_rule_structure(self):
-        rules = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001)
-        for r in rules:
+        result = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001)
+        for r in result['rules']:
             self.assertIsInstance(r, dict)
             self.assertIn('antecedents', r)
             self.assertIn('consequent', r)
@@ -168,13 +175,13 @@ class TestAerialFunctions(unittest.TestCase):
             self.assertIsInstance(r['consequent'], dict)
 
     def test_empty_target_classes_or_features_of_interest_rule_learning(self):
-        rules = generate_rules(self.model, target_classes=[], features_of_interest=[], ant_similarity=0.001,
+        result = generate_rules(self.model, target_classes=[], features_of_interest=[], ant_similarity=0.001,
                                cons_similarity=0.001)
-        self.assertIsInstance(rules, list)
+        self.assertIsInstance(result, dict)
 
     def test_empty_target_classes_or_features_of_interest_frequent_itemset_learning(self):
-        itemsets = generate_frequent_itemsets(self.model, features_of_interest=[], similarity=0.001)
-        self.assertIsInstance(itemsets, list)
+        result = generate_frequent_itemsets(self.model, features_of_interest=[], similarity=0.001)
+        self.assertIsInstance(result, dict)
 
     ### Testing the "extract_significant_features_and_ignored_indices()" function from rule_extraction.py
     def test_no_features_of_interest_returns_all_indices(self):

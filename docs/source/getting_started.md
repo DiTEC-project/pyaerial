@@ -26,7 +26,7 @@ pip install pyaerial
 Here's a simple example to get you started with PyAerial:
 
 ```python
-from aerial import model, rule_extraction, rule_quality
+from aerial import model, rule_extraction
 from ucimlrepo import fetch_ucirepo
 
 # Load a categorical tabular dataset from the UCI ML repository
@@ -35,16 +35,13 @@ breast_cancer = fetch_ucirepo(id=14).data.features
 # Train an autoencoder on the loaded table
 trained_autoencoder = model.train(breast_cancer)
 
-# Extract association rules from the autoencoder
-association_rules = rule_extraction.generate_rules(trained_autoencoder)
+# Extract association rules with quality metrics calculated automatically
+result = rule_extraction.generate_rules(trained_autoencoder)
 
-# Calculate rule quality statistics (support, confidence, zhangs metric) for each rule
-if len(association_rules) > 0:
-    stats, association_rules = rule_quality.calculate_rule_stats(
-        association_rules,
-        trained_autoencoder.input_vectors
-    )
-    print(stats, association_rules[:1])
+# Access rules and statistics
+if len(result['rules']) > 0:
+    print(f"Overall statistics: {result['statistics']}\n")
+    print(f"Sample rule: {result['rules'][0]}")
 ```
 
 ### Output
@@ -60,24 +57,36 @@ breast_cancer dataset:
 2  40-49   premeno      20-24       0-2  ...         2    left    left_low       no
                                          ...
 
-Overall rule quality statistics: {
-   "rule_count":15,
-   "average_support":  0.448,
+Overall statistics: {
+   "rule_count": 15,
+   "average_support": 0.448,
    "average_confidence": 0.881,
    "average_coverage": 0.860,
+   "data_coverage": 0.923,
    "average_zhangs_metric": 0.318
 }
 
 Sample rule:
 {
-   "antecedents":[
+   "antecedents": [
       {"feature": "inv-nodes", "value": "0-2"}
    ],
    "consequent": {"feature": "node-caps", "value": "no"},
    "support": 0.702,
    "confidence": 0.943,
-   "zhangs_metric": 0.69
+   "zhangs_metric": 0.69,
+   "rule_coverage": 0.744
 }
+```
+
+**Interpretation:** When `inv-nodes` is between `0-2`, there's 94.3% confidence that `node-caps` equals `no`, covering 70.2% of the dataset.
+
+**Quality metrics explained:**
+
+- **Support**: How often this pattern appears in the data (rule frequency)
+- **Confidence**: How often the prediction is correct (rule reliability)
+- **Zhang's Metric**: Strength of the correlation between antecedent and consequent
+- **Rule Coverage**: Proportion of transactions containing the antecedents (left-hand side coverage)
 ```
 
 ## What's Next?
