@@ -2,11 +2,8 @@
 Copyright (c) [2025] [Erkan Karabulut - DiTEC Project]
 This script implements helper functions relevant to logical association rule quality metrics
 """
-from concurrent.futures import ThreadPoolExecutor
-
 import logging
 import numpy as np
-import pandas as pd
 
 from joblib import Parallel, delayed
 
@@ -70,69 +67,6 @@ def calculate_zhangs_metric(support, support_ant, support_cons):
             + 2.220446049250313e-16
     )
     return numerator / denominator
-
-
-# Following are cumulative rule quality calculation functions for a given rule or itemset
-
-def calculate_average_rule_quality(rules):
-    stats = []
-    for rule in rules:
-        stats.append([
-            rule["rule_coverage"], rule["support"], rule["confidence"], rule["zhangs_metric"]
-        ])
-
-    stats = pd.DataFrame(stats).mean()
-    stats = {
-        "rule_coverage": stats[0],
-        "support": stats[1],
-        "confidence": stats[2],
-        "zhangs_metric": stats[3],
-    }
-    return stats
-
-
-def calculate_basic_rule_stats(rules, transactions, num_workers=1):
-    """
-    Calculate support and confidence for rules in parallel using vectorized operations.
-    :param rules: List of rules, each a dict with 'antecedents' (list of dicts) and 'consequent' (dict).
-    :param transactions: DataFrame with binary transaction data.
-    :param num_workers: Number of parallel threads to use.
-    :return: Updated list of rules with support and confidence.
-    """
-
-    logger.debug(
-        f"Calculating support and confidence metrics for {len(rules)} rules over {len(transactions)} transactions...")
-
-    num_transactions = len(transactions)
-    transaction_array = transactions.to_numpy()
-    columns = transactions.columns.tolist()
-    column_indices = {col: i for i, col in enumerate(columns)}
-
-    def process_rule(rule):
-        # Convert dictionary format to column names
-        antecedent_cols = [f"{a['feature']}__{a['value']}" for a in rule['antecedents']]
-        consequent_col = f"{rule['consequent']['feature']}__{rule['consequent']['value']}"
-
-        antecedent_indices = [column_indices[a] for a in antecedent_cols]
-        consequent_index = column_indices[consequent_col]
-
-        # Vectorized masks
-        antecedent_mask = np.all(transaction_array[:, antecedent_indices] == 1, axis=1)
-        consequent_mask = transaction_array[:, consequent_index] == 1
-        co_occurrence_mask = antecedent_mask & consequent_mask
-
-        ant_count = np.sum(antecedent_mask)
-        co_occurrence_count = np.sum(co_occurrence_mask)
-
-        rule['support'] = co_occurrence_count / num_transactions
-        rule['confidence'] = rule['support'] / (ant_count / num_transactions) if ant_count != 0 else 0
-
-        return rule
-
-    with ThreadPoolExecutor(max_workers=num_workers) as executor:
-        rules = list(executor.map(process_rule, rules))
-
-    return rules if rules else None
 
 
 def _calculate_rule_quality_from_indices(antecedent_indices, consequent_index, transaction_array,
@@ -221,119 +155,78 @@ def _calculate_itemset_support_from_indices(itemset_indices, transaction_array, 
     return float(round(support, 3))
 
 
-def calculate_freq_item_support(freq_items, transactions, max_workers=1):
+def calculate_rule_metrics(rules_with_indices, transaction_array, quality_metrics, num_workers=1):
     """
-    Calculate support for frequent itemsets in dict format with optimized parallel performance.
-    :param freq_items: List of itemsets, each itemset is a list of dicts with 'feature' and 'value' keys
-    :param transactions: DataFrame with categorical transaction data
-    :param max_workers: Number of parallel workers for computation (default=1)
-    :return: List of dicts with 'itemset' and 'support' keys, and average support
+    Calculate quality metrics for multiple rules with optional parallelization.
+
+    :param rules_with_indices: List of dicts with 'antecedent_indices' and 'consequent_index'
+    :param transaction_array: Numpy array of binary transaction data
+    :param quality_metrics: List of quality metrics to calculate
+    :param num_workers: Number of parallel workers (default=1 for sequential processing).
+                        Parallelization is only used when rule count >= 1000 to avoid overhead.
+    :return: List of tuples (metrics_dict, antecedent_mask) for each rule
     """
-    logger.debug(f"Calculating support for {len(freq_items)} frequent itemsets over {len(transactions)} transactions...")
+    num_transactions = len(transaction_array)
+    num_rules = len(rules_with_indices)
 
-    if max_workers == 1:
-        logger.info("To speed up support calculations, set max_workers > 1 in calculate_freq_item_support() "
-                    "to process itemsets in parallel.")
+    # Automatic threshold: only use parallelization for large rule counts
+    if num_workers > 1 and num_rules < 1000:
+        logger.info(f"Automatically using sequential processing (num_workers=1) for {num_rules} rules. "
+                   f"Parallelization is likely only beneficial for 1000+ rules due to overhead costs.")
+        num_workers = 1
 
-    num_rows = len(transactions)
+    def process_single_rule(rule_idx):
+        ant_indices = rule_idx['antecedent_indices']
+        cons_index = rule_idx['consequent_index']
+        return _calculate_rule_quality_from_indices(
+            ant_indices, cons_index, transaction_array, num_transactions, quality_metrics
+        )
 
-    # Convert DataFrame to numpy for faster operations
-    trans_array = transactions.to_numpy() if hasattr(transactions, 'to_numpy') else transactions.values
-    columns = transactions.columns.tolist()
+    if num_workers == 1:
+        # Sequential processing
+        results = [process_single_rule(rule) for rule in rules_with_indices]
+    else:
+        # Parallel processing
+        logger.info(f"Using parallel processing with {num_workers} workers for {num_rules} rules.")
+        results = Parallel(n_jobs=num_workers)(
+            delayed(process_single_rule)(rule) for rule in rules_with_indices
+        )
 
-    # Pre-compute all possible feature-value to column index mapping for O(1) lookup
-    col_map = {col: idx for idx, col in enumerate(columns)}
-
-    def process_itemset(item):
-        """Process a single itemset and return its support"""
-        # Build mask using numpy operations for speed
-        mask = np.ones(num_rows, dtype=bool)
-
-        for pair in item:
-            feature = pair['feature']
-            value = pair['value']
-            col_idx = col_map.get(feature)
-
-            if col_idx is not None:
-                # For categorical data, direct comparison
-                mask &= (trans_array[:, col_idx] == value)
-
-        support = np.sum(mask) / num_rows
-
-        # Return itemset and support in dict format
-        return {'itemset': item, 'support': float(support)}
-
-    # Parallel processing of itemsets
-    results = Parallel(n_jobs=max_workers)(delayed(process_itemset)(item) for item in freq_items)
-
-    average_support = sum(r['support'] for r in results) / len(results) if results else 0
-    return results, average_support
+    return results
 
 
-def calculate_rule_stats(rules, transactions, max_workers=1):
+def calculate_itemset_metrics(itemsets_with_indices, transaction_array, num_workers=1):
     """
-    Calculate rule quality stats for the given set of rules based on the input transactions.
-    :param rules: List of rules with antecedents (list of dicts) and consequent (dict) in dictionary format
-    :param transactions: DataFrame with binary transaction data
-    :param max_workers: Number of parallel workers
+    Calculate support for multiple itemsets with optional parallelization.
+
+    :param itemsets_with_indices: List of itemsets (each is a list of column indices)
+    :param transaction_array: Numpy array of binary transaction data
+    :param num_workers: Number of parallel workers (default=1 for sequential processing).
+                        Parallelization is only used when itemset count >= 1000 to avoid overhead.
+    :return: List of float support values for each itemset
     """
-    logger.debug(f"Calculating rule quality metrics for {len(rules)} rules over {len(transactions)} transactions ...")
+    num_transactions = len(transaction_array)
+    num_itemsets = len(itemsets_with_indices)
 
-    if max_workers == 1:
-        logger.info("To speed up rule quality calculations, set max_workers > 1 in calculate_rule_stats() "
-                    "to process rules in parallel.")
-    num_transactions = len(transactions)
-    vector_tracker_list = transactions.columns.tolist()
+    # Automatic threshold: only use parallelization for large itemset counts
+    if num_workers > 1 and num_itemsets < 1000:
+        logger.info(f"Automatically using sequential processing (num_workers=1) for {num_itemsets} itemsets. "
+                   f"Parallelization is likely only beneficial for 1000+ itemsets due to overhead costs.")
+        num_workers = 1
 
-    dataset_coverage = np.zeros(num_transactions, dtype=bool)
+    def process_single_itemset(itemset_indices):
+        return _calculate_itemset_support_from_indices(
+            itemset_indices, transaction_array, num_transactions
+        )
 
-    def process_rule(rule):
-        # Convert dictionary format to column names
-        antecedent_cols = [f"{a['feature']}__{a['value']}" for a in rule['antecedents']]
-        consequent_col = f"{rule['consequent']['feature']}__{rule['consequent']['value']}"
+    if num_workers == 1:
+        # Sequential processing
+        results = [process_single_itemset(itemset) for itemset in itemsets_with_indices]
+    else:
+        # Parallel processing
+        logger.info(f"Using parallel processing with {num_workers} workers for {num_itemsets} itemsets.")
+        results = Parallel(n_jobs=num_workers)(
+            delayed(process_single_itemset)(itemset) for itemset in itemsets_with_indices
+        )
 
-        antecedents_indices = [vector_tracker_list.index(ant) for ant in antecedent_cols]
-        consequent_index = vector_tracker_list.index(consequent_col)
-
-        # Find transactions where all antecedents are present
-        antecedent_matches = np.all(transactions.iloc[:, antecedents_indices] == 1, axis=1)
-        consequent_matches = transactions.iloc[:, consequent_index] == 1
-        co_occurrence_matches = antecedent_matches & (transactions.iloc[:, consequent_index] == 1)
-
-        antecedents_occurrence_count = np.sum(antecedent_matches)
-        consequent_occurrence_count = np.sum(consequent_matches)
-        co_occurrence_count = np.sum(co_occurrence_matches)
-
-        support_body = antecedents_occurrence_count / num_transactions if num_transactions else 0
-        support_head = consequent_occurrence_count / num_transactions if num_transactions else 0
-        rule_support = co_occurrence_count / num_transactions if num_transactions else 0
-        rule_confidence = rule_support / support_body if support_body != 0 else 0
-
-        rule['support'] = float(round(rule_support, 3))
-        rule['confidence'] = float(round(rule_confidence, 3))
-        rule['zhangs_metric'] = float(round(calculate_zhangs_metric(rule_support, support_body, support_head), 3))
-        rule['rule_coverage'] = float(
-            round(antecedents_occurrence_count / num_transactions if num_transactions else 0, 3))
-
-        return antecedent_matches, rule
-
-    # Parallel processing of rules
-    results = Parallel(n_jobs=max_workers)(delayed(process_rule)(rule) for rule in rules)
-
-    # Aggregate dataset coverage and collect updated rules
-    updated_rules = []
-    for antecedent_matches, rule in results:
-        dataset_coverage |= antecedent_matches
-        updated_rules.append(rule)
-
-    if not updated_rules:
-        return None, None
-
-    stats = calculate_average_rule_quality(updated_rules)
-    stats["data_coverage"] = np.sum(dataset_coverage) / num_transactions
-
-    return {"rule_count": len(updated_rules), "average_rule_coverage": float(round(stats["rule_coverage"], 3)),
-            "average_support": float(round(stats['support'], 3)),
-            "average_confidence": float(round(stats["confidence"], 3)),
-            "data_coverage": float(round(stats["data_coverage"], 3)),
-            "average_zhangs_metric": float(round(stats["zhangs_metric"], 3))}, updated_rules
+    return results

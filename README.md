@@ -64,6 +64,26 @@ pip install pyaerial
 
 ---
 
+## Performance
+
+PyAerial significantly outperforms traditional ARM methods in **scalability** while maintaining high-quality results:
+
+<div align="center">
+  <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/benchmark.png" alt="PyAerial performance comparison" width="700">
+  <p><i>Execution time comparison across datasets of varying sizes. PyAerial scales linearly while traditional methods (e.g., Mlxtend, SPMF) exhibit exponential growth.</i></p>
+</div>
+
+**Key advantages:**
+- ⚡ **100-1000x faster** on large datasets compared to Apriori/FP-Growth Python implementations
+- 📈 **Linear scaling** with dataset size (vs. exponential for traditional methods)
+- 🎯 **No rule explosion** - extracts concise, high-quality rules with full data coverage
+- 💾 **Memory efficient** - neural representation avoids storing exponential candidate sets
+
+For comprehensive benchmarks and comparisons with Mlxtend (e.g., FPGrowth, Apriori etc.), and other ARM tools, see our benchmarking paper:
+**[PyAerial: Scalable association rule mining from tabular data](https://www.sciencedirect.com/science/article/pii/S2352711025003073)** (SoftwareX, 2025)
+
+---
+
 ## Quick Start
 
 The following are basic example usages of PyAerial. 📚 **[See full feature list](#features)** | **[Read the complete documentation](https://pyaerial.readthedocs.io)**, to see the

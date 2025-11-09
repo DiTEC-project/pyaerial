@@ -81,11 +81,12 @@ generate_rules(
     cons_similarity=0.8,
     max_antecedents=2,
     target_classes=None,
-    quality_metrics=['support', 'confidence', 'zhangs_metric']
+    quality_metrics=['support', 'confidence', 'zhangs_metric'],
+    num_workers=1
 )
 ```
 
-Extracts association rules from a trained AutoEncoder using the Aerial algorithm, with quality metrics calculated automatically.
+Extracts association rules from a trained AutoEncoder using the Aerial algorithm, with quality metrics calculated automatically using optimized batch processing.
 
 **Parameters**:
 
@@ -101,7 +102,9 @@ Extracts association rules from a trained AutoEncoder using the Aerial algorithm
 - `target_classes` (list, optional): When set, restricts rule consequents to the specified class(es) (constraint-based
   rule mining). The format of the list is same as the list format of `features_of_interest`.
 - `quality_metrics` (list, optional): Quality metrics to calculate for each rule. Default=['support', 'confidence', 'zhangs_metric'].
-  Available metrics: 'support', 'confidence', 'lift', 'conviction', 'zhangs_metric', 'yules_q', 'interestingness'
+  Available metrics: 'support', 'confidence', 'lift', 'conviction', 'zhangs_metric', 'yulesq', 'interestingness'
+- `num_workers` (int, optional): Number of parallel workers for quality metric calculation. Default=1 for sequential processing.
+  **Note**: Parallelization is automatically disabled for fewer than 1000 rules due to overhead costs. Set to 4-8 for datasets generating 1000+ rules.
 
 **Returns**:
 
@@ -149,11 +152,12 @@ generate_frequent_itemsets(
     autoencoder,
     features_of_interest=None,
     similarity=0.5,
-    max_length=2
+    max_length=2,
+    num_workers=1
 )
 ```
 
-Generates frequent itemsets from a trained AutoEncoder using the same Aerial+ mechanism, with support values calculated automatically.
+Generates frequent itemsets from a trained AutoEncoder using the same Aerial+ mechanism, with support values calculated automatically using optimized batch processing.
 
 **Parameters**:
 
@@ -161,8 +165,10 @@ Generates frequent itemsets from a trained AutoEncoder using the same Aerial+ me
 - `features_of_interest` (list, Optional): only look for rules that have these features of interest on the antecedent
   side. Accepted form `["feature1", "feature2", {"feature3": "value1"}, ...]`, either a feature name as str, or specific
   value of a feature in object form
-- `similarity` (float, Optional): Minimum similarity threshold for an itemset to be considered frequent. Default=0.8
+- `similarity` (float, Optional): Minimum similarity threshold for an itemset to be considered frequent. Default=0.5
 - `max_length` (int, Optional): Maximum number of items in each itemset. Default=2
+- `num_workers` (int, optional): Number of parallel workers for support calculation. Default=1 for sequential processing.
+  **Note**: Parallelization is automatically disabled for fewer than 1000 itemsets due to overhead costs. Set to 4-8 for datasets generating 1000+ itemsets.
 
 **Returns**:
 
@@ -210,95 +216,17 @@ The `rule_quality` module provides the following constants and metrics:
 - `DEFAULT_RULE_METRICS`: Default metrics calculated by `generate_rules()`
   - ['support', 'confidence', 'zhangs_metric']
 
-### Individual Metric Functions
+### Internal Helper Functions
 
-Calculate specific quality metrics for individual rules:
+The following helper functions are used internally by PyAerial for calculating individual quality metrics:
 
-```python
-# Support: Frequency of the rule in the dataset
-support = rule_quality.calculate_support(rule, data)
+- `calculate_lift(support, confidence)`: Calculate lift metric
+- `calculate_conviction(support, confidence)`: Calculate conviction metric
+- `calculate_zhangs_metric(support, support_ant, support_cons)`: Calculate Zhang's metric
+- `calculate_yulesq(full_count, not_ant_not_con, con_not_ant, ant_not_con)`: Calculate Yule's Q
+- `calculate_interestingness(confidence, support, rhs_support, input_length)`: Calculate interestingness
 
-# Confidence: Conditional probability P(consequent|antecedent)
-confidence = rule_quality.calculate_confidence(rule, data)
-
-# Lift: Ratio of observed to expected support under independence
-lift = rule_quality.calculate_lift(rule, data)
-
-# Conviction: Measure of implication strength
-conviction = rule_quality.calculate_conviction(rule, data)
-
-# Zhang's Metric: Symmetric correlation measure (-1 to 1)
-zhangs = rule_quality.calculate_zhangs_metric(rule, data)
-
-# Yule's Q: Symmetric association measure based on odds ratio
-yules_q = rule_quality.calculate_yules_q(rule, data)
-
-# Interestingness: Measure of rule interestingness
-interestingness = rule_quality.calculate_interestingness(rule, data)
-```
-
-### Legacy Functions (for backward compatibility)
-
-#### calculate_basic_rule_stats
-
-```python
-calculate_basic_rule_stats(rules, transactions, num_workers)
-```
-
-**Deprecated**: Use `generate_rules()` instead, which calculates metrics automatically.
-
-Computes support and confidence for a list of rules using parallel processing.
-
-**Parameters**:
-
-- `rules`: List of rule dictionaries with 'antecedents' and 'consequent'.
-- `transactions`: A pandas DataFrame of one-hot encoded transactions.
-- `num_workers`: Number of parallel workers
-
-**Returns**: A list of rules enriched with support and confidence values.
-
-#### calculate_freq_item_support
-
-```python
-calculate_freq_item_support(freq_items, transactions, max_workers=1)
-```
-
-**Deprecated**: Use `generate_frequent_itemsets()` instead, which calculates support automatically.
-
-Calculates the support for a list of frequent itemsets using optimized vectorized operations with parallel processing support.
-
-**Parameters**:
-
-- `freq_items`: List of itemsets (each itemset is a list of dictionaries with 'feature' and 'value' keys).
-- `transactions`: A pandas DataFrame of categorical data.
-- `max_workers`: Number of parallel workers (via joblib). Default=1. Set higher for faster computation on large datasets.
-
-**Returns**:
-- A list of dictionaries, each containing 'itemset' and 'support' keys
-- Average support across all itemsets
-
-#### calculate_rule_stats
-
-```python
-calculate_rule_stats(rules, transactions, max_workers=1)
-```
-
-**Deprecated**: Use `generate_rules()` instead, which calculates metrics automatically.
-
-Evaluates rules with extended metrics including: Support, Confidence, Zhang's Metric, Dataset Coverage.
-
-Runs in parallel with joblib.
-
-**Parameters**:
-
-- `rules`: List of rule dictionaries.
-- `transactions`: One-hot encoded pandas DataFrame.
-- `max_workers`: Number of parallel threads (via joblib).
-
-**Returns**:
-
-- A dictionary of average metrics (support, confidence, zhangs_metric, coverage)
-- A list of updated rules
+These are low-level functions used by `generate_rules()` and `generate_frequent_itemsets()`. Most users should use the high-level functions instead.
 
 ## Discretization Module
 

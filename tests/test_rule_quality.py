@@ -437,5 +437,88 @@ class TestBackwardCompatibility(unittest.TestCase):
         self.assertEqual(AVAILABLE_METRICS, expected_metrics)
 
 
+class TestParallelization(unittest.TestCase):
+    """Test parallelization support in rule quality calculation"""
+
+    def setUp(self):
+        """Create sample data"""
+        self.transactions = pd.DataFrame({
+            'Color': ['Red', 'Blue', 'Green', 'Blue', 'Red', 'Green'] * 10,
+            'Size': ['S', 'M', 'L', 'S', 'L', 'M'] * 10,
+            'Shape': ['Circle', 'Square', 'Triangle', 'Circle', 'Square', 'Triangle'] * 10
+        })
+        self.model = train(self.transactions, epochs=2)
+
+    def test_num_workers_parameter_rules(self):
+        """Test that num_workers parameter is accepted by generate_rules"""
+        result_sequential = generate_rules(
+            self.model,
+            ant_similarity=0.001,
+            cons_similarity=0.001,
+            num_workers=1
+        )
+
+        result_parallel = generate_rules(
+            self.model,
+            ant_similarity=0.001,
+            cons_similarity=0.001,
+            num_workers=2
+        )
+
+        # Both should succeed and return the same structure
+        self.assertIsInstance(result_sequential, dict)
+        self.assertIsInstance(result_parallel, dict)
+
+        # Results should be consistent (same number of rules)
+        if len(result_sequential['rules']) > 0 and len(result_parallel['rules']) > 0:
+            self.assertEqual(len(result_sequential['rules']), len(result_parallel['rules']))
+
+    def test_num_workers_parameter_itemsets(self):
+        """Test that num_workers parameter is accepted by generate_frequent_itemsets"""
+        result_sequential = generate_frequent_itemsets(
+            self.model,
+            similarity=0.001,
+            num_workers=1
+        )
+
+        result_parallel = generate_frequent_itemsets(
+            self.model,
+            similarity=0.001,
+            num_workers=2
+        )
+
+        # Both should succeed and return the same structure
+        self.assertIsInstance(result_sequential, dict)
+        self.assertIsInstance(result_parallel, dict)
+
+        # Results should be consistent (same number of itemsets)
+        if len(result_sequential['itemsets']) > 0 and len(result_parallel['itemsets']) > 0:
+            self.assertEqual(len(result_sequential['itemsets']), len(result_parallel['itemsets']))
+
+    def test_parallel_results_match_sequential(self):
+        """Test that parallel processing produces same results as sequential"""
+        result_seq = generate_rules(
+            self.model,
+            ant_similarity=0.001,
+            cons_similarity=0.001,
+            num_workers=1
+        )
+
+        result_par = generate_rules(
+            self.model,
+            ant_similarity=0.001,
+            cons_similarity=0.001,
+            num_workers=4
+        )
+
+        if len(result_seq['rules']) > 0:
+            # Same number of rules
+            self.assertEqual(len(result_seq['rules']), len(result_par['rules']))
+
+            # Statistics should match
+            self.assertEqual(result_seq['statistics']['rule_count'],
+                           result_par['statistics']['rule_count'])
+
+
 if __name__ == "__main__":
     unittest.main()

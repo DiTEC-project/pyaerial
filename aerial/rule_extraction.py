@@ -12,8 +12,8 @@ from itertools import combinations
 
 from aerial.model import AutoEncoder
 from aerial.rule_quality import (
-    _calculate_rule_quality_from_indices,
-    _calculate_itemset_support_from_indices,
+    calculate_rule_metrics,
+    calculate_itemset_metrics,
     DEFAULT_RULE_METRICS,
     AVAILABLE_METRICS
 )
@@ -24,7 +24,7 @@ logger = logging.getLogger("aerial")
 
 
 def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, ant_similarity=0.5, cons_similarity=0.8,
-                   max_antecedents=2, target_classes=None, quality_metrics=None):
+                   max_antecedents=2, target_classes=None, quality_metrics=None, num_workers=1):
     """
     Extract association rules from a trained Autoencoder using Aerial+ algorithm.
     Rule quality metrics are calculated automatically and included in the output.
@@ -40,6 +40,7 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
         right hand side only, the content of the list is as same as features_of_interest
     :param quality_metrics: list of quality metrics to calculate. Default is ['support', 'confidence', 'zhangs_metric'].
         Available metrics: 'support', 'confidence', 'zhangs_metric', 'lift', 'conviction', 'yulesq', 'interestingness'
+    :param num_workers: number of parallel workers for quality metric calculation (default=1 for sequential processing)
     :return: dict with 'rules' (list of rules with quality metrics) and 'statistics' (aggregate stats)
     """
     if not autoencoder:
@@ -143,22 +144,23 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
         logger.info("No rules found")
         return {'rules': [], 'statistics': {}}
 
-    # Calculate quality metrics using integer indices (fast!)
+    # Calculate quality metrics using batch processing with optional parallelization
     logger.info(f"Calculating quality metrics: {', '.join(quality_metrics)}")
     transaction_array = autoencoder.input_vectors.to_numpy()
     num_transactions = len(transaction_array)
 
+    # Batch calculate metrics for all rules (with optional parallelization)
+    all_metrics = calculate_rule_metrics(
+        rules_with_indices, transaction_array, quality_metrics, num_workers=num_workers
+    )
+
+    # Build final rules and calculate dataset coverage
     final_rules = []
     dataset_coverage = np.zeros(num_transactions, dtype=bool)
 
-    for rule_idx in rules_with_indices:
+    for rule_idx, metrics in zip(rules_with_indices, all_metrics):
         ant_indices = rule_idx['antecedent_indices']
         cons_index = rule_idx['consequent_index']
-
-        # Calculate quality metrics
-        metrics = _calculate_rule_quality_from_indices(
-            ant_indices, cons_index, transaction_array, num_transactions, quality_metrics
-        )
 
         # Extract antecedent mask for dataset coverage
         antecedent_mask = metrics.pop('_antecedent_mask')
@@ -193,7 +195,7 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
     return {'rules': final_rules, 'statistics': stats}
 
 
-def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=None, similarity=0.5, max_length=2):
+def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=None, similarity=0.5, max_length=2, num_workers=1):
     """
     Generate frequent itemsets using the Aerial+ algorithm.
     Support values are calculated automatically and included in the output.
@@ -204,6 +206,7 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=No
         of a feature in object form
     :param similarity: similarity threshold (default=0.5)
     :param max_length: max itemset length (default=2)
+    :param num_workers: number of parallel workers for support calculation (default=1 for sequential processing)
     :return: dict with 'itemsets' (list of itemsets with support) and 'statistics' (aggregate stats)
         Example: {
             'itemsets': [
@@ -283,16 +286,19 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=No
         logger.info("No itemsets found")
         return {'itemsets': [], 'statistics': {}}
 
-    # Calculate support using integer indices (fast!)
+    # Calculate support using batch processing with optional parallelization
     logger.info("Calculating support values")
     transaction_array = autoencoder.input_vectors.to_numpy()
     num_transactions = len(transaction_array)
 
-    final_itemsets = []
-    for itemset_indices in itemsets_with_indices:
-        # Calculate support
-        support = _calculate_itemset_support_from_indices(itemset_indices, transaction_array, num_transactions)
+    # Batch calculate support for all itemsets (with optional parallelization)
+    all_supports = calculate_itemset_metrics(
+        itemsets_with_indices, transaction_array, num_workers=num_workers
+    )
 
+    # Build final itemsets with support values
+    final_itemsets = []
+    for itemset_indices, support in zip(itemsets_with_indices, all_supports):
         # Convert indices to human-readable format
         itemset = [
             {'feature': autoencoder.feature_values[idx].split('__', 1)[0],
@@ -440,28 +446,3 @@ def _calculate_aggregate_stats(rules, dataset_coverage, num_transactions, qualit
     stats['data_coverage'] = float(round(np.sum(dataset_coverage) / num_transactions, 3))
 
     return stats
-
-
-def _get_rule(antecedents, consequents, feature_values):
-    """
-    Find the corresponding feature value for the given antecedents and consequent that are indices in test vectors
-    :param antecedents: a list of indices in the test vectors marking the antecedent locations
-    :param consequents: an index in the test vector marking the consequent location
-    :param feature_values: a list of string that keeps track of which neuron in the Autoencoder input corresponds
-        to which feature value in the tabular data
-    :return: a rule dictionary with antecedents and consequents in dictionary format
-        Example: {
-            'antecedents': [{'feature': 'age', 'value': '30-39'}, ...],
-            'consequents': [{'feature': 'node-caps', 'value': 'no'}, ...]
-        }
-    """
-    rule = {'antecedents': [], 'consequents': []}
-    for antecedent in antecedents:
-        feature_name, feature_value = feature_values[antecedent].split('__', 1)
-        rule['antecedents'].append({'feature': feature_name, 'value': feature_value})
-
-    for consequent in consequents:
-        feature_name, feature_value = feature_values[consequent].split('__', 1)
-        rule['consequents'].append({'feature': feature_name, 'value': feature_value})
-
-    return rule
