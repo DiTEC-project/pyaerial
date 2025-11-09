@@ -11,6 +11,12 @@ import torch
 from itertools import combinations
 
 from aerial.model import AutoEncoder
+from aerial.rule_quality import (
+    _calculate_rule_quality_from_indices,
+    _calculate_itemset_support_from_indices,
+    DEFAULT_RULE_METRICS,
+    AVAILABLE_METRICS
+)
 import numpy as np
 import logging
 
@@ -18,26 +24,42 @@ logger = logging.getLogger("aerial")
 
 
 def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, ant_similarity=0.5, cons_similarity=0.8,
-                   max_antecedents=2, target_classes=None):
+                   max_antecedents=2, target_classes=None, quality_metrics=None):
     """
-    extract rules from a trained Autoencoder using Aerial+ algorithm
-    :param max_antecedents: max number of antecedents that the rules will contain
+    Extract association rules from a trained Autoencoder using Aerial+ algorithm.
+    Rule quality metrics are calculated automatically and included in the output.
+
+    :param autoencoder: a trained Autoencoder for ARM
     :param features_of_interest: list: only look for rules that have these features of interest on the antecedent side
         accepted form ["feature1", "feature2", {"feature3": "value1}, ...], either a feature name as str, or specific value
         of a feature in object form
+    :param ant_similarity: antecedent similarity threshold (default=0.5)
+    :param cons_similarity: consequent similarity threshold (default=0.8)
+    :param max_antecedents: max number of antecedents that the rules will contain (default=2)
     :param target_classes: list: if given a list of target classes, generate rules with the target classes on the
         right hand side only, the content of the list is as same as features_of_interest
-    :param cons_similarity: consequent similarity threshold
-    :param ant_similarity: antecedent similarity threshold
-    :param autoencoder: a trained Autoencoder for ARM
+    :param quality_metrics: list of quality metrics to calculate. Default is ['support', 'confidence', 'zhangs_metric'].
+        Available metrics: 'support', 'confidence', 'zhangs_metric', 'lift', 'conviction', 'yulesq', 'interestingness'
+    :return: dict with 'rules' (list of rules with quality metrics) and 'statistics' (aggregate stats)
     """
     if not autoencoder:
         logger.error("A trained Autoencoder has to be provided before generating rules.")
         return None
 
+    # Validate quality metrics
+    if quality_metrics is None:
+        quality_metrics = DEFAULT_RULE_METRICS.copy()
+    else:
+        invalid_metrics = [m for m in quality_metrics if m not in AVAILABLE_METRICS]
+        if invalid_metrics:
+            logger.error(f"Invalid quality metrics: {invalid_metrics}. Available: {AVAILABLE_METRICS}")
+            return None
+
+    logger.info("Mining association rules...")
     logger.debug("Extracting association rules from the given trained Autoencoder ...")
 
-    association_rules = []
+    # Store rules with their integer indices for fast quality calculation
+    rules_with_indices = []
     input_vector_size = autoencoder.encoder[0].in_features
 
     # process features of interest
@@ -108,33 +130,98 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
                 ]
 
                 if consequent_list:
-                    new_rule = _get_rule(candidate_antecedents, consequent_list, autoencoder.feature_values)
-                    for consequent in new_rule['consequents']:
-                        association_rules.append({'antecedents': new_rule['antecedents'], 'consequent': consequent})
+                    # Store rules with integer indices for fast quality calculation
+                    for consequent_idx in consequent_list:
+                        rules_with_indices.append({
+                            'antecedent_indices': candidate_antecedents.tolist() if isinstance(candidate_antecedents, np.ndarray) else list(candidate_antecedents),
+                            'consequent_index': int(consequent_idx)
+                        })
 
-    logger.debug("%d association rules extracted.", len(association_rules))
-    return association_rules
+    logger.info(f"Found {len(rules_with_indices)} rules")
+
+    if len(rules_with_indices) == 0:
+        logger.info("No rules found")
+        return {'rules': [], 'statistics': {}}
+
+    # Calculate quality metrics using integer indices (fast!)
+    logger.info(f"Calculating quality metrics: {', '.join(quality_metrics)}")
+    transaction_array = autoencoder.input_vectors.to_numpy()
+    num_transactions = len(transaction_array)
+
+    final_rules = []
+    dataset_coverage = np.zeros(num_transactions, dtype=bool)
+
+    for rule_idx in rules_with_indices:
+        ant_indices = rule_idx['antecedent_indices']
+        cons_index = rule_idx['consequent_index']
+
+        # Calculate quality metrics
+        metrics = _calculate_rule_quality_from_indices(
+            ant_indices, cons_index, transaction_array, num_transactions, quality_metrics
+        )
+
+        # Extract antecedent mask for dataset coverage
+        antecedent_mask = metrics.pop('_antecedent_mask')
+        dataset_coverage |= antecedent_mask
+
+        # Convert indices to human-readable format
+        antecedents = [
+            {'feature': autoencoder.feature_values[idx].split('__', 1)[0],
+             'value': autoencoder.feature_values[idx].split('__', 1)[1]}
+            for idx in ant_indices
+        ]
+        consequent = {
+            'feature': autoencoder.feature_values[cons_index].split('__', 1)[0],
+            'value': autoencoder.feature_values[cons_index].split('__', 1)[1]
+        }
+
+        # Build final rule with quality metrics
+        rule = {
+            'antecedents': antecedents,
+            'consequent': consequent
+        }
+        rule.update(metrics)
+        final_rules.append(rule)
+
+    # Calculate aggregate statistics
+    logger.info("Calculating aggregate statistics")
+    stats = _calculate_aggregate_stats(final_rules, dataset_coverage, num_transactions, quality_metrics)
+
+    logger.info(f"Mining complete: {len(final_rules)} rules with avg support={stats.get('average_support', 0):.3f}, "
+                f"avg confidence={stats.get('average_confidence', 0):.3f}")
+
+    return {'rules': final_rules, 'statistics': stats}
 
 
 def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=None, similarity=0.5, max_length=2):
     """
     Generate frequent itemsets using the Aerial+ algorithm.
-    :param max_length: max itemset length
-    :param similarity: similarity threshold
+    Support values are calculated automatically and included in the output.
+
     :param autoencoder: a trained Autoencoder
     :param features_of_interest: list: only look for itemsets that have these features of interest
         accepted form ["feature1", "feature2", {"feature3": "value1}, ...], either a feature name as str, or specific value
         of a feature in object form
-    :return: list of frequent itemsets, where each itemset is a list of dictionaries with 'feature' and 'value' keys
-        Example: [[{'feature': 'age', 'value': '30-39'}], [{'feature': 'age', 'value': '30-39'}, {'feature': 'tumor-size', 'value': '20-24'}], ...]
+    :param similarity: similarity threshold (default=0.5)
+    :param max_length: max itemset length (default=2)
+    :return: dict with 'itemsets' (list of itemsets with support) and 'statistics' (aggregate stats)
+        Example: {
+            'itemsets': [
+                {'itemset': [{'feature': 'age', 'value': '30-39'}], 'support': 0.524},
+                {'itemset': [{'feature': 'age', 'value': '30-39'}, {'feature': 'tumor-size', 'value': '20-24'}], 'support': 0.312}
+            ],
+            'statistics': {'itemset_count': 2, 'average_support': 0.418}
+        }
     """
     if not autoencoder:
         logger.error("A trained Autoencoder has to be provided before extracting frequent items.")
         return None
 
+    logger.info("Mining frequent itemsets...")
     logger.debug("Extracting frequent items from the given trained Autoencoder ...")
 
-    frequent_itemsets = []
+    # Store itemsets with their integer indices for fast support calculation
+    itemsets_with_indices = []
     input_vector_size = len(autoencoder.feature_values)
 
     # process features of interest
@@ -185,16 +272,44 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=No
                         insignificant_feature_values = np.append(insignificant_feature_values, candidate_antecedents)
                     continue
 
-                # Add to frequent itemsets
-                itemset = [
-                    {'feature': autoencoder.feature_values[idx].split('__', 1)[0],
-                     'value': autoencoder.feature_values[idx].split('__', 1)[1]}
-                    for idx in candidate_antecedents
-                ]
-                frequent_itemsets.append(itemset)
+                # Store itemsets with integer indices for fast support calculation
+                itemsets_with_indices.append(
+                    candidate_antecedents.tolist() if isinstance(candidate_antecedents, np.ndarray) else list(candidate_antecedents)
+                )
 
-    logger.debug("%d frequent itemsets extracted.", len(frequent_itemsets))
-    return frequent_itemsets
+    logger.info(f"Found {len(itemsets_with_indices)} itemsets")
+
+    if len(itemsets_with_indices) == 0:
+        logger.info("No itemsets found")
+        return {'itemsets': [], 'statistics': {}}
+
+    # Calculate support using integer indices (fast!)
+    logger.info("Calculating support values")
+    transaction_array = autoencoder.input_vectors.to_numpy()
+    num_transactions = len(transaction_array)
+
+    final_itemsets = []
+    for itemset_indices in itemsets_with_indices:
+        # Calculate support
+        support = _calculate_itemset_support_from_indices(itemset_indices, transaction_array, num_transactions)
+
+        # Convert indices to human-readable format
+        itemset = [
+            {'feature': autoencoder.feature_values[idx].split('__', 1)[0],
+             'value': autoencoder.feature_values[idx].split('__', 1)[1]}
+            for idx in itemset_indices
+        ]
+
+        final_itemsets.append({'itemset': itemset, 'support': support})
+
+    # Calculate statistics
+    logger.info("Calculating aggregate statistics")
+    avg_support = float(round(np.mean([item['support'] for item in final_itemsets]), 3))
+    stats = {'itemset_count': len(final_itemsets), 'average_support': avg_support}
+
+    logger.info(f"Mining complete: {len(final_itemsets)} itemsets with avg support={avg_support:.3f}")
+
+    return {'itemsets': final_itemsets, 'statistics': stats}
 
 
 def extract_significant_features_and_ignored_indices(features_of_interest, autoencoder):
@@ -294,6 +409,37 @@ def _initialize_input_vectors(input_vector_size, categories):
         vector_with_unmarked_features[category['start']:category['end']] = 1 / (
                 category['end'] - category['start'])
     return vector_with_unmarked_features
+
+
+def _calculate_aggregate_stats(rules, dataset_coverage, num_transactions, quality_metrics):
+    """
+    Calculate aggregate statistics for a set of rules.
+
+    :param rules: List of rules with quality metrics
+    :param dataset_coverage: Boolean array indicating which transactions are covered
+    :param num_transactions: Total number of transactions
+    :param quality_metrics: List of quality metrics that were calculated
+    :return: Dictionary of aggregate statistics
+    """
+    if not rules:
+        return {}
+
+    stats = {'rule_count': len(rules)}
+
+    # Calculate averages for each requested metric
+    for metric in quality_metrics:
+        values = [rule[metric] for rule in rules if metric in rule]
+        if values:
+            stats[f'average_{metric}'] = float(round(np.mean(values), 3))
+
+    # Always include rule_coverage and data_coverage
+    if 'rule_coverage' in rules[0]:
+        coverage_values = [rule['rule_coverage'] for rule in rules]
+        stats['average_coverage'] = float(round(np.mean(coverage_values), 3))
+
+    stats['data_coverage'] = float(round(np.sum(dataset_coverage) / num_transactions, 3))
+
+    return stats
 
 
 def _get_rule(antecedents, consequents, feature_values):

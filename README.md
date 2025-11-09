@@ -72,7 +72,7 @@ full capabilities
 ### Basic Association Rule Mining
 
 ```python
-from aerial import model, rule_extraction, rule_quality
+from aerial import model, rule_extraction
 from ucimlrepo import fetch_ucirepo
 
 # Load a categorical tabular dataset
@@ -81,17 +81,11 @@ breast_cancer = fetch_ucirepo(id=14).data.features
 # Train an autoencoder on the loaded table
 trained_autoencoder = model.train(breast_cancer)
 
-# Extract association rules from the autoencoder
-association_rules = rule_extraction.generate_rules(trained_autoencoder)
+# Extract association rules with quality metrics calculated automatically
+result = rule_extraction.generate_rules(trained_autoencoder)
 
-# Calculate rule quality statistics
-if len(association_rules) > 0:
-    stats, association_rules = rule_quality.calculate_rule_stats(
-        association_rules,
-        trained_autoencoder.input_vectors
-    )
-    print(f"Overall statistics: {stats}\n")
-    print(f"Sample rule: {association_rules[0]}")
+print(f"Overall statistics: {result['statistics']}\n")
+print(f"Sample rule: {result['rules'][0]}")
 ```
 
 **Output:**
@@ -102,6 +96,7 @@ Overall statistics: {
     "average_support": 0.448,
     "average_confidence": 0.881,
     "average_coverage": 0.860,
+    "data_coverage": 0.923,
     "average_zhangs_metric": 0.318
 }
 
@@ -110,26 +105,27 @@ Sample rule: {
     "consequent": {"feature": "node-caps", "value": "no"},
     "support": 0.702,
     "confidence": 0.943,
-    "zhangs_metric": 0.69
+    "zhangs_metric": 0.69,
+    "rule_coverage": 0.744
 }
 ```
 
 **Interpretation:** When `inv-nodes` is between `0-2`, there's 94.3% confidence that `node-caps` equals `no`, covering
 70.2% of the dataset.
 
-**Working with rules:** Access rule components easily using the dictionary format:
+**Working with rules:** Access rule components and metrics easily using the dictionary format:
 
 ```python
 # Example: Print all rules in a readable format
-for rule in association_rules:
+for rule in result['rules']:
     antecedents_str = " AND ".join([f"{a['feature']}={a['value']}" for a in rule['antecedents']])
     consequent_str = f"{rule['consequent']['feature']}={rule['consequent']['value']}"
-    print(f"IF {antecedents_str} THEN {consequent_str} (conf: {rule['confidence']:.2f})")
+    print(f"IF {antecedents_str} THEN {consequent_str} (support: {rule['support']:.2f}, conf: {rule['confidence']:.2f})")
 
 # Sample output:
-# IF inv-nodes=0-2 THEN node-caps=no (conf: 0.94)
-# IF age=30-39 AND menopause=premeno THEN breast=left (conf: 0.75)
-# IF tumor-size=30-34 THEN deg-malig=2 (conf: 0.82)
+# IF inv-nodes=0-2 THEN node-caps=no (support: 0.70, conf: 0.94)
+# IF age=30-39 AND menopause=premeno THEN breast=left (support: 0.45, conf: 0.75)
+# IF tumor-size=30-34 THEN deg-malig=2 (support: 0.38, conf: 0.82)
 ```
 
 **Quality metrics explained:**
@@ -138,6 +134,8 @@ for rule in association_rules:
 - **Confidence**: How often the consequent is true when antecedent is true (rule reliability)
 - **Zhang's Metric**: Correlation measure between antecedent and consequent (-1 to 1; positive values indicate positive
   correlation)
+- **Rule Coverage**: Proportion of transactions containing the antecedents
+- **Data Coverage** (in statistics): Overall proportion of the dataset covered by at least one rule
 
 ---
 
@@ -162,8 +160,10 @@ iris = fetch_ucirepo(id=53).data.features
 iris_discretized = discretization.equal_frequency_discretization(iris, n_bins=3)
 
 # Train and extract rules as usual
-trained_autoencoder = model.train(iris_discretized)
-association_rules = rule_extraction.generate_rules(trained_autoencoder)
+trained_autoencoder = model.train(iris_discretized, epochs=10)
+result = rule_extraction.generate_rules(trained_autoencoder, ant_similarity=0.1)
+print(
+    f"Found {result['statistics']['rule_count']} rules with avg support {result['statistics']['average_support']:.3f}")
 ```
 
 **Example discretization output:**
@@ -194,7 +194,7 @@ trained_autoencoder = model.train(breast_cancer)
 features_of_interest = ["age", {"menopause": 'premeno'}, {"node-caps": "yes"}]
 
 # Extract rules focusing only on specified features
-association_rules = rule_extraction.generate_rules(
+result = rule_extraction.generate_rules(
     trained_autoencoder,
     features_of_interest,
     cons_similarity=0.5
@@ -207,7 +207,10 @@ association_rules = rule_extraction.generate_rules(
 {
     "antecedents": [{"feature": "menopause", "value": "premeno"}],
     "consequent": {"feature": "node-caps", "value": "no"},
-    ...
+    "support": 0.357,
+    "confidence": 0.68,
+    "zhangs_metric": -0.066,
+    "rule_coverage": 0.525
 }
 ```
 
@@ -236,21 +239,23 @@ table_with_labels = pd.concat([features, labels], axis=1)
 trained_autoencoder = model.train(table_with_labels)
 
 # Generate classification rules with target class on consequent side
-classification_rules = rule_extraction.generate_rules(
+result = rule_extraction.generate_rules(
     trained_autoencoder,
     target_classes=["Class"],
     cons_similarity=0.5
 )
 ```
 
-**Output:** Rules predicting class labels:
+**Output:** Rules predicting class labels with quality metrics:
 
 ```python
 {
     "antecedents": [{"feature": "menopause", "value": "premeno"}],
     "consequent": {"feature": "Class", "value": "no-recurrence-events"},
     "support": 0.357,
-    "confidence": 0.68
+    "confidence": 0.68,
+    "zhangs_metric": -0.066,
+    "rule_coverage": 0.525
 }
 ```
 
@@ -264,13 +269,14 @@ from [imodels](https://github.com/csinva/imodels).
 PyAerial provides a comprehensive toolkit for association rule mining with advanced capabilities:
 
 - **Scalable Rule Mining** - Efficiently mine association rules from large tabular datasets without rule explosion
-- **Frequent Itemset Mining** - Generate frequent itemsets using the same neural approach
+- **Automatic Quality Metrics** - Rules include support, confidence, Zhang's metric, and more calculated automatically
+- **Frequent Itemset Mining** - Generate frequent itemsets with support values using the same neural approach
 - **ARM with Item Constraints** - Focus rule mining on specific features of interest
 - **Classification Rules** - Extract rules with target class labels for interpretable inference
 - **Numerical Data Support** - Built-in discretization methods (equal-frequency, equal-width)
 - **Customizable Architectures** - Fine-tune autoencoder layers and dimensions for optimal performance
 - **GPU Acceleration** - Leverage CUDA for faster training on large datasets
-- **Quality Metrics** - Comprehensive rule evaluation (support, confidence, coverage, Zhang's metric)
+- **Comprehensive Metrics** - Support, confidence, lift, conviction, Zhang's metric, Yule's Q, interestingness
 - **Rule Visualization** - Integrate with NiaARM for scatter plots and visual analysis
 - **Flexible Training** - Adjust epochs, learning rate, batch size, and noise factors
 
@@ -308,7 +314,7 @@ Rules emerge from analyzing the trained autoencoder using test vectors:
 2. Specific features are set to 1 (antecedents) while others remain at baseline
 3. Forward passes through the network produce output probabilities
 4. Rules are extracted when probabilities exceed similarity thresholds
-5. Quality metrics (support, confidence, coverage, Zhang's metric) are calculated
+5. Quality metrics (support, confidence, coverage, Zhang's metric, etc.) are calculated automatically using vectorized operations
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/pipeline.png" alt="Aerial pipeline" width="700">
