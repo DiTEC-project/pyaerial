@@ -153,9 +153,12 @@ rule: {
 
 ---
 
-**Can't get results you looked for?**
-See [_How to set the parameters?_](https://pyaerial.readthedocs.io/en/latest/advanced_topics.html#debugging) in our
-documentation.
+**Can't get the results you're looking for?**
+
+Learn how to adjust parameters for your specific needs:
+- 🎯 [**Parameter Tuning Guide**](https://pyaerial.readthedocs.io/en/latest/parameter_guide.html) - Quick reference for high/low support, confidence, and more
+- 🔧 [**Troubleshooting**](https://pyaerial.readthedocs.io/en/latest/configuration.html#debugging) - What to do when Aerial doesn't find rules or takes too long
+- ⚙️ [**Advanced Tuning**](https://pyaerial.readthedocs.io/en/latest/configuration.html#advanced-training-and-architecture-tuning) - Training duration and architecture optimization
 
 ---
 
@@ -369,10 +372,11 @@ For detailed usage examples, API reference, and advanced topics, visit our compr
 Documentation includes:
 
 - **Getting Started** - Installation and basic usage
-- **User Guide** - Detailed examples for all features
+- **User Guide** - 11 detailed examples covering all features
+- **Parameter Tuning Guide** - How to get high/low support, confidence, and control rule count
+- **Configuration & Troubleshooting** - GPU usage, debugging, and advanced training/architecture tuning
 - **API Reference** - Complete function and class documentation
-- **Advanced Topics** - GPU usage, debugging, visualization
-- **How It Works** - Understanding Aerial's architecture and algorithm
+- **How Aerial Works** - Understanding the neurosymbolic architecture and algorithm
 
 ---
 

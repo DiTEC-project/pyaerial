@@ -2,7 +2,10 @@
 
 This section provides detailed examples of using Aerial with various configurations and use cases.
 
-If you encounter issues such as Aerial can't learn rules, or takes too much time to terminate, please see the [Debugging section](configuration.md#debugging).
+**Looking for something specific?**
+- 🎯 **Parameter tuning** - See the [Parameter Tuning Guide](parameter_guide.md) for how to get high/low support, confidence, etc.
+- ⚙️ **Configuration** - See [Configuration](configuration.md) for GPU usage, logging, and training parameters
+- 🔧 **Troubleshooting** - See [Debugging](configuration.md#debugging) if Aerial can't learn rules or takes too long
 
 ## 1. Association Rule Mining from Categorical Tabular Data
 
@@ -135,25 +138,37 @@ result['rules']: [
 
 ## 3. Setting Aerial Parameters
 
-Aerial has 3 key parameters; antecedent and consequent similarity threshold, and antecedent length.
+Aerial has 3 key parameters that control rule extraction:
 
-As shown in the paper, higher antecedent thresholds results in lower number of higher support rules, while higher consequent thresholds results in lower number of higher confidence rules.
+- **`ant_similarity`**: Controls support (how frequent patterns are) - analogous to minimum support in traditional ARM
+- **`cons_similarity`**: Controls confidence and association strength - analogous to minimum confidence
+- **`max_antecedents`**: Maximum number of conditions in rule antecedents (complexity)
 
-These 3 parameters can be set using the `generate_rules` function:
+**Quick example:**
 
 ```python
-import pandas as pd
-from aerial import model, rule_extraction, rule_quality
+from aerial import model, rule_extraction
 from ucimlrepo import fetch_ucirepo
 
 breast_cancer = fetch_ucirepo(id=14).data.features
-
 trained_autoencoder = model.train(breast_cancer)
 
-# hyperparameters of aerial can be set using the generate_rules function
-association_rules = rule_extraction.generate_rules(trained_autoencoder, ant_similarity=0.5, cons_similarity=0.8, max_antecedents=2)
-...
+# Adjust parameters to control rule characteristics
+result = rule_extraction.generate_rules(
+    trained_autoencoder,
+    ant_similarity=0.5,    # Minimum support threshold
+    cons_similarity=0.8,   # Minimum confidence/association threshold
+    max_antecedents=2      # Max rule complexity
+)
 ```
+
+**Want to know which parameters to set for your specific needs?**
+
+See the **[Parameter Tuning Guide](parameter_guide.md)** for detailed guidance on:
+- Getting high/low support rules
+- Getting high/low confidence rules
+- Controlling the number of rules
+- Common scenarios with examples
 
 ## 4. Fine-tuning Autoencoder Architecture and Dimensions
 
@@ -305,69 +320,7 @@ Sample rule:
 }
 ```
 
-## 8. Fine-tuning the Training Parameters
-
-The `train()` function allows programmers to specify various training parameters:
-
-- `autoencoder`: You can implement your own Autoencoder and use it for ARM as part of Aerial, as long as the last layer matches the original version (see our paper or the source code)
-- `noise_factor` (default=0.5): amount of random noise (`+-`) added to each neuron of the denoising Autoencoder before the training process
-- `lr` (default=5e-3): learning rate
-- `epochs` (default=1): number of training epochs
-- `batch_size` (default=2): number of batches to train
-- `loss_function` (default=torch.nn.BCELoss()): loss function
-- `num_workers` (default=1): number of workers for parallel execution
-
-```python
-from aerial import model, rule_extraction, rule_quality, discretization
-from ucimlrepo import fetch_ucirepo
-
-# a categorical tabular dataset
-breast_cancer = fetch_ucirepo(id=14).data.features
-
-# increasing epochs to 5, note that longer training may lead to overfitting which results in rules with low association strength (zhangs' metric)
-trained_autoencoder = model.train(breast_cancer, epochs=5, lr=1e-3)
-
-result = rule_extraction.generate_rules(trained_autoencoder)
-if len(result['rules']) > 0:
-    print(f"Found {result['statistics']['rule_count']} rules")
-    print(f"Average Zhang's metric: {result['statistics']['average_zhangs_metric']}")
-```
-
-## 9. Setting the Log Levels
-
-Aerial source code prints extra debug statements notifying the beginning and ending of major functions such as the training process or rule extraction. The log levels can be changed as follows:
-
-```python
-import logging
-import aerial
-
-# setting the log levels to DEBUG level
-aerial.setup_logging(logging.DEBUG)
-...
-```
-
-## 10. Running Aerial on GPU
-
-The `device` parameter in `train()` can be used to run Aerial on GPU. Note that Aerial only uses a shallow Autoencoder and therefore can also run on CPU without a major performance hindrance.
-
-Furthermore, Aerial will also use the device specified in `train()` function for rule extraction, e.g., when performing forward runs on the trained Autoencoder with the test vectors.
-
-```python
-from aerial import model, rule_extraction, rule_quality, discretization
-from ucimlrepo import fetch_ucirepo
-
-# a categorical tabular dataset
-breast_cancer = fetch_ucirepo(id=14).data.features
-
-# run Aerial on GPU
-trained_autoencoder = model.train(breast_cancer, device="cuda")
-
-# during the rule extraction stage, Aerial will continue to use the device specified above
-result = rule_extraction.generate_rules(trained_autoencoder)
-print(f"Mined {result['statistics']['rule_count']} rules on GPU")
-```
-
-## 11. Visualizing Association Rules
+## 8. Visualizing Association Rules
 
 Rules learned by PyAerial can be visualized using [NiaARM](https://github.com/firefly-cpp/NiaARM) library. In the following, `visualizable_rule_list()` function converts PyAerial's rule format to NiaARM `RuleList()` format. And then visualizes the rules on a scatter plot using the visualization module of NiaARM
 

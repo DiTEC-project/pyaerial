@@ -272,6 +272,34 @@ result = rule_extraction.generate_rules(
 )
 ```
 
+### Scenario 5: Focused Mining with Item Constraints
+Mine rules focusing only on specific features of interest instead of the entire feature space.
+
+```python
+# Define which features to focus on
+features_of_interest = [
+    "age",                      # All values of 'age' feature
+    {"menopause": "premeno"},   # Only 'premeno' value of 'menopause'
+    "tumor-size",               # All values of 'tumor-size'
+    {"node-caps": "yes"}        # Only 'yes' value of 'node-caps'
+]
+
+result = rule_extraction.generate_rules(
+    trained_autoencoder,
+    features_of_interest,       # Focus mining on specified features
+    ant_similarity=0.3,         # Moderate support
+    cons_similarity=0.6         # Moderate confidence
+)
+```
+
+**Use when:**
+- You have domain knowledge about important features
+- You want to reduce rule explosion by focusing on key variables
+- You're investigating relationships involving specific attributes
+- You need faster execution by limiting the search space
+
+**Note:** Features of interest appear only on the antecedent (left) side of rules. To constrain the consequent (right) side, use `target_classes` (see Scenario 4).
+
 ## Understanding Parameter Effects
 
 For a deeper understanding of how each parameter affects rule quality, see this detailed blog post: [Scalable Knowledge Discovery with PyAerial](https://erkankarabulut.github.io/blog/uva-dsc-seminar-scalable-knowledge-discovery/)
