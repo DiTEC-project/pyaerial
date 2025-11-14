@@ -70,7 +70,7 @@ pip install pyaerial
 PyAerial significantly outperforms traditional ARM methods in **scalability** while maintaining high-quality results:
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/benchmark.png" alt="PyAerial performance comparison" width="700">
+  <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/docs/source/_static/assets/benchmark.png" alt="PyAerial performance comparison" width="700">
   <p><i>Execution time comparison across datasets of varying sizes. PyAerial scales linearly while traditional methods (e.g., Mlxtend, SPMF) exhibit exponential growth.</i></p>
 </div>
 
@@ -337,7 +337,7 @@ An under-complete denoising autoencoder learns a compact representation of the d
 - **Denoising mechanism**: Random noise during training improves robustness and generalization
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/example.png" alt="Rule extraction example" width="600">
+  <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/docs/source/_static/assets/example.png" alt="Rule extraction example" width="600">
   <p><i>Example: Rule extraction process using weather and beverage features</i></p>
 </div>
 
@@ -353,7 +353,7 @@ Rules emerge from analyzing the trained autoencoder using test vectors:
    operations
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/pipeline.png" alt="Aerial pipeline" width="700">
+  <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/docs/source/_static/assets/pipeline.png" alt="Aerial pipeline" width="700">
   <p><i>Complete three-stage pipeline: data preparation → training → rule extraction</i></p>
 </div>
 

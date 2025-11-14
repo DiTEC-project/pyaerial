@@ -15,7 +15,7 @@ Performance
 
 PyAerial significantly outperforms traditional ARM methods in **scalability** while maintaining high-quality results:
 
-.. image:: ../../benchmark.png
+.. image:: _static/assets/benchmark.png
    :alt: PyAerial performance comparison
    :align: center
    :width: 700px

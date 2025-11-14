@@ -351,6 +351,6 @@ figure.show()
 
 Visualization of the PyAerial rules as a scatter plot showing their quality metrics:
 
-![visualization.png](../../visualization.png)
+![visualization.png](_static/assets/visualization.png)
 
 Please see NiaARM for more visualization options: https://github.com/firefly-cpp/NiaARM?tab=readme-ov-file#visualization
