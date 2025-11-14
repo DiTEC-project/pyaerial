@@ -8,6 +8,39 @@
 
 **Therefore**, we need to tell the algorithm what kind of patterns/rules we are looking for by setting the correct parameters!
 
+## Default Parameter Values
+
+Aerial uses these defaults when you don't specify parameters:
+
+### Core Rule Extraction Parameters ⭐
+
+| Parameter | Default | What it Controls |
+|-----------|---------|------------------|
+| `ant_similarity` | `0.5` | How frequent patterns must be (like minimum support) |
+| `cons_similarity` | `0.8` | How reliable rules must be (confidence + association strength) |
+| `max_antecedents` | `2` | Maximum complexity (number of conditions per rule) |
+
+### Training Parameters
+
+| Parameter | Default | What it Controls |
+|-----------|---------|------------------|
+| `epochs` | `2` | Training iterations (⚠️ more ≠ better, often causes overfitting) |
+| `layer_dims` | Auto-selected | Autoencoder architecture (smaller = stronger compression = higher quality rules) |
+
+### Other Parameters
+
+| Parameter | Default | What it Controls |
+|-----------|---------|------------------|
+| `features_of_interest` | `None` | Focus mining on specific features (item constraints) |
+| `target_classes` | `None` | Restrict rules to predict specific class labels |
+| `quality_metrics` | `['support', 'confidence', 'zhangs_metric']` | Which metrics to calculate |
+| `num_workers` | `1` | Parallel processing (set to 4-8 for 1000+ rules) |
+| `lr` | `5e-3` | Learning rate |
+| `batch_size` | `2` | Training batch size |
+| `device` | Auto | `'cuda'` for GPU or `'cpu'` |
+
+**💡 Tip:** Start with defaults, then adjust the 3 core parameters based on your goals below.
+
 ## Quick Parameter Reference
 
 | I want... | Set these parameters | Leave at default | Example |
