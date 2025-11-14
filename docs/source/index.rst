@@ -38,8 +38,9 @@ For comprehensive benchmarks and comparisons with Mlxtend (e.g., FPGrowth, Aprio
 
    getting_started
    user_guide
+   parameter_guide
+   configuration
    api_reference
-   advanced_topics
    research
    citation
 

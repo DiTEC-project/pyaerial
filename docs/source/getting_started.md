@@ -87,13 +87,22 @@ Sample rule:
 - **Confidence**: How often the prediction is correct (rule reliability)
 - **Zhang's Metric**: Strength of the correlation between antecedent and consequent
 - **Rule Coverage**: Proportion of transactions containing the antecedents (left-hand side coverage)
-```
+
+---
+
+**Can't get the results you're looking for?**
+See the [Parameter Tuning Guide](parameter_guide.md) to learn how to adjust parameters for your specific needs.
+
+---
 
 ## What's Next?
 
 - Explore the [User Guide](user_guide.md) for detailed usage examples
+- Learn how to [tune parameters](parameter_guide.md) for different use cases
+- Configure [GPU usage and logging](configuration.md)
 - Check the [API Reference](api_reference.md) for complete function documentation
-- Learn about [Advanced Topics](advanced_topics.md) like GPU usage and debugging
 - Understand [How Aerial Works](research.md) in depth
 
-If you encounter issues, please see the [Debugging section](advanced_topics.md#debugging) or create an issue in our [GitHub repository](https://github.com/DiTEC-project/pyaerial/issues).
+
+If you encounter issues, please create an issue in
+our [GitHub repository](https://github.com/DiTEC-project/pyaerial/issues), or directly contact the contributors.

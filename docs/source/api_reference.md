@@ -36,12 +36,14 @@ train(
     autoencoder=None,
     noise_factor=0.5,
     lr=5e-3,
-    epochs=1,
+    epochs=2,
     batch_size=2,
     loss_function=torch.nn.BCELoss(),
     num_workers=1,
     layer_dims=None,
-    device=None
+    device=None,
+    patience=20,
+    delta=1e-4
 )
 ```
 
@@ -57,15 +59,17 @@ cardinality is more than 10, then it throws an error.
 - `transactions` (pd.DataFrame): Tabular input data for training.
 - `autoencoder` (AutoEncoder, optional): A preconstructed autoencoder instance. If not provided, one is created
   automatically.
-- `noise_factor` (float): Controls the amount of Gaussian noise added to inputs during training (denoising effect).
-- `lr` (float): Learning rate for the Adam optimizer.
-- `epochs` (int): Number of training epochs.
-- `batch_size` (int): Number of samples per training batch.
-- `loss_function` (torch.nn.Module): Loss function to apply (default is BCELoss).
-- `num_workers` (int): Number of subprocesses used for data loading.
+- `noise_factor` (float, default=0.5): Controls the amount of Gaussian noise added to inputs during training (denoising effect).
+- `lr` (float, default=5e-3): Learning rate for the Adam optimizer.
+- `epochs` (int, default=2): Number of training epochs.
+- `batch_size` (int, default=2): Number of samples per training batch.
+- `loss_function` (torch.nn.Module, default=torch.nn.BCELoss()): Loss function to apply.
+- `num_workers` (int, default=1): Number of subprocesses used for data loading.
 - `layer_dims` (list of int, optional): Custom hidden layer dimensions for autoencoder construction.
-- `device` (str): Name of the device to run the Autoencoder model on, e.g., "cuda", "cpu" etc. The device option that is
-  set here will also be used in the rule extraction stage.
+- `device` (str, optional): Name of the device to run the Autoencoder model on, e.g., "cuda", "cpu" etc. The device option that is
+  set here will also be used in the rule extraction stage. If not specified, uses CUDA if available, otherwise CPU.
+- `patience` (int, default=20): Number of epochs to wait for improvement before early stopping.
+- `delta` (float, default=1e-4): Minimum change in loss to qualify as an improvement for early stopping.
 
 **Returns**: A trained instance of the AutoEncoder.
 
@@ -212,7 +216,7 @@ for item in result['itemsets']:
 The `rule_quality` module provides the following constants and metrics:
 
 - `AVAILABLE_METRICS`: List of all supported quality metrics
-  - 'support', 'confidence', 'lift', 'conviction', 'zhangs_metric', 'yules_q', 'interestingness'
+  - 'support', 'confidence', 'lift', 'conviction', 'zhangs_metric', 'yulesq', 'interestingness'
 - `DEFAULT_RULE_METRICS`: Default metrics calculated by `generate_rules()`
   - ['support', 'confidence', 'zhangs_metric']
 
