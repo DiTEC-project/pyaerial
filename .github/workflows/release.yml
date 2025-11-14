@@ -30,16 +30,3 @@ jobs:
 
       - name: Build
         run: python -m build
-
-      - name: Publish to PyPI (trusted publishing)
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          # No API token needed when Trusted Publishing is configured
-          print-hash: true
-
-      - name: Trigger Read the Docs build
-        if: success()
-        run: |
-          curl -X POST \
-            -H "Authorization: Token ${{ secrets.RTD_WEBHOOK_TOKEN }}" \
-            ${{ secrets.RTD_WEBHOOK_URL }}
