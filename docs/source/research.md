@@ -16,7 +16,7 @@ Learn more about the architecture, training, and rule extraction in our paper:
 
 The figure below shows the pipeline of operations for Aerial in 3 main stages.
 
-![Aerial neurosymbolic association rule mining pipeline](../../pipeline.png)
+![Aerial neurosymbolic association rule mining pipeline](_static/assets/pipeline.png)
 
 ### 1. Data Preparation
 
@@ -40,7 +40,7 @@ The figure below shows the pipeline of operations for Aerial in 3 main stages.
 
    Assume that after a forward run, `[0.7, 0.3, 0.04, 0.1, 0.86]` is received as the output probabilities. Since the probability of `p_weather(warm) = 0.7` is bigger than the given antecedent similarity threshold (`τ_a = 0.5`), and `p_beverage(soda) = 0.86` probability is higher than the consequent similarity threshold (`τ_c = 0.8`), we conclude with `weather(warm) → beverage(soda)`.
 
-   ![Aerial rule extraction example](../../example.png)
+   ![Aerial rule extraction example](_static/assets/example.png)
 
 3. Frequent itemsets (instead of rules) can also be extracted ([rule_extraction.py:generate_frequent_itemsets()](api_reference.md#generate_frequent_itemsets)).
 
