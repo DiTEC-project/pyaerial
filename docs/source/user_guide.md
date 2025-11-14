@@ -2,11 +2,9 @@
 
 This section provides detailed examples of using Aerial with various configurations and use cases.
 
-If you encounter issues such as Aerial can't learn rules, or takes too much time to terminate, please see the [Debugging section](advanced_topics.md#debugging).
+If you encounter issues such as Aerial can't learn rules, or takes too much time to terminate, please see the [Debugging section](configuration.md#debugging).
 
-## Basic Usage Examples
-
-### 1. Association Rule Mining from Categorical Tabular Data
+## 1. Association Rule Mining from Categorical Tabular Data
 
 ```python
 from aerial import model, rule_extraction, rule_quality
@@ -83,7 +81,7 @@ for rule in result['rules']:
     rule_coverage = rule['rule_coverage']  # antecedent support
 ```
 
-### 2. Specifying Item Constraints
+## 2. Specifying Item Constraints
 
 Instead of performing rule extraction on all features, Aerial allows you to extract rules only for features of interest. This is called ARM with item constraints.
 
@@ -135,7 +133,7 @@ result['rules']: [
 ]
 ```
 
-### 3. Setting Aerial Parameters
+## 3. Setting Aerial Parameters
 
 Aerial has 3 key parameters; antecedent and consequent similarity threshold, and antecedent length.
 
@@ -157,7 +155,7 @@ association_rules = rule_extraction.generate_rules(trained_autoencoder, ant_simi
 ...
 ```
 
-### 4. Fine-tuning Autoencoder Architecture and Dimensions
+## 4. Fine-tuning Autoencoder Architecture and Dimensions
 
 Aerial uses an under-complete Autoencoder and in default, it decides automatically how many layers to use and the dimensions of each layer (see [API Reference](api_reference.md)).
 
@@ -172,7 +170,7 @@ trained_autoencoder = model.train(breast_cancer, layer_dims=[4, 2])
 ...
 ```
 
-### 5. Running Aerial for Numerical Values
+## 5. Running Aerial for Numerical Values
 
 Discretizing numerical values is required before running Aerial. We provide 2 discretization methods as part of the `discretization.py` script; equal-frequency and equal-width discretization. However, Aerial can work with any other discretization method of your choice as well.
 
@@ -209,7 +207,7 @@ Following is the partial iris dataset content before and after the discretizatio
 ...
 ```
 
-### 6. Frequent Itemset Mining with Aerial
+## 6. Frequent Itemset Mining with Aerial
 
 Aerial can also be used for frequent itemset mining besides association rules.
 
@@ -255,7 +253,7 @@ Itemsets with support values:
 ]
 ```
 
-### 7. Using Aerial for Rule-Based Classification for Interpretable Inference
+## 7. Using Aerial for Rule-Based Classification for Interpretable Inference
 
 Aerial can be used to learn rules with a class label on the consequent side, which can later be used for inference either by themselves or as part of rule list or rule set classifiers (e.g., from [imodels](https://github.com/csinva/imodels) repository).
 
@@ -307,7 +305,7 @@ Sample rule:
 }
 ```
 
-### 8. Fine-tuning the Training Parameters
+## 8. Fine-tuning the Training Parameters
 
 The `train()` function allows programmers to specify various training parameters:
 
@@ -335,7 +333,7 @@ if len(result['rules']) > 0:
     print(f"Average Zhang's metric: {result['statistics']['average_zhangs_metric']}")
 ```
 
-### 9. Setting the Log Levels
+## 9. Setting the Log Levels
 
 Aerial source code prints extra debug statements notifying the beginning and ending of major functions such as the training process or rule extraction. The log levels can be changed as follows:
 
@@ -348,7 +346,7 @@ aerial.setup_logging(logging.DEBUG)
 ...
 ```
 
-### 10. Running Aerial on GPU
+## 10. Running Aerial on GPU
 
 The `device` parameter in `train()` can be used to run Aerial on GPU. Note that Aerial only uses a shallow Autoencoder and therefore can also run on CPU without a major performance hindrance.
 
@@ -369,7 +367,7 @@ result = rule_extraction.generate_rules(trained_autoencoder)
 print(f"Mined {result['statistics']['rule_count']} rules on GPU")
 ```
 
-### 11. Visualizing Association Rules
+## 11. Visualizing Association Rules
 
 Rules learned by PyAerial can be visualized using [NiaARM](https://github.com/firefly-cpp/NiaARM) library. In the following, `visualizable_rule_list()` function converts PyAerial's rule format to NiaARM `RuleList()` format. And then visualizes the rules on a scatter plot using the visualization module of NiaARM
 

@@ -15,7 +15,6 @@
 
   <img src="https://img.shields.io/github/last-commit/DiTEC-project/pyaerial" alt="Last commit">
 
-
   <img src="https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange" alt="Tested on Ubuntu 24.04 LTS">
 
   <img src="https://img.shields.io/badge/macOS-Monterey%2012.6.7-lightgrey" alt="Tested on MacOS Monterey 12.6.7">
@@ -60,7 +59,9 @@ pip install pyaerial
 > pip install ucimlrepo
 > ```
 
-> **Data Requirements:** PyAerial works with **categorical data**. Numerical columns must be discretized first, but you don't need to one-hot encode your data—PyAerial handles that automatically (unlike libraries like mlxtend that require manual one-hot encoding).
+> **Data Requirements:** PyAerial works with **categorical data**. Numerical columns must be discretized first, but you
+> don't need to one-hot encode your data—PyAerial handles that automatically (unlike libraries like mlxtend that require
+> manual one-hot encoding).
 
 ---
 
@@ -74,20 +75,26 @@ PyAerial significantly outperforms traditional ARM methods in **scalability** wh
 </div>
 
 **Key advantages:**
-- ⚡ **100-1000x faster** on large datasets compared to Apriori/FP-Growth Python implementations
+
+- ⚡ **100-1000x faster** on large datasets compared to standard rule mining algorithms in Python (e.g.,
+  Apriori, FP-Growth, ECLAT, ...)
 - 📈 **Linear scaling** with dataset size (vs. exponential for traditional methods)
 - 🎯 **No rule explosion** - extracts concise, high-quality rules with full data coverage
 - 💾 **Memory efficient** - neural representation avoids storing exponential candidate sets
 
-For comprehensive benchmarks and comparisons with Mlxtend (e.g., FPGrowth, Apriori etc.), and other ARM tools, see our benchmarking paper:
-**[PyAerial: Scalable association rule mining from tabular data](https://www.sciencedirect.com/science/article/pii/S2352711025003073)** (SoftwareX, 2025)
+For **comprehensive benchmarking** and comparisons with Mlxtend (e.g., FPGrowth, Apriori etc.), and other ARM tools, see
+our benchmarking paper:
+[**PyAerial: Scalable association rule mining from tabular data**](https://doi.org/10.1016/j.softx.2025.102341)
+(SoftwareX, 2025)
 
 ---
 
 ## Quick Start
 
-The following are basic example usages of PyAerial. 📚 **[See full feature list](#features)** | **[Read the complete documentation](https://pyaerial.readthedocs.io)**, to see the
-full capabilities
+The following are basic example usages of PyAerial. 📚
+
+See **[full feature list](#features)** | **[Read the complete documentation](https://pyaerial.readthedocs.io)**, to see
+the full capabilities.
 
 ### Basic Association Rule Mining
 
@@ -111,7 +118,8 @@ print(f"Sample rule: {result['rules'][0]}")
 **Output:**
 
 ```python
-Overall statistics: {
+Overall
+statistics: {
     "rule_count": 15,
     "average_support": 0.448,
     "average_confidence": 0.881,
@@ -120,7 +128,8 @@ Overall statistics: {
     "average_zhangs_metric": 0.318
 }
 
-Sample rule: {
+Sample
+rule: {
     "antecedents": [{"feature": "inv-nodes", "value": "0-2"}],
     "consequent": {"feature": "node-caps", "value": "no"},
     "support": 0.702,
@@ -132,21 +141,6 @@ Sample rule: {
 
 **Interpretation:** When `inv-nodes` is between `0-2`, there's 94.3% confidence that `node-caps` equals `no`, covering
 70.2% of the dataset.
-
-**Working with rules:** Access rule components and metrics easily using the dictionary format:
-
-```python
-# Example: Print all rules in a readable format
-for rule in result['rules']:
-    antecedents_str = " AND ".join([f"{a['feature']}={a['value']}" for a in rule['antecedents']])
-    consequent_str = f"{rule['consequent']['feature']}={rule['consequent']['value']}"
-    print(f"IF {antecedents_str} THEN {consequent_str} (support: {rule['support']:.2f}, conf: {rule['confidence']:.2f})")
-
-# Sample output:
-# IF inv-nodes=0-2 THEN node-caps=no (support: 0.70, conf: 0.94)
-# IF age=30-39 AND menopause=premeno THEN breast=left (support: 0.45, conf: 0.75)
-# IF tumor-size=30-34 THEN deg-malig=2 (support: 0.38, conf: 0.82)
-```
 
 **Quality metrics explained:**
 
@@ -160,8 +154,26 @@ for rule in result['rules']:
 ---
 
 **Can't get results you looked for?**
-See [_Debugging_](https://pyaerial.readthedocs.io/en/latest/advanced_topics.html#debugging) in our
+See [_How to set the parameters?_](https://pyaerial.readthedocs.io/en/latest/advanced_topics.html#debugging) in our
 documentation.
+
+---
+
+**Working with rules:** Access rule components and metrics easily using the dictionary format:
+
+```python
+# Example: Print all rules in a readable format
+for rule in result['rules']:
+    antecedents_str = " AND ".join([f"{a['feature']}={a['value']}" for a in rule['antecedents']])
+    consequent_str = f"{rule['consequent']['feature']}={rule['consequent']['value']}"
+    print(
+        f"IF {antecedents_str} THEN {consequent_str} (support: {rule['support']:.2f}, conf: {rule['confidence']:.2f})")
+
+# Sample output:
+# IF inv-nodes=0-2 THEN node-caps=no (support: 0.70, conf: 0.94)
+# IF age=30-39 AND menopause=premeno THEN breast=left (support: 0.45, conf: 0.75)
+# IF tumor-size=30-34 THEN deg-malig=2 (support: 0.38, conf: 0.82)
+```
 
 ---
 
@@ -334,7 +346,8 @@ Rules emerge from analyzing the trained autoencoder using test vectors:
 2. Specific features are set to 1 (antecedents) while others remain at baseline
 3. Forward passes through the network produce output probabilities
 4. Rules are extracted when probabilities exceed similarity thresholds
-5. Quality metrics (support, confidence, coverage, Zhang's metric, etc.) are calculated automatically using vectorized operations
+5. Quality metrics (support, confidence, coverage, Zhang's metric, etc.) are calculated automatically using vectorized
+   operations
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/pipeline.png" alt="Aerial pipeline" width="700">
