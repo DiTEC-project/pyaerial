@@ -288,13 +288,13 @@ Aerial supports two fine-tuning strategies to adapt foundation models for rule m
 
 #### 1. Weight Initialization (WI)
 
-<img src="docs/source/assets/aerial-wi.png" alt="Weight Initialization Strategy" width="500"/>
+<img src="assets/aerial-wi.png" alt="Weight Initialization Strategy" width="500"/>
 
 The foundation model's pre-trained weights initialize Aerial's autoencoder, preserving learned feature relationships while adapting to the specific rule mining task. This strategy enables the model to leverage patterns from large-scale pre-training while specializing for the target domain.
 
 #### 2. Projection-Guided Fine-Tuning via Double Loss (DL)
 
-<img src="docs/source/assets/aerial-dl.png" alt="Double Loss Strategy" width="500"/>
+<img src="assets/aerial-dl.png" alt="Double Loss Strategy" width="500"/>
 
 This strategy uses a projection encoder to align Aerial's autoencoder reconstructions with embeddings from a tabular foundation model (e.g., TabPFN), jointly optimizing two complementary objectives:
 

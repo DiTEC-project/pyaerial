@@ -36,3 +36,10 @@ jobs:
         with:
           # No API token needed when Trusted Publishing is configured
           print-hash: true
+
+      - name: Trigger Read the Docs build
+        if: success()
+        run: |
+          curl -X POST \
+            -H "Authorization: Token ${{ secrets.RTD_WEBHOOK_TOKEN }}" \
+            ${{ secrets.RTD_WEBHOOK_URL }}
