@@ -26,10 +26,3 @@ jobs:
 
       - name: Check distributions (twine check)
         run: twine check dist/*
-
-      - name: Trigger Read the Docs build
-        if: success()
-        run: |
-          curl -X POST \
-            -H "Authorization: Token ${{ secrets.RTD_WEBHOOK_TOKEN }}" \
-            ${{ secrets.RTD_WEBHOOK_URL }}
