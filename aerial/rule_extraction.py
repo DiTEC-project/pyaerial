@@ -75,6 +75,13 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
     # Precompute target indices for softmax to speed things up
     softmax_ranges = [range(cat['start'], cat['end']) for cat in significant_features]
 
+    # Precompute index-to-feature-range mapping for fast feature conflict detection
+    # This maps each index to its feature range (start, end) for O(1) lookup
+    index_to_feature_range = {}
+    for cat in feature_value_indices:
+        for idx in range(cat['start'], cat['end']):
+            index_to_feature_range[idx] = (cat['start'], cat['end'])
+
     # If target_classes are specified, narrow the target range and features to constrain the consequent side of a rule
     significant_consequents, insignificant_consequent_values = extract_significant_features_and_ignored_indices(
         target_classes, autoencoder)
@@ -123,10 +130,13 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
                         insignificant_feature_values = np.append(insignificant_feature_values, candidate_antecedents)
                     continue
 
-                # Identify high-support consequents
+                # Get the feature ranges used in antecedents to prevent same-feature rules
+                antecedent_ranges = set(index_to_feature_range[ant_idx] for ant_idx in candidate_antecedents)
+
+                # Identify high-support consequents (excluding same features as antecedents)
                 consequent_list = [
                     prob_index for prob_index in significant_consequent_indices
-                    if prob_index not in candidate_antecedents and
+                    if index_to_feature_range[prob_index] not in antecedent_ranges and
                        implication_probabilities[prob_index] >= cons_similarity
                 ]
 

@@ -329,6 +329,19 @@ class TestAerialFunctions(unittest.TestCase):
         for ant in candidate_antecedents:
             self.assertIsInstance(ant, np.ndarray)
 
+    def test_no_same_feature_in_antecedent_and_consequent(self):
+        """Test that no rule has the same feature in both antecedent and consequent with different values"""
+        result = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001)
+
+        for rule in result['rules']:
+            # Get all features used in antecedents
+            antecedent_features = set(ant['feature'] for ant in rule['antecedents'])
+            # Get the feature in consequent
+            consequent_feature = rule['consequent']['feature']
+
+            # Assert that consequent feature is not in antecedent features
+            self.assertNotIn(consequent_feature, antecedent_features,
+                           f"Rule has same feature '{consequent_feature}' in both antecedent and consequent: {rule}")
 
 
 if __name__ == "__main__":
