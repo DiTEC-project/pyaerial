@@ -187,22 +187,130 @@ trained_autoencoder = model.train(breast_cancer, layer_dims=[4, 2])
 
 ## 5. Running Aerial for Numerical Values
 
-Discretizing numerical values is required before running Aerial. We provide 2 discretization methods as part of the `discretization.py` script; equal-frequency and equal-width discretization. However, Aerial can work with any other discretization method of your choice as well.
+Discretizing numerical values is required before running Aerial. PyAerial provides several discretization methods as part of the `discretization.py` module. These methods can be categorized into **unsupervised** (no target variable needed) and **supervised** (require target variable for classification tasks).
+
+### 5.1. Unsupervised Discretization Methods
+
+These methods work without requiring a target variable:
+
+#### Equal-Frequency Discretization (Quantile-Based)
+
+Divides data into bins with approximately equal number of samples per bin. Useful for skewed distributions.
+
+**Reference:** Dougherty, J., Kohavi, R., & Sahami, M. (1995). Supervised and unsupervised discretization of continuous features. *Machine Learning Proceedings 1995*, 194-202.
 
 ```python
-from aerial import model, rule_extraction, rule_quality, discretization
+from aerial import model, rule_extraction, discretization
 from ucimlrepo import fetch_ucirepo
 
-# load a numerical tabular data
 iris = fetch_ucirepo(id=53).data.features
-
-# find and discretize numerical columns
 iris_discretized = discretization.equal_frequency_discretization(iris, n_bins=3)
 
 trained_autoencoder = model.train(iris_discretized, epochs=10)
-
 result = rule_extraction.generate_rules(trained_autoencoder, ant_similarity=0.1, cons_similarity=0.8)
 print(f"Found {result['statistics']['rule_count']} rules")
+```
+
+#### Equal-Width Discretization
+
+Divides the range of values into equal-width intervals. Simple and intuitive.
+
+**Reference:** Dougherty, J., Kohavi, R., & Sahami, M. (1995). Supervised and unsupervised discretization of continuous features. *Machine Learning Proceedings 1995*, 194-202.
+
+```python
+iris_discretized = discretization.equal_width_discretization(iris, n_bins=5)
+```
+
+#### K-Means Discretization
+
+Uses k-means clustering to create bins based on natural clusters in the data. Interval boundaries are created at the midpoints between consecutive cluster centers.
+
+**Reference:** Garcia, S., Luengo, J., Sáez, J. A., Lopez, V., & Herrera, F. (2013). A survey of discretization techniques: Taxonomy and empirical analysis in supervised learning. *IEEE Transactions on Knowledge and Data Engineering*, 25(4), 734-750.
+
+```python
+iris_discretized = discretization.kmeans_discretization(iris, n_bins=4, random_state=42)
+```
+
+#### Quantile Discretization
+
+Similar to equal-frequency but allows custom percentile specification.
+
+```python
+# Using custom percentiles (quartiles)
+iris_discretized = discretization.quantile_discretization(
+    iris,
+    percentiles=[0, 25, 50, 75, 100]
+)
+```
+
+#### Custom Bins Discretization
+
+Allows full control with user-specified bin edges for each feature.
+
+```python
+bins_dict = {
+    'sepal length (cm)': [4.0, 5.0, 6.0, 7.0, 8.0],
+    'sepal width (cm)': [2.0, 2.5, 3.0, 3.5, 5.0],
+    'petal length (cm)': [1.0, 2.0, 4.0, 5.5, 7.0],
+    'petal width (cm)': [0.0, 0.5, 1.5, 2.0, 3.0]
+}
+iris_discretized = discretization.custom_bins_discretization(iris, bins_dict)
+```
+
+### 5.2. Supervised Discretization Methods
+
+These methods use target variable information to create more informative bins for classification:
+
+#### Entropy-Based Discretization (MDLP)
+
+Uses decision tree splits to minimize entropy with respect to the target variable.
+
+**Reference:** Fayyad, U., & Irani, K. (1993). Multi-interval discretization of continuous-valued attributes for classification learning. *Proceedings of the 13th International Joint Conference on Artificial Intelligence*, 1022-1027.
+
+```python
+from aerial import discretization
+from ucimlrepo import fetch_ucirepo
+
+# Load dataset with target labels
+iris_data = fetch_ucirepo(id=53)
+features = iris_data.data.features
+targets = iris_data.data.targets
+
+import pandas as pd
+df = pd.concat([features, targets], axis=1)
+
+# Discretize using target information
+df_discretized = discretization.entropy_based_discretization(df, target_col='class', n_bins=4)
+```
+
+#### ChiMerge Discretization
+
+Merges adjacent intervals based on chi-square statistics to find optimal discretization.
+
+**Reference:** Kerber, R. (1992). ChiMerge: Discretization of numeric attributes. *Proceedings of the tenth national conference on Artificial intelligence*, 123-128.
+
+```python
+df_discretized = discretization.chimerge_discretization(
+    df,
+    target_col='class',
+    max_bins=5,
+    significance_level=0.05
+)
+```
+
+#### Decision Tree Discretization
+
+Uses decision tree regression to find optimal split points based on the target variable. Works with both categorical and numerical targets.
+
+**Reference:** Dougherty, J., Kohavi, R., & Sahami, M. (1995). Supervised and unsupervised discretization of continuous features. *Machine Learning Proceedings 1995*, 194-202.
+
+```python
+df_discretized = discretization.decision_tree_discretization(
+    df,
+    target_col='class',
+    max_depth=3,
+    min_samples_leaf=5
+)
 ```
 
 Following is the partial iris dataset content before and after the discretization:

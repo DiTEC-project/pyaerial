@@ -4,3 +4,4 @@ joblib~=1.4.2
 setuptools~=80.9.0
 pytest~=8.3.5
 pandas~=2.2.3
+scikit-learn~=1.6.0
