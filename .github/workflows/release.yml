@@ -30,3 +30,8 @@ jobs:
 
       - name: Build
         run: python -m build
+
+      - name: Publish to PyPI (trusted publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          print-hash: true
