@@ -197,8 +197,6 @@ These methods work without requiring a target variable:
 
 Divides data into bins with approximately equal number of samples per bin. Useful for skewed distributions.
 
-**Reference:** Dougherty, J., Kohavi, R., & Sahami, M. (1995). Supervised and unsupervised discretization of continuous features. *Machine Learning Proceedings 1995*, 194-202.
-
 ```python
 from aerial import model, rule_extraction, discretization
 from ucimlrepo import fetch_ucirepo
@@ -215,8 +213,6 @@ print(f"Found {result['statistics']['rule_count']} rules")
 
 Divides the range of values into equal-width intervals. Simple and intuitive.
 
-**Reference:** Dougherty, J., Kohavi, R., & Sahami, M. (1995). Supervised and unsupervised discretization of continuous features. *Machine Learning Proceedings 1995*, 194-202.
-
 ```python
 iris_discretized = discretization.equal_width_discretization(iris, n_bins=5)
 ```
@@ -224,8 +220,6 @@ iris_discretized = discretization.equal_width_discretization(iris, n_bins=5)
 #### K-Means Discretization
 
 Uses k-means clustering to create bins based on natural clusters in the data. Interval boundaries are created at the midpoints between consecutive cluster centers.
-
-**Reference:** Garcia, S., Luengo, J., Sáez, J. A., Lopez, V., & Herrera, F. (2013). A survey of discretization techniques: Taxonomy and empirical analysis in supervised learning. *IEEE Transactions on Knowledge and Data Engineering*, 25(4), 734-750.
 
 ```python
 iris_discretized = discretization.kmeans_discretization(iris, n_bins=4, random_state=42)
@@ -265,8 +259,6 @@ These methods use target variable information to create more informative bins fo
 
 Uses decision tree splits to minimize entropy with respect to the target variable.
 
-**Reference:** Fayyad, U., & Irani, K. (1993). Multi-interval discretization of continuous-valued attributes for classification learning. *Proceedings of the 13th International Joint Conference on Artificial Intelligence*, 1022-1027.
-
 ```python
 from aerial import discretization
 from ucimlrepo import fetch_ucirepo
@@ -287,8 +279,6 @@ df_discretized = discretization.entropy_based_discretization(df, target_col='cla
 
 Merges adjacent intervals based on chi-square statistics to find optimal discretization.
 
-**Reference:** Kerber, R. (1992). ChiMerge: Discretization of numeric attributes. *Proceedings of the tenth national conference on Artificial intelligence*, 123-128.
-
 ```python
 df_discretized = discretization.chimerge_discretization(
     df,
@@ -301,8 +291,6 @@ df_discretized = discretization.chimerge_discretization(
 #### Decision Tree Discretization
 
 Uses decision tree regression to find optimal split points based on the target variable. Works with both categorical and numerical targets.
-
-**Reference:** Dougherty, J., Kohavi, R., & Sahami, M. (1995). Supervised and unsupervised discretization of continuous features. *Machine Learning Proceedings 1995*, 194-202.
 
 ```python
 df_discretized = discretization.decision_tree_discretization(
