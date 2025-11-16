@@ -234,32 +234,151 @@ These are low-level functions used by `generate_rules()` and `generate_frequent_
 
 ## Discretization Module
 
-### equal_frequency_discretization
+The discretization module provides multiple methods for transforming continuous numerical features into categorical bins. Methods are categorized as **unsupervised** (no target variable needed) or **supervised** (use target variable information).
+
+### Unsupervised Discretization Methods
+
+#### equal_frequency_discretization
 
 ```python
-equal_frequency_discretization(df: pd.DataFrame, n_bins = 5)
+equal_frequency_discretization(df: pd.DataFrame, n_bins=5)
 ```
 
-Discretizes all numerical columns into equal-frequency bins and encodes the resulting intervals as string labels.
+Discretizes all numerical columns into equal-frequency (quantile-based) bins. Each bin contains approximately the same number of samples.
 
 **Parameters**:
 
-- `df`: A pandas DataFrame containing tabular data.
-- `n_bins`: Number of intervals (bins) to create.
+- `df` (pd.DataFrame): A pandas DataFrame containing tabular data.
+- `n_bins` (int, default=5): Number of intervals (bins) to create.
 
 **Returns**: A modified DataFrame with numerical columns replaced by string-encoded interval bins.
 
-### equal_width_discretization
+**Reference**: Dougherty, J., Kohavi, R., & Sahami, M. (1995). Supervised and unsupervised discretization of continuous features. *Machine Learning Proceedings 1995*, 194-202.
+
+#### equal_width_discretization
 
 ```python
-equal_width_discretization(df: pd.DataFrame, n_bins = 5)
+equal_width_discretization(df: pd.DataFrame, n_bins=5)
 ```
 
-Discretizes all numerical columns into equal-width bins and encodes the resulting intervals as string labels.
+Discretizes all numerical columns into equal-width bins. The range of values is divided into intervals of equal size.
 
 **Parameters**:
 
-- `df`: A pandas DataFrame containing tabular data.
-- `n_bins`: Number of intervals (bins) to create.
+- `df` (pd.DataFrame): A pandas DataFrame containing tabular data.
+- `n_bins` (int, default=5): Number of intervals (bins) to create.
 
 **Returns**: A modified DataFrame with numerical columns replaced by string-encoded interval bins.
+
+**Reference**: Dougherty, J., Kohavi, R., & Sahami, M. (1995). Supervised and unsupervised discretization of continuous features. *Machine Learning Proceedings 1995*, 194-202.
+
+#### kmeans_discretization
+
+```python
+kmeans_discretization(df: pd.DataFrame, n_bins=5, random_state=42)
+```
+
+Discretizes numerical columns using k-means clustering. Creates bins based on natural clusters in the data, with interval boundaries at the midpoints between consecutive cluster centers.
+
+**Parameters**:
+
+- `df` (pd.DataFrame): A pandas DataFrame containing tabular data.
+- `n_bins` (int, default=5): Number of clusters/bins to create.
+- `random_state` (int, default=42): Random seed for reproducibility.
+
+**Returns**: A modified DataFrame with numerical columns replaced by interval-based bins.
+
+**Reference**: Garcia, S., Luengo, J., Sáez, J. A., Lopez, V., & Herrera, F. (2013). A survey of discretization techniques: Taxonomy and empirical analysis in supervised learning. *IEEE Transactions on Knowledge and Data Engineering*, 25(4), 734-750.
+
+#### quantile_discretization
+
+```python
+quantile_discretization(df: pd.DataFrame, n_bins=5, percentiles=None)
+```
+
+Discretizes numerical columns based on quantiles (percentiles). Allows custom percentile specification.
+
+**Parameters**:
+
+- `df` (pd.DataFrame): A pandas DataFrame containing tabular data.
+- `n_bins` (int, default=5): Number of bins (used if percentiles not specified).
+- `percentiles` (list of float, optional): List of percentile values (e.g., [0, 25, 50, 75, 100]).
+
+**Returns**: A modified DataFrame with numerical columns replaced by quantile-based bins.
+
+**Reference**: Dougherty, J., Kohavi, R., & Sahami, M. (1995). Supervised and unsupervised discretization of continuous features. *Machine Learning Proceedings 1995*, 194-202.
+
+#### custom_bins_discretization
+
+```python
+custom_bins_discretization(df: pd.DataFrame, bins_dict: dict)
+```
+
+Discretizes numerical columns using user-specified bin edges. Provides full control over discretization boundaries.
+
+**Parameters**:
+
+- `df` (pd.DataFrame): A pandas DataFrame containing tabular data.
+- `bins_dict` (dict): Dictionary mapping column names to lists of bin edges. Example: `{'age': [0, 18, 30, 50, 100], 'income': [0, 30000, 60000, 100000, np.inf]}`
+
+**Returns**: A modified DataFrame with specified columns replaced by custom bins.
+
+**Reference**: Garcia, S., Luengo, J., Sáez, J. A., Lopez, V., & Herrera, F. (2013). A survey of discretization techniques: Taxonomy and empirical analysis in supervised learning. *IEEE Transactions on Knowledge and Data Engineering*, 25(4), 734-750.
+
+### Supervised Discretization Methods
+
+#### entropy_based_discretization
+
+```python
+entropy_based_discretization(df: pd.DataFrame, target_col: str, n_bins=5)
+```
+
+Supervised discretization using entropy minimization (MDLP - Minimum Description Length Principle). Uses decision tree splits to minimize entropy with respect to the target variable.
+
+**Parameters**:
+
+- `df` (pd.DataFrame): A pandas DataFrame containing tabular data.
+- `target_col` (str): Name of the target column for supervised discretization.
+- `n_bins` (int, default=5): Maximum number of bins (decision tree max_leaf_nodes).
+
+**Returns**: A modified DataFrame with numerical columns discretized based on target information.
+
+**Reference**: Fayyad, U., & Irani, K. (1993). Multi-interval discretization of continuous-valued attributes for classification learning. *Proceedings of the 13th International Joint Conference on Artificial Intelligence*, 1022-1027.
+
+#### chimerge_discretization
+
+```python
+chimerge_discretization(df: pd.DataFrame, target_col: str, max_bins=5, significance_level=0.05)
+```
+
+ChiMerge discretization algorithm that merges adjacent intervals based on chi-square statistics. Starts with many intervals and iteratively merges the most similar adjacent pairs.
+
+**Parameters**:
+
+- `df` (pd.DataFrame): A pandas DataFrame containing tabular data.
+- `target_col` (str): Name of the target column for supervised discretization.
+- `max_bins` (int, default=5): Maximum number of bins to create.
+- `significance_level` (float, default=0.05): Chi-square significance level for merging.
+
+**Returns**: A modified DataFrame with numerical columns discretized using chi-square based merging.
+
+**Reference**: Kerber, R. (1992). ChiMerge: Discretization of numeric attributes. *Proceedings of the tenth national conference on Artificial intelligence*, 123-128.
+
+#### decision_tree_discretization
+
+```python
+decision_tree_discretization(df: pd.DataFrame, target_col: str, max_depth=3, min_samples_leaf=5)
+```
+
+Supervised discretization using decision tree regression to find optimal split points. Works with both categorical and numerical target variables.
+
+**Parameters**:
+
+- `df` (pd.DataFrame): A pandas DataFrame containing tabular data.
+- `target_col` (str): Name of the target column for supervised discretization.
+- `max_depth` (int, default=3): Maximum depth of the decision tree (controls number of bins).
+- `min_samples_leaf` (int, default=5): Minimum samples required in each leaf node.
+
+**Returns**: A modified DataFrame with numerical columns discretized using decision tree splits.
+
+**Reference**: Dougherty, J., Kohavi, R., & Sahami, M. (1995). Supervised and unsupervised discretization of continuous features. *Machine Learning Proceedings 1995*, 194-202.

@@ -182,7 +182,7 @@ for rule in result['rules']:
 
 ### Working with Numerical Data
 
-For datasets with numerical columns, use PyAerial's built-in discretization:
+For datasets with numerical columns, use PyAerial's built-in discretization methods:
 
 ```python
 from aerial import model, rule_extraction, discretization
@@ -208,9 +208,23 @@ print(
 # After:  sepal_length (ranges of values) = (4.8, 5.5], (4.8, 5.5], (6.4, 7.9], ...
 ```
 
-PyAerial provides `equal_frequency_discretization` and `equal_width_discretization` methods. See
+**Available discretization methods:**
+
+**Unsupervised methods** (no target variable needed):
+- `equal_frequency_discretization` - Equal-frequency (quantile) binning
+- `equal_width_discretization` - Equal-width binning
+- `kmeans_discretization` - K-means clustering-based binning
+- `quantile_discretization` - Custom percentile-based binning
+- `custom_bins_discretization` - User-defined bin edges
+
+**Supervised methods** (use target variable for classification):
+- `entropy_based_discretization` - Entropy minimization (MDLP)
+- `chimerge_discretization` - Chi-square based merging
+- `decision_tree_discretization` - Decision tree regression-based splits
+
+Each method is documented with academic references. See
 the [User Guide](https://pyaerial.readthedocs.io/en/latest/user_guide.html#running-aerial-for-numerical-values) for
-more discretization options.
+detailed examples and references.
 
 ---
 
@@ -308,7 +322,7 @@ PyAerial provides a comprehensive toolkit for association rule mining with advan
 - **Frequent Itemset Mining** - Generate frequent itemsets with support values using the same neural approach
 - **ARM with Item Constraints** - Focus rule mining on specific features of interest
 - **Classification Rules** - Extract rules with target class labels for interpretable inference
-- **Numerical Data Support** - Built-in discretization methods (equal-frequency, equal-width)
+- **Numerical Data Support** - 8 built-in discretization methods (unsupervised: equal-frequency, equal-width, k-means, quantile, custom bins; supervised: entropy-based, ChiMerge, decision tree)
 - **Customizable Architectures** - Fine-tune autoencoder layers and dimensions for optimal performance
 - **GPU Acceleration** - Leverage CUDA for faster training on large datasets
 - **Comprehensive Metrics** - Support, confidence, lift, conviction, Zhang's metric, Yule's Q, interestingness
