@@ -161,8 +161,7 @@ def train(transactions: pd.DataFrame, autoencoder: AutoEncoder = None, noise_fac
     vectors_tensor = torch.from_numpy(input_vectors)
 
     dataset = TensorDataset(vectors_tensor)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers,
-                            pin_memory=torch.cuda.is_available())
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, pin_memory=torch.cuda.is_available())
 
     softmax_ranges = [range(cat['start'], cat['end']) for cat in feature_value_indices]
 
