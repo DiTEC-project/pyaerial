@@ -45,12 +45,20 @@ def calculate_yulesq(full_count, not_ant_not_con, con_not_ant, ant_not_con):
     return yulesq
 
 
-def calculate_lift(support, confidence):
-    return confidence / support
+def calculate_lift(support_cons, confidence):
+    """
+    Calculate lift metric for an association rule.
+    Lift = confidence / P(consequent) = confidence / support_cons
+    """
+    return confidence / (support_cons + 2.220446049250313e-16)
 
 
-def calculate_conviction(support, confidence):
-    return (1 - support) / (1 - confidence + 2.220446049250313e-16)
+def calculate_conviction(support_cons, confidence):
+    """
+    Calculate conviction metric for an association rule.
+    Conviction = (1 - support_consequent) / (1 - confidence)
+    """
+    return (1 - support_cons) / (1 - confidence + 2.220446049250313e-16)
 
 
 def calculate_zhangs_metric(support, support_ant, support_cons):
@@ -114,10 +122,10 @@ def _calculate_rule_quality_from_indices(antecedent_indices, consequent_index, t
             calculate_zhangs_metric(rule_support, support_body, support_head), 3))
 
     if 'lift' in quality_metrics:
-        result['lift'] = float(round(calculate_lift(rule_support, rule_confidence), 3))
+        result['lift'] = float(round(calculate_lift(support_head, rule_confidence), 3))
 
     if 'conviction' in quality_metrics:
-        result['conviction'] = float(round(calculate_conviction(rule_support, rule_confidence), 3))
+        result['conviction'] = float(round(calculate_conviction(support_head, rule_confidence), 3))
 
     if 'yulesq' in quality_metrics:
         not_ant_not_con = num_transactions - ant_count - cons_count + co_occurrence_count

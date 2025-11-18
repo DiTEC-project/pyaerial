@@ -22,32 +22,34 @@ class TestRuleQualityFunctions(unittest.TestCase):
 
     def test_calculate_lift(self):
         """Test lift calculation"""
-        support = 0.5
+        support_cons = 0.5  # Consequent support
         confidence = 0.75
-        lift = calculate_lift(support, confidence)
+        lift = calculate_lift(support_cons, confidence)
+        # lift = confidence / support_cons = 0.75 / 0.5 = 1.5
         self.assertAlmostEqual(lift, 1.5, places=2)
 
     def test_calculate_lift_edge_case(self):
         """Test lift with edge case values"""
-        support = 0.3
+        support_cons = 0.3  # Consequent support
         confidence = 0.9
-        lift = calculate_lift(support, confidence)
+        lift = calculate_lift(support_cons, confidence)
+        # lift = confidence / support_cons = 0.9 / 0.3 = 3.0
         self.assertAlmostEqual(lift, 3.0, places=2)
 
     def test_calculate_conviction(self):
         """Test conviction calculation"""
-        support = 0.5
+        support_cons = 0.5  # Consequent support
         confidence = 0.75
-        conviction = calculate_conviction(support, confidence)
-        # conviction = (1 - 0.5) / (1 - 0.75) = 0.5 / 0.25 = 2.0
+        conviction = calculate_conviction(support_cons, confidence)
+        # conviction = (1 - support_cons) / (1 - confidence) = (1 - 0.5) / (1 - 0.75) = 0.5 / 0.25 = 2.0
         self.assertAlmostEqual(conviction, 2.0, places=2)
 
     def test_calculate_conviction_high_confidence(self):
         """Test conviction with high confidence"""
-        support = 0.6
+        support_cons = 0.6  # Consequent support
         confidence = 0.95
-        conviction = calculate_conviction(support, confidence)
-        # conviction = (1 - 0.6) / (1 - 0.95) = 0.4 / 0.05 = 8.0
+        conviction = calculate_conviction(support_cons, confidence)
+        # conviction = (1 - support_cons) / (1 - confidence) = (1 - 0.6) / (1 - 0.95) = 0.4 / 0.05 = 8.0
         self.assertAlmostEqual(conviction, 8.0, places=2)
 
     def test_calculate_zhangs_metric(self):
