@@ -17,7 +17,8 @@
 
   <img src="https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange" alt="Tested on Ubuntu 24.04 LTS">
 
-  <img src="https://img.shields.io/badge/macOS-Monterey%2012.6.7-lightgrey" alt="Tested on MacOS Monterey 12.6.7">
+  <img src="https://img.shields.io/badge/macOS-Monterey%2012.6.7-lightgrey" alt="Tested on MacOS Monterey 12.6.7"> 
+  <a href="https://doi.org/10.5281/zenodo.17650128"><img src="https://zenodo.org/badge/975774111.svg" alt="DOI"></a>
 </div>
 
 ---
