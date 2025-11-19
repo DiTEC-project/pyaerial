@@ -18,6 +18,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check if tag is on main branch
+        run: |
+          git fetch origin main:main
+          if ! git merge-base --is-ancestor $GITHUB_REF_NAME main; then
+            echo "INFO: Tag $GITHUB_REF_NAME is not on the main branch. Not releasing yet ..."
+            exit 1
+          fi
+          echo "Tag $GITHUB_REF_NAME is on main branch - proceeding with release"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
