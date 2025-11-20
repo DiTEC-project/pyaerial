@@ -1,0 +1,57 @@
+{
+  "title": "PyAerial: Scalable association rule mining from tabular data",
+  "description": "\n\nScalable association rule mining from tabular data using the Aerial neurosymbolic method. PyAerial provides a comprehensive toolkit for association rule mining with advanced capabilities:\n\n    Scalable Rule Mining - Efficiently mine association rules from large tabular datasets without rule explosion\n    Automatic Quality Metrics - Rules include support, confidence, Zhang's metric, and more calculated automatically\n    Frequent Itemset Mining - Generate frequent itemsets with support values using the same neural approach\n    ARM with Item Constraints - Focus rule mining on specific features of interest\n    Classification Rules - Extract rules with target class labels for interpretable inference\n    Numerical Data Support - 8 built-in discretization methods (unsupervised: equal-frequency, equal-width, k-means, quantile, custom bins; supervised: entropy-based, ChiMerge, decision tree)\n    Customizable Architectures - Fine-tune autoencoder layers and dimensions for optimal performance\n    GPU Acceleration - Leverage CUDA for faster training on large datasets\n    Comprehensive Metrics - Support, confidence, lift, conviction, Zhang's metric, Yule's Q, interestingness\n    Rule Visualization - Integrate with NiaARM for scatter plots and visual analysis\n    Flexible Training - Adjust epochs, learning rate, batch size, and noise factors\n\nCITATION: If you use PyAerial in your research, please cite our papers:\n\n1. The neurosymbolic method paper:\nKarabulut, E., Groth, P., & Degeler, V. (2025). Neurosymbolic Association Rule Mining from Tabular Data. In Proceedings of The 19th International Conference on Neurosymbolic Learning and Reasoning (NeSy 2025), PMLR 284:565-588.\nhttps://proceedings.mlr.press/v284/karabulut25a.html\n\n2. The software paper:\nKarabulut, E., Groth, P., & Degeler, V. (2025). PyAerial: Scalable association rule mining from tabular data. SoftwareX, 31, 102341.\nhttps://doi.org/10.1016/j.softx.2025.102341\n\n",
+  "creators": [
+    {
+      "name": "Karabulut, Erkan",
+      "affiliation": "University of Amsterdam",
+      "orcid": "0000-0003-2710-7951"
+    }
+  ],
+  "contributors": [
+    {
+      "name": "Groth, Paul",
+      "affiliation": "University of Amsterdam",
+      "orcid": "0000-0003-0183-6910",
+      "type": "Supervisor"
+    },
+    {
+      "name": "Degeler, Victoria",
+      "affiliation": "University of Amsterdam",
+      "orcid": "0000-0001-7054-3770",
+      "type": "Supervisor"
+    }
+  ],
+  "keywords": [
+    "association rule mining",
+    "machine learning",
+    "neurosymbolic artificial intelligence",
+    "tabular data",
+    "autoencoder",
+    "data mining",
+    "interpretable machine learning",
+    "Python"
+  ],
+  "license": "MIT",
+  "upload_type": "software",
+  "related_identifiers": [
+    {
+      "identifier": "https://doi.org/10.1016/j.softx.2025.102341",
+      "relation": "isSupplementTo",
+      "resource_type": "publication-article",
+      "scheme": "doi"
+    },
+    {
+      "identifier": "https://proceedings.mlr.press/v284/karabulut25a.html",
+      "relation": "isSupplementTo",
+      "resource_type": "publication-article",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://github.com/DiTEC-project/pyaerial",
+      "relation": "isSupplementTo",
+      "resource_type": "software",
+      "scheme": "url"
+    }
+  ]
+}
