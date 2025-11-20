@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "**" ]  # Trigger on push to any branch
   workflow_dispatch:
 
 jobs:

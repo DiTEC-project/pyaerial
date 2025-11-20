@@ -1,13 +1,18 @@
-name: CI
+name: Tests
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
+  workflow_run:
+    workflows: ["Build"]  # Run after Build workflow completes
+    types:
+      - completed
+  pull_request:  # Also run on PRs for early feedback
+  workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Only run if Build workflow succeeded, or if triggered by PR/manual
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success') }}
     strategy:
       fail-fast: false
       matrix:
