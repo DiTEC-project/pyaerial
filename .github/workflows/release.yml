@@ -1,11 +1,12 @@
 name: Publish
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Tests"]  # Run after Tests workflow completes
+    types:
+      - completed
     branches:
-      - main  # Trigger on push/merge to main
-    tags:
-      - "v[0-9]+.[0-9]+.[0-9]+"  # Also trigger on version tag pushes
+      - main  # Only trigger when Tests runs on main branch
   workflow_dispatch:  # Allow manual triggering from GitHub UI
 
 permissions:
@@ -15,60 +16,32 @@ permissions:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    # Only run if Tests workflow succeeded or manually triggered
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.workflow_run.head_branch || 'main' }}
 
-      - name: Check for version tag on main branch
+      - name: Fetch all tags
+        run: git fetch --tags --force
+
+      - name: Check for version tag on current commit
         id: check_release
         run: |
-          # Fetch all tags and branches
-          git fetch --tags --force
-          git fetch origin main:main
+          # Check if HEAD has a version tag (v1.2.3 format, no pre-release)
+          VERSION_TAG=$(git tag --points-at HEAD | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
 
-          # Check if this is a tag push event
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            TAG_NAME="${GITHUB_REF#refs/tags/}"
-
-            # Verify tag matches version pattern (v1.2.3, no pre-release)
-            if ! echo "$TAG_NAME" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
-              echo "Tag $TAG_NAME does not match version pattern. Skipping release."
-              echo "should_release=false" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-
-            # Check if tag is on main branch
-            if ! git merge-base --is-ancestor "$TAG_NAME" main; then
-              echo "Tag $TAG_NAME is not on main branch yet. Skipping release."
-              echo "should_release=false" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-
-            echo "Tag $TAG_NAME is on main branch - proceeding with release"
-            echo "should_release=true" >> $GITHUB_OUTPUT
-            echo "version_tag=$TAG_NAME" >> $GITHUB_OUTPUT
-
-          # Check if this is a push to main branch
-          elif [[ "$GITHUB_REF" == refs/heads/main ]]; then
-            # Check if HEAD has a version tag
-            VERSION_TAG=$(git tag --points-at HEAD | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
-
-            if [ -z "$VERSION_TAG" ]; then
-              echo "No version tag found on current commit. Skipping release."
-              echo "should_release=false" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-
-            echo "Found version tag $VERSION_TAG on main branch - proceeding with release"
-            echo "should_release=true" >> $GITHUB_OUTPUT
-            echo "version_tag=$VERSION_TAG" >> $GITHUB_OUTPUT
-
-          else
-            echo "Unexpected ref: $GITHUB_REF. Skipping release."
+          if [ -z "$VERSION_TAG" ]; then
+            echo "No version tag found on current commit. Skipping release."
             echo "should_release=false" >> $GITHUB_OUTPUT
             exit 0
           fi
+
+          echo "Found version tag $VERSION_TAG on main branch - proceeding with release"
+          echo "should_release=true" >> $GITHUB_OUTPUT
+          echo "version_tag=$VERSION_TAG" >> $GITHUB_OUTPUT
 
       - name: Set up Python
         if: steps.check_release.outputs.should_release == 'true'
