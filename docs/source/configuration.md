@@ -41,8 +41,10 @@ aerial.setup_logging(logging.DEBUG)
 
 The `train()` function allows you to customize various training parameters:
 
-- `autoencoder`: You can implement your own Autoencoder and use it for ARM as part of Aerial, as long as the last layer matches the original version (see our paper or the source code)
-- `noise_factor` (default=0.5): amount of random noise (`+-`) added to each neuron of the denoising Autoencoder before the training process
+- `autoencoder`: You can implement your own Autoencoder and use it for ARM as part of Aerial, as long as the last layer
+  matches the original version (see our paper or the source code)
+- `noise_factor` (default=0.5): amount of random noise (`+-`) added to each neuron of the denoising Autoencoder before
+  the training process
 - `lr` (default=5e-3): learning rate
 - `epochs` (default=1): number of training epochs
 - `batch_size` (default=2): number of batches to train
@@ -69,7 +71,8 @@ result = rule_extraction.generate_rules(trained_autoencoder)
 print(f"Found {result['statistics']['rule_count']} rules")
 ```
 
-**Note:** Longer training may lead to overfitting, which results in rules with low association strength (Zhang's metric). See [Advanced: Training and Architecture Tuning](#advanced-training-and-architecture-tuning) for more details.
+**Note:** Longer training may lead to overfitting, which results in rules with low association strength (Zhang's
+metric). See [Advanced: Training and Architecture Tuning](#advanced-training-and-architecture-tuning) for more details.
 
 ## Debugging
 
@@ -145,8 +148,9 @@ Overfitting in knowledge discovery is fundamentally different from overfitting i
 
 - **More rules with lower average quality**
 - Model captures spurious correlations instead of meaningful associations
-- Rules have high support and confidence but **low association strength (Zhang's metric)**
-- Solution: Shorter training, stronger compression, higher quality thresholds (in addition to early stopping,
+- Rules may have high support and confidence but **low association strength (Zhang's metric)** or **too many low support
+  and confidence rules**.
+- **Solution**: Shorter training, stronger compression, higher quality thresholds (in addition to early stopping,
   regularization, more training data). Note that PyAerial already implements early stopping.
 
 **Key Insight:** In knowledge discovery, overfitting doesn't mean poor generalization to new data—it means discovering
@@ -160,7 +164,7 @@ non-informative patterns that lack genuine associations.
 
 ### Impact of Training Duration (Epochs)
 
-Training duration has a non-intuitive effect on rule quality in knowledge discovery.
+Training duration has the following effects on rule quality in knowledge discovery.
 
 **Shorter Training (1-3 epochs):**
 
@@ -204,7 +208,7 @@ print(f"Avg Zhang's metric: {result['statistics']['average_zhangs_metric']}")
 
 The autoencoder's architecture controls how aggressively it compresses information, which directly affects rule quality.
 
-**Compression Ratio:** How much the autoencoder reduces dimensionality in the bottleneck layer. This is 
+**Compression Ratio:** How much the autoencoder reduces dimensionality in the bottleneck layer. This is
 controlled by setting the last layer's dimension in `layer_dims`.
 
 `layer_dims = [4, 2]` means 2 hidden layers of dimensions 4 and 2.
@@ -228,7 +232,7 @@ controlled by setting the last layer's dimension in `layer_dims`.
 
 - Deeper networks (more layers) allow for more gradual compression
 - Shallower networks (fewer layers) force more aggressive compression
-- For most tabular datasets: 2-3 hidden layers per encoder/decoder is sufficient
+- For most tabular datasets: 1-2 hidden layers per encoder/decoder is sufficient
 
 **Recommendation:**
 
@@ -246,8 +250,8 @@ from ucimlrepo import fetch_ucirepo
 breast_cancer = fetch_ucirepo(id=14).data.features
 
 # Aggressive compression for higher quality rules
-# layer_dims=[4, 2] means: encoder has layers of size 4 then 2, decoder mirrors this
-trained_autoencoder = model.train(breast_cancer, layer_dims=[4, 2], epochs=2)
+# layer_dims=[4] means: encoder has a single hidden layer of size 4, decoder mirrors this
+trained_autoencoder = model.train(breast_cancer, layer_dims=[4], epochs=2)
 
 result = rule_extraction.generate_rules(trained_autoencoder)
 print(f"Rule count: {result['statistics']['rule_count']}")
@@ -276,11 +280,18 @@ this [blog post on scalable knowledge discovery](https://erkankarabulut.github.i
 
 ## Advanced: Boosting Rule Quality with Tabular Foundation Models
 
-For domains with limited data—such as gene expression datasets with thousands of features but only dozens of samples—traditional rule mining algorithms struggle to discover meaningful patterns. Aerial addresses this challenge by enabling **transfer learning in knowledge discovery**, a paradigm shift from conventional algorithmic methods like Apriori, FP-Growth, and ECLAT that inherently lack this capability.
+For domains with limited data—such as gene expression datasets with thousands of features but only dozens of
+samples—traditional rule mining algorithms struggle to discover meaningful patterns. Aerial addresses this challenge by
+enabling **transfer learning in knowledge discovery**, a paradigm shift from conventional algorithmic methods like
+Apriori, FP-Growth, and ECLAT that inherently lack this capability.
 
 ### The Challenge: High-Dimensional Small Tabular Data
 
-In specialized domains (biomedical research, rare disease analysis, materials science), practitioners often face extreme dimensional imbalance where the number of features far exceeds available samples. Classical ARM algorithms fail in these settings because they cannot leverage knowledge from related domains. Aerial overcomes this limitation by incorporating tabular foundation models—neural networks pre-trained on diverse tabular datasets—that transfer learned representations to discover high-quality rules even from scarce data.
+In specialized domains (biomedical research, rare disease analysis, materials science), practitioners often face extreme
+dimensional imbalance where the number of features far exceeds available samples. Classical ARM algorithms fail in these
+settings because they cannot leverage knowledge from related domains. Aerial overcomes this limitation by incorporating
+tabular foundation models—neural networks pre-trained on diverse tabular datasets—that transfer learned representations
+to discover high-quality rules even from scarce data.
 
 ### Transfer Learning Strategies in Aerial
 
@@ -290,35 +301,49 @@ Aerial supports two fine-tuning strategies to adapt foundation models for rule m
 
 <img src="_static/assets/aerial-wi.png" alt="Weight Initialization Strategy" width="500"/>
 
-The foundation model's pre-trained weights initialize Aerial's autoencoder, preserving learned feature relationships while adapting to the specific rule mining task. This strategy enables the model to leverage patterns from large-scale pre-training while specializing for the target domain.
+The foundation model's pre-trained weights initialize Aerial's autoencoder, preserving learned feature relationships
+while adapting to the specific rule mining task. This strategy enables the model to leverage patterns from large-scale
+pre-training while specializing for the target domain.
 
 #### 2. Projection-Guided Fine-Tuning via Double Loss (DL)
 
 <img src="_static/assets/aerial-dl.png" alt="Double Loss Strategy" width="500"/>
 
-This strategy uses a projection encoder to align Aerial's autoencoder reconstructions with embeddings from a tabular foundation model (e.g., TabPFN), jointly optimizing two complementary objectives:
+This strategy uses a projection encoder to align Aerial's autoencoder reconstructions with embeddings from a tabular
+foundation model (e.g., TabPFN), jointly optimizing two complementary objectives:
 
-- **Reconstruction loss (L_recon)**: Binary cross-entropy loss ensuring the autoencoder accurately reconstructs the original tabular data
-- **Projection loss (L_proj)**: Cosine distance loss aligning the autoencoder's representations with the foundation model's meta-learned embedding space
+- **Reconstruction loss (L_recon)**: Binary cross-entropy loss ensuring the autoencoder accurately reconstructs the
+  original tabular data
+- **Projection loss (L_proj)**: Cosine distance loss aligning the autoencoder's representations with the foundation
+  model's meta-learned embedding space
 
 The combined double loss function is: **L(θ) = L_recon + L_proj**
 
-By optimizing both objectives simultaneously, this strategy encourages the autoencoder to not only reconstruct the input data but also produce representations that are semantically consistent with the foundation model's learned knowledge, leading to higher-quality rules with better generalization.
+By optimizing both objectives simultaneously, this strategy encourages the autoencoder to not only reconstruct the input
+data but also produce representations that are semantically consistent with the foundation model's learned knowledge,
+leading to higher-quality rules with better generalization.
 
 ### Why This Matters
 
-Traditional algorithmic methods operate without learned representations—they mine rules directly from raw data statistics. Aerial fundamentally changes this by:
+Traditional algorithmic methods operate without learned representations—they mine rules directly from raw data
+statistics. Aerial fundamentally changes this by:
 
-- **Leveraging pre-trained models**: Enables rule discovery from small specialized datasets by transferring knowledge from foundation models
-- **Enabling cross-domain transfer**: Knowledge learned from diverse tabular data transfers to new domains, even with minimal samples
-- **Improving rule quality**: Foundation models capture semantic relationships that pure algorithmic methods miss in low-data regimes
+- **Leveraging pre-trained models**: Enables rule discovery from small specialized datasets by transferring knowledge
+  from foundation models
+- **Enabling cross-domain transfer**: Knowledge learned from diverse tabular data transfers to new domains, even with
+  minimal samples
+- **Improving rule quality**: Foundation models capture semantic relationships that pure algorithmic methods miss in
+  low-data regimes
 
 ### Implementation Note
 
-**Important:** PyAerial does not yet provide out-of-the-box support for tabular foundation model integration. To use these transfer learning strategies, you will need to implement them yourself by:
+**Important:** PyAerial does not yet provide out-of-the-box support for tabular foundation model integration. To use
+these transfer learning strategies, you will need to implement them yourself by:
 
 1. Following the methodology described in [Karabulut et al. (2025)](https://arxiv.org/pdf/2509.20113)
-2. Referring to the implementation in the [paper's companion repository](https://github.com/DiTEC-project/rule_learning_high_dimensional_small_tabular_data)
+2. Referring to the implementation in
+   the [paper's companion repository](https://github.com/DiTEC-project/rule_learning_high_dimensional_small_tabular_data)
 3. Adapting Aerial's autoencoder architecture to incorporate the weight initialization or double loss strategies
 
-The paper provides comprehensive implementation details and the repository contains reference code for both fine-tuning approaches. Future versions of PyAerial may include built-in support for these advanced capabilities.
+The paper provides comprehensive implementation details and the repository contains reference code for both fine-tuning
+approaches. Future versions of PyAerial may include built-in support for these advanced capabilities.
