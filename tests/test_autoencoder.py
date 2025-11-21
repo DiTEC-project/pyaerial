@@ -98,7 +98,8 @@ class TestAutoEncoder(unittest.TestCase):
         self.assertTrue(torch.allclose(self.input_data, input_clone))
 
     def test_forward_with_empty_feature_indices(self):
-        with self.assertRaises(RuntimeError):
+        # PyTorch <2.8 raises RuntimeError, >=2.8 raises ValueError
+        with self.assertRaises((RuntimeError, ValueError)):
             _ = self.model(self.input_data, [])
 
     def test_deterministic_forward_with_fixed_seed(self):
