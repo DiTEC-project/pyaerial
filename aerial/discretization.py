@@ -23,18 +23,16 @@ from sklearn.tree import DecisionTreeClassifier
 logger = logging.getLogger("aerial")
 
 
-def _filter_numerical_columns(df: pd.DataFrame, n_bins, min_unique_ratio=0.05):
+def _filter_numerical_columns(df: pd.DataFrame, n_bins):
     """
     Filter numerical columns suitable for discretization.
 
     Skips columns that are:
-    - Low cardinality (≤max_unique_values or unique_ratio < min_unique_ratio)
     - Have ≤n_bins unique values (no benefit from discretization)
 
     :param df: DataFrame
     :param n_bins: number of bins for discretization
-    :param min_unique_ratio: minimum ratio of unique/total values to consider continuous
-    :return: list of suitable column names
+    :return: tuple of (suitable_columns, skipped_columns) as lists
     """
     num_cols = df.select_dtypes(include=[np.number]).columns
     suitable = []
@@ -46,8 +44,6 @@ def _filter_numerical_columns(df: pd.DataFrame, n_bins, min_unique_ratio=0.05):
 
         if n_total == 0:
             skipped.append((col, n_unique, 'no-data'))
-        elif n_unique / n_total < min_unique_ratio:
-            skipped.append((col, n_unique, 'low-ratio'))
         elif n_unique <= n_bins:
             skipped.append((col, n_unique, f'≤{n_bins}bins'))
         else:
@@ -55,9 +51,9 @@ def _filter_numerical_columns(df: pd.DataFrame, n_bins, min_unique_ratio=0.05):
 
     if skipped:
         skipped_info = [f"{col}({n},{reason})" for col, n, reason in skipped]
-        logger.info(f"Skipping {len(skipped)} columns: {', '.join(skipped_info)}")
+        logger.info(f"Converting {len(skipped)} low-cardinality columns to categorical: {', '.join(skipped_info)}")
 
-    return suitable
+    return suitable, [col for col, _, _ in skipped]
 
 
 def equal_frequency_discretization(df: pd.DataFrame, n_bins=5):
@@ -74,17 +70,22 @@ def equal_frequency_discretization(df: pd.DataFrame, n_bins=5):
 
     :param df: tabular data in pandas DataFrame form
     :param n_bins: number of intervals (bins)
-    :return: df with discrete columns
+    :return: df with all numerical columns converted to categorical strings
     """
     df_discretized = df.copy()
-    num_cols = _filter_numerical_columns(df, n_bins)
+    suitable_cols, skipped_cols = _filter_numerical_columns(df, n_bins)
 
-    for col in num_cols:
+    # Discretize suitable columns
+    for col in suitable_cols:
         try:
             df_discretized[col] = pd.qcut(df[col], q=n_bins, duplicates='drop')
             df_discretized[col] = df_discretized[col].astype(str)
         except ValueError:
             logger.debug(f"Column '{col}' could not be discretized due to insufficient unique values.")
+
+    # Convert skipped columns to categorical (string)
+    for col in skipped_cols:
+        df_discretized[col] = df_discretized[col].astype(str)
 
     return df_discretized
 
@@ -103,17 +104,22 @@ def equal_width_discretization(df: pd.DataFrame, n_bins=5):
 
     :param df: tabular data in pandas DataFrame form
     :param n_bins: number of intervals (bins)
-    :return: df with discrete columns
+    :return: df with all numerical columns converted to categorical strings
     """
     df_discretized = df.copy()
-    num_cols = _filter_numerical_columns(df, n_bins)
+    suitable_cols, skipped_cols = _filter_numerical_columns(df, n_bins)
 
-    for col in num_cols:
+    # Discretize suitable columns
+    for col in suitable_cols:
         try:
             df_discretized[col] = pd.cut(df[col], bins=n_bins)
             df_discretized[col] = df_discretized[col].astype(str)
         except ValueError:
             logger.debug(f"Column '{col}' could not be discretized due to insufficient unique values.")
+
+    # Convert skipped columns to categorical (string)
+    for col in skipped_cols:
+        df_discretized[col] = df_discretized[col].astype(str)
 
     return df_discretized
 
@@ -135,12 +141,13 @@ def kmeans_discretization(df: pd.DataFrame, n_bins=5, random_state=42):
     :param df: tabular data in pandas DataFrame form
     :param n_bins: number of clusters/bins
     :param random_state: random seed for reproducibility
-    :return: df with discrete columns represented as intervals
+    :return: df with all numerical columns converted to categorical strings
     """
     df_discretized = df.copy()
-    num_cols = _filter_numerical_columns(df, n_bins)
+    suitable_cols, skipped_cols = _filter_numerical_columns(df, n_bins)
 
-    for col in num_cols:
+    # Discretize suitable columns
+    for col in suitable_cols:
         try:
             # Remove NaN values for clustering
             valid_mask = df[col].notna()
@@ -166,6 +173,10 @@ def kmeans_discretization(df: pd.DataFrame, n_bins=5, random_state=42):
 
         except Exception as e:
             logger.debug(f"Column '{col}' could not be discretized using k-means: {e}")
+
+    # Convert skipped columns to categorical (string)
+    for col in skipped_cols:
+        df_discretized[col] = df_discretized[col].astype(str)
 
     return df_discretized
 
@@ -196,8 +207,13 @@ def entropy_based_discretization(df: pd.DataFrame, target_col: str, n_bins=5):
     df_discretized = df.copy()
 
     # Filter numerical columns and exclude target
-    all_suitable = _filter_numerical_columns(df, n_bins)
+    all_suitable, all_skipped = _filter_numerical_columns(df, n_bins)
     num_cols = [col for col in all_suitable if col != target_col]
+    skipped_cols = [col for col in all_skipped if col != target_col]
+
+    # Convert skipped columns to categorical (string)
+    for col in skipped_cols:
+        df_discretized[col] = df_discretized[col].astype(str)
 
     if len(num_cols) == 0:
         logger.warning("No numerical columns found to discretize (excluding target).")
@@ -295,8 +311,13 @@ def chimerge_discretization(df: pd.DataFrame, target_col: str, max_bins=5, signi
     df_discretized = df.copy()
 
     # Filter numerical columns and exclude target
-    all_suitable = _filter_numerical_columns(df, max_bins)
+    all_suitable, all_skipped = _filter_numerical_columns(df, max_bins)
     num_cols = [col for col in all_suitable if col != target_col]
+    skipped_cols = [col for col in all_skipped if col != target_col]
+
+    # Convert skipped columns to categorical (string)
+    for col in skipped_cols:
+        df_discretized[col] = df_discretized[col].astype(str)
 
     if len(num_cols) == 0:
         logger.warning("No numerical columns found to discretize (excluding target).")
@@ -503,12 +524,13 @@ def quantile_discretization(df: pd.DataFrame, n_bins=5, percentiles=None):
     :param df: tabular data in pandas DataFrame form
     :param n_bins: number of bins (used if percentiles not specified)
     :param percentiles: list of percentile values (e.g., [0, 25, 50, 75, 100])
-    :return: df with discrete columns
+    :return: df with all numerical columns converted to categorical strings
     """
     df_discretized = df.copy()
-    num_cols = _filter_numerical_columns(df, n_bins)
+    suitable_cols, skipped_cols = _filter_numerical_columns(df, n_bins)
 
-    for col in num_cols:
+    # Discretize suitable columns
+    for col in suitable_cols:
         try:
             if percentiles is not None:
                 # Use custom percentiles
@@ -522,6 +544,10 @@ def quantile_discretization(df: pd.DataFrame, n_bins=5, percentiles=None):
             df_discretized[col] = df_discretized[col].astype(str)
         except Exception as e:
             logger.debug(f"Column '{col}' could not be discretized: {e}")
+
+    # Convert skipped columns to categorical (string)
+    for col in skipped_cols:
+        df_discretized[col] = df_discretized[col].astype(str)
 
     return df_discretized
 
@@ -559,8 +585,13 @@ def decision_tree_discretization(df: pd.DataFrame, target_col: str, max_depth=3,
 
     # Filter numerical columns and exclude target (max_depth=3 gives ~2^3=8 bins)
     estimated_bins = 2 ** max_depth
-    all_suitable = _filter_numerical_columns(df, estimated_bins)
+    all_suitable, all_skipped = _filter_numerical_columns(df, estimated_bins)
     num_cols = [col for col in all_suitable if col != target_col]
+    skipped_cols = [col for col in all_skipped if col != target_col]
+
+    # Convert skipped columns to categorical (string)
+    for col in skipped_cols:
+        df_discretized[col] = df_discretized[col].astype(str)
 
     if len(num_cols) == 0:
         logger.warning("No numerical columns found to discretize (excluding target).")
@@ -639,50 +670,54 @@ def decision_tree_discretization(df: pd.DataFrame, target_col: str, max_depth=3,
     return df_discretized
 
 
-def zscore_discretization(df: pd.DataFrame, n_std=1.0):
+def zscore_discretization(df: pd.DataFrame, n_bins: int = 5, n_std: float = 1.0):
     """
-    Discretize numerical columns based on z-scores (standard deviations from the mean).
-    Creates bins centered around the mean with boundaries at multiples of the standard deviation.
+    Discretize numerical columns into n_bins using z-score based bin boundaries.
 
-    This method is particularly useful for normally distributed data, creating interpretable
-    bins based on statistical properties (e.g., values within 1 std, 1-2 std, >2 std from mean).
+    Bins are created from -n_std*std to +n_std*std, evenly spaced in z-score space.
+    Values outside that range go to the first or last bin.
 
-    Common z-score binning schemes:
-    - n_std=1.0: Creates bins at [-inf, μ-2σ, μ-σ, μ+σ, μ+2σ, inf] (5 bins)
-    - n_std=0.5: Creates bins at [-inf, μ-σ, μ-0.5σ, μ+0.5σ, μ+σ, inf] (5 bins)
+    Example:
+      n_bins = 5 → z-boundaries at [-∞, -2σ, -1σ, 0σ, +1σ, +2σ, +∞]
+      n_bins = 4 → z-boundaries at [-∞, -2σ, -0.67σ, +0.67σ, +2σ, +∞]
 
-    :param df: tabular data in pandas DataFrame form
-    :param n_std: number of standard deviations for bin boundaries (default 1.0)
-    :return: df with discrete columns based on z-score bins
+    :param df: pandas DataFrame
+    :param n_bins: number of bins for discretization
+    :param n_std: max number of std deviations on each side (default 2.0)
+    :return: discretized DataFrame
     """
     df_discretized = df.copy()
-    num_cols = _filter_numerical_columns(df, n_bins=5)
+
+    num_cols, skipped_cols = _filter_numerical_columns(df, n_bins=n_bins)
+
+    # Convert skipped columns to categorical (string)
+    for col in skipped_cols:
+        df_discretized[col] = df_discretized[col].astype(str)
 
     for col in num_cols:
         try:
-            # Calculate mean and std
             mean = df[col].mean()
             std = df[col].std()
 
-            if std == 0:
-                logger.debug(f"Column '{col}' has zero standard deviation. Skipping.")
+            if std == 0 or pd.isna(std):
+                logger.debug(f"Column '{col}' has zero or invalid std. Skipping.")
                 continue
 
-            # Create bins based on standard deviations
-            # Typical bins: very low, low, medium, high, very high
-            bins = [
-                -np.inf,
-                mean - 2 * n_std * std,
-                mean - n_std * std,
-                mean + n_std * std,
-                mean + 2 * n_std * std,
-                np.inf
-            ]
+            # Create z-step boundaries
+            # Example: n_bins=5 → 6 boundaries from -k to +k
+            z_edges = np.linspace(-n_std, n_std, n_bins - 1)
 
-            df_discretized[col] = pd.cut(df[col], bins=bins, duplicates='drop')
-            df_discretized[col] = df_discretized[col].astype(str)
+            # Convert z-scores to actual data boundaries
+            boundaries = [mean + z * std for z in z_edges]
+
+            # Add infinite boundaries at ends
+            bins = [-np.inf] + boundaries + [np.inf]
+
+            # Apply discretization
+            df_discretized[col] = pd.cut(df[col], bins=bins, labels=False)
+            df_discretized[col] = df_discretized[col].astype("Int64")
 
         except Exception as e:
-            logger.debug(f"Column '{col}' could not be discretized using z-score: {e}")
+            logger.debug(f"Column '{col}' could not be discretized: {e}")
 
     return df_discretized
