@@ -421,33 +421,36 @@ class TestZScoreDiscretization:
     """Test z-score based discretization"""
 
     def test_basic_zscore(self):
-        """Test basic z-score discretization"""
-        # Create normally distributed data
+        """Test basic discretization into fixed number of bins"""
         np.random.seed(42)
         df = pd.DataFrame({
             'value': np.random.normal(50, 10, 100)
         })
 
-        result = discretization.zscore_discretization(df, n_std=1.0)
+        result = discretization.zscore_discretization(df, n_bins=5)
 
-        # Should discretize successfully
-        assert result['value'].dtype == object
-        # Should have up to 5 bins (very low, low, medium, high, very high)
+        # Should discretize successfully to integer categories
+        assert str(result['value'].dtype) == "Int64"
+
+        # Should have <= 5 bins
         assert result['value'].nunique() <= 5
 
-    def test_different_n_std(self):
-        """Test with different n_std parameter"""
+    def test_different_n_bins(self):
+        """Test that different n_bins produce different binning resolutions"""
         np.random.seed(42)
         df = pd.DataFrame({
             'value': np.random.normal(0, 1, 100)
         })
 
-        result_1 = discretization.zscore_discretization(df.copy(), n_std=1.0)
-        result_05 = discretization.zscore_discretization(df.copy(), n_std=0.5)
+        result_5 = discretization.zscore_discretization(df.copy(), n_bins=5)
+        result_3 = discretization.zscore_discretization(df.copy(), n_bins=3)
 
-        # Both should discretize
-        assert result_1['value'].dtype == object
-        assert result_05['value'].dtype == object
+        # Both should discretize and produce integer labels
+        assert str(result_5['value'].dtype) == "Int64"
+        assert str(result_3['value'].dtype) == "Int64"
+
+        # Different bin counts should produce different unique label counts
+        assert result_5['value'].nunique() >= result_3['value'].nunique()
 
     def test_zero_std(self):
         """Test handling of zero standard deviation"""
@@ -455,26 +458,31 @@ class TestZScoreDiscretization:
             'value': [5.0] * 100  # All same values
         })
 
-        result = discretization.zscore_discretization(df, n_std=1.0)
+        result = discretization.zscore_discretization(df, n_bins=5)
 
-        # Column should remain unchanged (logged and skipped)
-        # In this case, pd.cut won't be called, so it stays numeric
-        assert len(result) == 100
+        # Column should remain unchanged BUT treated as skipped → cast to string
+        assert result['value'].dtype == object
 
-    def test_output_is_ranges(self):
-        """Test that output is interval ranges, not labels"""
+        # Values should remain identical
+        assert result['value'].nunique() == 1
+        assert set(result['value'].unique()) == {"5.0"}
+
+    def test_output_is_integer_bins(self):
+        """Output should be integer-coded bins, not interval strings"""
         np.random.seed(42)
         df = pd.DataFrame({
             'value': np.random.normal(100, 15, 50)
         })
 
-        result = discretization.zscore_discretization(df, n_std=1.0)
+        result = discretization.zscore_discretization(df, n_bins=5)
 
-        # Check that results are string representations of intervals
-        sample_values = result['value'].dropna().unique()
-        for val in sample_values[:3]:  # Check a few values
-            # Should contain '(' or '[' and ']' indicating intervals
-            assert ('(' in val or '[' in val) and ']' in val
+        # Should produce integer bin labels
+        assert pd.api.types.is_integer_dtype(result['value'])
+
+        # Labels should NOT contain interval parentheses
+        vals = result['value'].dropna().unique()
+        for v in vals[:3]:
+            assert isinstance(v, (int, np.integer))
 
 
 class TestIntegrationScenarios:
@@ -610,37 +618,40 @@ class TestColumnFiltering:
 
         result = discretization.equal_frequency_discretization(df, n_bins=5)
 
-        # Binary column should be skipped (low ratio: 2/120 < 0.05)
-        assert pd.api.types.is_numeric_dtype(result['binary'])
-        # Continuous column should be discretized
+        # Binary is skipped → cast to string
+        assert result['binary'].dtype == object
+
+        # Continuous column should be discretized → dtype object
         assert result['continuous'].dtype == object
 
     def test_low_cardinality_filtered(self):
         """Test that low cardinality columns are filtered out"""
         df = pd.DataFrame({
-            'status': [1, 2, 3] * 40,  # 3 unique values, 120 rows (3/120 = 0.025 < 0.05)
+            'status': [1, 2, 3] * 40,  # 3 unique → skipped
             'continuous': np.linspace(0, 100, 120)
         })
 
         result = discretization.equal_width_discretization(df, n_bins=5)
 
-        # Status column should be skipped (low ratio)
-        assert pd.api.types.is_numeric_dtype(result['status'])
-        # Continuous should be discretized
+        # Status column skipped → dtype object
+        assert result['status'].dtype == object
+
+        # Continuous discretized → dtype object
         assert result['continuous'].dtype == object
 
     def test_few_unique_values_filtered(self):
         """Test that columns with ≤ n_bins unique values are filtered"""
         df = pd.DataFrame({
-            'few_unique': [1, 2, 3, 4] * 30,  # 4 unique, 120 rows (4/120 = 0.033 < 0.05)
-            'many_unique': list(range(120))  # 120 unique values
+            'few_unique': [1, 2, 3, 4] * 30,  # 4 unique → skipped
+            'many_unique': list(range(120))  # 120 unique → discretized
         })
 
         result = discretization.equal_frequency_discretization(df, n_bins=5)
 
-        # few_unique has only 4 values and low ratio, should be skipped
-        assert pd.api.types.is_numeric_dtype(result['few_unique'])
-        # many_unique should be discretized
+        # Skipped → cast to string
+        assert result['few_unique'].dtype == object
+
+        # Discretized → dtype object
         assert result['many_unique'].dtype == object
 
     def test_all_columns_filtered(self):
@@ -653,26 +664,27 @@ class TestColumnFiltering:
 
         result = discretization.kmeans_discretization(df, n_bins=5)
 
-        # All columns should remain numeric (all filtered)
+        # All columns skipped → all cast to string
         for col in df.columns:
-            assert pd.api.types.is_numeric_dtype(result[col])
+            assert result[col].dtype == object
 
     def test_mixed_filtered_and_discretized(self):
         """Test mix of filtered and discretized columns"""
         np.random.seed(42)
         df = pd.DataFrame({
-            'binary': [0, 1] * 50,
-            'continuous1': np.random.randn(100),
-            'status': [1, 2, 3] * 33 + [1],
-            'continuous2': np.linspace(0, 100, 100)
+            'binary': [0, 1] * 50,            # skipped → object
+            'continuous1': np.random.randn(100),  # discretized → object
+            'status': [1, 2, 3] * 33 + [1],       # skipped → object
+            'continuous2': np.linspace(0, 100, 100)  # discretized → object
         })
 
         result = discretization.equal_width_discretization(df, n_bins=5)
 
-        # Binary and status should be skipped
-        assert pd.api.types.is_numeric_dtype(result['binary'])
-        assert pd.api.types.is_numeric_dtype(result['status'])
-        # Continuous columns should be discretized
+        # Skipped columns
+        assert result['binary'].dtype == object
+        assert result['status'].dtype == object
+
+        # Discretized columns
         assert result['continuous1'].dtype == object
         assert result['continuous2'].dtype == object
 
@@ -680,30 +692,33 @@ class TestColumnFiltering:
         """Test that filtering works with supervised methods"""
         np.random.seed(42)
         df = pd.DataFrame({
-            'binary': [0, 1] * 50,
-            'feature': np.random.randn(100),
-            'target': ['A'] * 50 + ['B'] * 50
+            'binary': [0, 1] * 50,                 # skipped
+            'feature': np.random.randn(100),       # discretized
+            'target': ['A'] * 50 + ['B'] * 50      # target untouched
         })
 
         result = discretization.entropy_based_discretization(df, target_col='target', n_bins=5)
 
-        # Binary should be skipped
-        assert pd.api.types.is_numeric_dtype(result['binary'])
-        # Feature should be discretized
+        # Binary skipped → object
+        assert result['binary'].dtype == object
+
+        # Feature discretized → object
         assert result['feature'].dtype == object
-        # Target should be unchanged
-        assert all(result['target'].isin(['A', 'B']))
+
+        # Target unchanged
+        assert set(result['target'].unique()) == {'A', 'B'}
 
     def test_empty_data_column_filtered(self):
         """Test that columns with no data are filtered"""
         df = pd.DataFrame({
-            'empty': [np.nan] * 100,
-            'valid': range(100)
+            'empty': [np.nan] * 100,  # n_total = 0 → skipped
+            'valid': range(100)       # many uniques → discretized
         })
 
         result = discretization.equal_frequency_discretization(df, n_bins=5)
 
-        # Empty column should be skipped
-        assert df['empty'].isna().all()
-        # Valid column should be discretized
+        # Empty column skipped → cast to string
+        assert result['empty'].dtype == object
+
+        # Valid column discretized → object
         assert result['valid'].dtype == object
