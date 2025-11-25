@@ -3,7 +3,9 @@ name: Publish
 on:
   push:
     branches:
-      - main  # Only trigger on pushes to main branch (including PR merges and tags)
+      - main  # Trigger on pushes to main branch (including PR merges)
+    tags:
+      - 'v*'  # Trigger on any tag starting with 'v'
   workflow_dispatch:  # Allow manual triggering from GitHub UI
 
 permissions:
@@ -18,17 +20,29 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all history and tags
 
-      - name: Fetch all tags
-        run: git fetch --tags --force
+      - name: Fetch all tags and branches
+        run: |
+          git fetch --tags --force
+          git fetch origin main
 
       - name: Check for version tag on current commit
         id: check_release
         run: |
+          # Get the current commit SHA
+          CURRENT_SHA=$(git rev-parse HEAD)
+
+          # Check if this commit exists on main branch
+          if ! git branch -r --contains "$CURRENT_SHA" | grep -q 'origin/main'; then
+            echo "Current commit is not on main branch. Skipping release."
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
           # Check if HEAD has a version tag (v1.2.3 format, no pre-release)
           VERSION_TAG=$(git tag --points-at HEAD | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
 
           if [ -z "$VERSION_TAG" ]; then
-            echo "No version tag found on current commit. Skipping release."
+            echo "No release version tag found on current commit. Skipping release."
             echo "should_release=false" >> $GITHUB_OUTPUT
             exit 0
           fi
