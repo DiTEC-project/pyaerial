@@ -1,12 +1,9 @@
 name: Publish
 
 on:
-  workflow_run:
-    workflows: ["Tests"]  # Run after Tests workflow completes
-    types:
-      - completed
+  push:
     branches:
-      - main  # Only trigger when Tests runs on main branch
+      - main  # Only trigger on pushes to main branch (including PR merges and tags)
   workflow_dispatch:  # Allow manual triggering from GitHub UI
 
 permissions:
@@ -16,13 +13,10 @@ permissions:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
-    # Only run if Tests workflow succeeded or manually triggered
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          ref: ${{ github.event.workflow_run.head_branch || 'main' }}
+          fetch-depth: 0  # Fetch all history and tags
 
       - name: Fetch all tags
         run: git fetch --tags --force
