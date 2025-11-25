@@ -189,6 +189,13 @@ trained_autoencoder = model.train(breast_cancer, layer_dims=[4, 2])
 
 Discretizing numerical values is required before running Aerial. PyAerial provides several discretization methods as part of the `discretization.py` module. These methods can be categorized into **unsupervised** (no target variable needed) and **supervised** (require target variable for classification tasks).
 
+**Automatic Column Filtering**: All discretization methods automatically skip columns that are already discrete or categorical-like. This includes:
+- Binary columns (e.g., 0/1 for class labels)
+- Low-cardinality columns (< 5% unique values relative to total rows)
+- Columns with fewer unique values than the requested number of bins
+
+When columns are skipped, an INFO-level log message will indicate which columns were filtered and why.
+
 ### 5.1. Unsupervised Discretization Methods
 
 These methods work without requiring a target variable:

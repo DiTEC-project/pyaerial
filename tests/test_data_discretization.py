@@ -596,3 +596,114 @@ class TestIntegrationScenarios:
         for col in ['col1', 'col2', 'col3', 'col4']:
             assert result[col].dtype == object
             assert result[col].nunique() <= 4
+
+
+class TestColumnFiltering:
+    """Test filtering of low-cardinality and already-discrete columns"""
+
+    def test_binary_column_filtered(self):
+        """Test that binary 0/1 columns are filtered out"""
+        df = pd.DataFrame({
+            'binary': [0, 1, 0, 1, 0, 1] * 20,  # 120 rows
+            'continuous': np.random.randn(120)
+        })
+
+        result = discretization.equal_frequency_discretization(df, n_bins=5)
+
+        # Binary column should be skipped (low ratio: 2/120 < 0.05)
+        assert pd.api.types.is_numeric_dtype(result['binary'])
+        # Continuous column should be discretized
+        assert result['continuous'].dtype == object
+
+    def test_low_cardinality_filtered(self):
+        """Test that low cardinality columns are filtered out"""
+        df = pd.DataFrame({
+            'status': [1, 2, 3] * 40,  # 3 unique values, 120 rows (3/120 = 0.025 < 0.05)
+            'continuous': np.linspace(0, 100, 120)
+        })
+
+        result = discretization.equal_width_discretization(df, n_bins=5)
+
+        # Status column should be skipped (low ratio)
+        assert pd.api.types.is_numeric_dtype(result['status'])
+        # Continuous should be discretized
+        assert result['continuous'].dtype == object
+
+    def test_few_unique_values_filtered(self):
+        """Test that columns with ≤ n_bins unique values are filtered"""
+        df = pd.DataFrame({
+            'few_unique': [1, 2, 3, 4] * 30,  # 4 unique, 120 rows (4/120 = 0.033 < 0.05)
+            'many_unique': list(range(120))  # 120 unique values
+        })
+
+        result = discretization.equal_frequency_discretization(df, n_bins=5)
+
+        # few_unique has only 4 values and low ratio, should be skipped
+        assert pd.api.types.is_numeric_dtype(result['few_unique'])
+        # many_unique should be discretized
+        assert result['many_unique'].dtype == object
+
+    def test_all_columns_filtered(self):
+        """Test when all columns are filtered out"""
+        df = pd.DataFrame({
+            'binary1': [0, 1] * 50,
+            'binary2': [1, 0] * 50,
+            'ternary': [1, 2, 3] * 33 + [1]
+        })
+
+        result = discretization.kmeans_discretization(df, n_bins=5)
+
+        # All columns should remain numeric (all filtered)
+        for col in df.columns:
+            assert pd.api.types.is_numeric_dtype(result[col])
+
+    def test_mixed_filtered_and_discretized(self):
+        """Test mix of filtered and discretized columns"""
+        np.random.seed(42)
+        df = pd.DataFrame({
+            'binary': [0, 1] * 50,
+            'continuous1': np.random.randn(100),
+            'status': [1, 2, 3] * 33 + [1],
+            'continuous2': np.linspace(0, 100, 100)
+        })
+
+        result = discretization.equal_width_discretization(df, n_bins=5)
+
+        # Binary and status should be skipped
+        assert pd.api.types.is_numeric_dtype(result['binary'])
+        assert pd.api.types.is_numeric_dtype(result['status'])
+        # Continuous columns should be discretized
+        assert result['continuous1'].dtype == object
+        assert result['continuous2'].dtype == object
+
+    def test_filtering_with_supervised_methods(self):
+        """Test that filtering works with supervised methods"""
+        np.random.seed(42)
+        df = pd.DataFrame({
+            'binary': [0, 1] * 50,
+            'feature': np.random.randn(100),
+            'target': ['A'] * 50 + ['B'] * 50
+        })
+
+        result = discretization.entropy_based_discretization(df, target_col='target', n_bins=5)
+
+        # Binary should be skipped
+        assert pd.api.types.is_numeric_dtype(result['binary'])
+        # Feature should be discretized
+        assert result['feature'].dtype == object
+        # Target should be unchanged
+        assert all(result['target'].isin(['A', 'B']))
+
+    def test_empty_data_column_filtered(self):
+        """Test that columns with no data are filtered"""
+        df = pd.DataFrame({
+            'empty': [np.nan] * 100,
+            'valid': range(100)
+        })
+
+        result = discretization.equal_frequency_discretization(df, n_bins=5)
+
+        # Empty column should be skipped
+        assert df['empty'].isna().all()
+        # Valid column should be discretized
+        assert result['valid'].dtype == object
