@@ -106,7 +106,7 @@ Extracts association rules from a trained AutoEncoder using the Aerial algorithm
 - `target_classes` (list, optional): When set, restricts rule consequents to the specified class(es) (constraint-based
   rule mining). The format of the list is same as the list format of `features_of_interest`.
 - `quality_metrics` (list, optional): Quality metrics to calculate for each rule. Default=['support', 'confidence', 'zhangs_metric'].
-  Available metrics: 'support', 'confidence', 'lift', 'conviction', 'zhangs_metric', 'yulesq', 'interestingness'
+  Available metrics: 'support', 'confidence', 'lift', 'conviction', 'zhangs_metric', 'yulesq', 'interestingness', 'leverage'
 - `num_workers` (int, optional): Number of parallel workers for quality metric calculation. Default=1 for sequential processing.
   **Note**: Parallelization is automatically disabled for fewer than 1000 rules due to overhead costs. Set to 4-8 for datasets generating 1000+ rules.
 
@@ -216,7 +216,7 @@ for item in result['itemsets']:
 The `rule_quality` module provides the following constants and metrics:
 
 - `AVAILABLE_METRICS`: List of all supported quality metrics
-  - 'support', 'confidence', 'lift', 'conviction', 'zhangs_metric', 'yulesq', 'interestingness'
+  - 'support', 'confidence', 'lift', 'conviction', 'zhangs_metric', 'yulesq', 'interestingness', 'leverage'
 - `DEFAULT_RULE_METRICS`: Default metrics calculated by `generate_rules()`
   - ['support', 'confidence', 'zhangs_metric']
 
@@ -229,6 +229,7 @@ The following helper functions are used internally by PyAerial for calculating i
 - `calculate_zhangs_metric(support, support_ant, support_cons)`: Calculate Zhang's metric
 - `calculate_yulesq(full_count, not_ant_not_con, con_not_ant, ant_not_con)`: Calculate Yule's Q
 - `calculate_interestingness(confidence, support, rhs_support, input_length)`: Calculate interestingness
+- `calculate_leverage(support, support_ant, support_cons)`: Calculate leverage metric
 
 These are low-level functions used by `generate_rules()` and `generate_frequent_itemsets()`. Most users should use the high-level functions instead.
 

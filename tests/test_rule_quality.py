@@ -10,6 +10,7 @@ from aerial.rule_quality import (
     calculate_lift,
     calculate_conviction,
     calculate_zhangs_metric,
+    calculate_leverage,
     _calculate_rule_quality_from_indices,
     _calculate_itemset_support_from_indices,
     DEFAULT_RULE_METRICS,
@@ -105,6 +106,42 @@ class TestRuleQualityFunctions(unittest.TestCase):
         # yulesq = (10000 - 0) / (10000 + 0) = 1.0
         yulesq = calculate_yulesq(full_count, not_ant_not_con, con_not_ant, ant_not_con)
         self.assertAlmostEqual(yulesq, 1.0, places=3)
+
+    def test_calculate_leverage(self):
+        """Test leverage calculation"""
+        support = 0.4
+        support_ant = 0.5
+        support_cons = 0.6
+        # leverage = support - (support_ant * support_cons) = 0.4 - (0.5 * 0.6) = 0.4 - 0.3 = 0.1
+        leverage = calculate_leverage(support, support_ant, support_cons)
+        self.assertAlmostEqual(leverage, 0.1, places=2)
+
+    def test_calculate_leverage_independence(self):
+        """Test leverage when antecedent and consequent are independent"""
+        support = 0.3
+        support_ant = 0.5
+        support_cons = 0.6
+        # leverage = 0.3 - (0.5 * 0.6) = 0.3 - 0.3 = 0.0 (independent)
+        leverage = calculate_leverage(support, support_ant, support_cons)
+        self.assertAlmostEqual(leverage, 0.0, places=2)
+
+    def test_calculate_leverage_positive_correlation(self):
+        """Test leverage with positive correlation"""
+        support = 0.5
+        support_ant = 0.6
+        support_cons = 0.7
+        # leverage = 0.5 - (0.6 * 0.7) = 0.5 - 0.42 = 0.08
+        leverage = calculate_leverage(support, support_ant, support_cons)
+        self.assertAlmostEqual(leverage, 0.08, places=2)
+
+    def test_calculate_leverage_negative_correlation(self):
+        """Test leverage with negative correlation"""
+        support = 0.2
+        support_ant = 0.5
+        support_cons = 0.6
+        # leverage = 0.2 - (0.5 * 0.6) = 0.2 - 0.3 = -0.1
+        leverage = calculate_leverage(support, support_ant, support_cons)
+        self.assertAlmostEqual(leverage, -0.1, places=2)
 
 
 class TestRuleQualityFromIndices(unittest.TestCase):
@@ -435,7 +472,7 @@ class TestBackwardCompatibility(unittest.TestCase):
 
     def test_available_metrics_constant(self):
         """Test that AVAILABLE_METRICS contains all expected metrics"""
-        expected_metrics = ['support', 'confidence', 'zhangs_metric', 'lift', 'conviction', 'yulesq', 'interestingness']
+        expected_metrics = ['support', 'confidence', 'zhangs_metric', 'lift', 'conviction', 'yulesq', 'interestingness', 'leverage']
         self.assertEqual(AVAILABLE_METRICS, expected_metrics)
 
 
