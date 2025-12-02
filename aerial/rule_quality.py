@@ -10,7 +10,7 @@ from joblib import Parallel, delayed
 logger = logging.getLogger("aerial")
 
 # Available quality metrics
-AVAILABLE_METRICS = ['support', 'confidence', 'zhangs_metric', 'lift', 'conviction', 'yulesq', 'interestingness']
+AVAILABLE_METRICS = ['support', 'confidence', 'zhangs_metric', 'lift', 'conviction', 'yulesq', 'interestingness', 'leverage']
 DEFAULT_RULE_METRICS = ['support', 'confidence', 'zhangs_metric']
 
 
@@ -77,6 +77,22 @@ def calculate_zhangs_metric(support, support_ant, support_cons):
     return numerator / denominator
 
 
+def calculate_leverage(support, support_ant, support_cons):
+    """
+    Calculate leverage metric for an association rule.
+    Leverage = P(A ∪ B) - P(A) × P(B) = support(A,B) - support(A) × support(B)
+
+    Leverage measures the difference between the observed frequency of A and B appearing
+    together versus the expected frequency if A and B were statistically independent.
+
+    :param support: Support of the rule (antecedent and consequent together)
+    :param support_ant: Support of the antecedent
+    :param support_cons: Support of the consequent
+    :return: Leverage value (ranges from -1 to 1)
+    """
+    return support - (support_ant * support_cons)
+
+
 def _calculate_rule_quality_from_indices(antecedent_indices, consequent_index, transaction_array,
                                          num_transactions, quality_metrics):
     """
@@ -137,6 +153,10 @@ def _calculate_rule_quality_from_indices(antecedent_indices, consequent_index, t
     if 'interestingness' in quality_metrics:
         result['interestingness'] = float(round(
             calculate_interestingness(rule_confidence, rule_support, support_head, num_transactions), 3))
+
+    if 'leverage' in quality_metrics:
+        result['leverage'] = float(round(
+            calculate_leverage(rule_support, support_body, support_head), 3))
 
     # Always include rule_coverage for internal calculations
     result['rule_coverage'] = float(round(support_body, 3))

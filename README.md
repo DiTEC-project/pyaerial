@@ -326,7 +326,7 @@ PyAerial provides a comprehensive toolkit for association rule mining with advan
 - **Numerical Data Support** - 8 built-in discretization methods (unsupervised: equal-frequency, equal-width, k-means, quantile, custom bins; supervised: entropy-based, ChiMerge, decision tree)
 - **Customizable Architectures** - Fine-tune autoencoder layers and dimensions for optimal performance
 - **GPU Acceleration** - Leverage CUDA for faster training on large datasets
-- **Comprehensive Metrics** - Support, confidence, lift, conviction, Zhang's metric, Yule's Q, interestingness
+- **Comprehensive Metrics** - Support, confidence, lift, conviction, Zhang's metric, Yule's Q, interestingness, leverage
 - **Rule Visualization** - Integrate with NiaARM for scatter plots and visual analysis
 - **Flexible Training** - Adjust epochs, learning rate, batch size, and noise factors
 

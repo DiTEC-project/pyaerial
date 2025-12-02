@@ -44,7 +44,7 @@ The figure below shows the pipeline of operations for Aerial in 3 main stages.
 
 3. Frequent itemsets (instead of rules) can also be extracted ([rule_extraction.py:generate_frequent_itemsets()](api_reference.md#generate_frequent_itemsets)).
 
-4. Quality metrics (support, confidence, coverage, Zhang's metric, lift, conviction, Yule's Q, interestingness) are calculated automatically during rule extraction using optimized batch processing with optional parallelization support.
+4. Quality metrics (support, confidence, coverage, Zhang's metric, lift, conviction, Yule's Q, interestingness, leverage) are calculated automatically during rule extraction using optimized batch processing with optional parallelization support.
 
 ## Key Features
 
