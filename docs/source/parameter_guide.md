@@ -1,5 +1,9 @@
 # Parameter Tuning Guide
 
+> **📝 Note on Parameter Names:** The parameters `min_rule_frequency` and `min_rule_strength` correspond to `ant_similarity` and `con_similarity` in the original [Aerial](https://proceedings.mlr.press/v284/karabulut25a.html) and [PyAerial](https://doi.org/10.1016/j.softx.2025.102341) papers.
+
+> **🖥️ CPU Performance:** PyAerial runs fast on CPU. GPU acceleration is optional and only beneficial for very large datasets.
+
 ## Golden Rules
 
 1. Association rule mining is a **knowledge discovery** task.
@@ -17,16 +21,26 @@ Aerial uses these defaults when you don't specify parameters:
 
 | Parameter         | Default | What it Controls                                               |
 |-------------------|---------|----------------------------------------------------------------|
-| `ant_similarity`  | `0.5`   | How frequent patterns must be (analogous to minimum support)  |
-| `cons_similarity` | `0.8`   | How reliable rules must be (confidence + association strength) |
+| `min_rule_frequency`  | `0.5`   | How frequent patterns must be (analogous to minimum support)   |
+| `min_rule_strength`   | `0.8`   | How reliable rules must be (confidence + association strength) |
 | `max_antecedents` | `2`     | Maximum complexity (number of conditions per rule)             |
 
 ### Training Parameters
 
-| Parameter    | Default       | What it Controls                                                                 |
-|--------------|---------------|----------------------------------------------------------------------------------|
-| `epochs`     | `2`           | Training iterations (⚠️ more ≠ better, often causes overfitting)                 |
-| `layer_dims` | Auto-selected | Autoencoder architecture (smaller = stronger compression = higher quality rules) |
+| Parameter      | Default       | What it Controls                                                                 |
+|----------------|---------------|----------------------------------------------------------------------------------|
+| `epochs`       | `2`           | Training iterations (shorter training = fewer, higher-quality rules)             |
+| `show_progress`| `True`        | Show a progress bar during training                                              |
+| `layer_dims`   | Auto-selected | Autoencoder architecture (smaller = stronger compression = higher quality rules) |
+
+> **💡 Tip:** Train less for fewer, higher-quality rules. The default `epochs=2` works well for most datasets. Only increase epochs if you're not getting enough rules for your use case.
+
+### Filtering Parameters
+
+| Parameter        | Default | What it Controls                                   |
+|------------------|---------|---------------------------------------------------|
+| `min_confidence` | `None`  | Post-filter rules with confidence below this value |
+| `min_support`    | `None`  | Post-filter rules with support below this value    |
 
 ### Other Parameters
 
@@ -37,23 +51,27 @@ Aerial uses these defaults when you don't specify parameters:
 | `quality_metrics`      | `['support', 'confidence', 'zhangs_metric']` | Which metrics to calculate                           |
 | `num_workers`          | `1`                                          | Parallel processing (set to 4-8 for 1000+ rules)     |
 | `lr`                   | `5e-3`                                       | Learning rate                                        |
-| `batch_size`           | `2`                                          | Training batch size                                  |
+| `batch_size`           | Auto                                         | Training batch size                                  |
 | `device`               | Auto                                         | `'cuda'` for GPU or `'cpu'`                          |
 
 **💡 Tip:** Start with defaults, then adjust the 3 core parameters based on your goals below.
 
 ## Quick Parameter Reference
 
-| I want...             | Set these parameters                            | Leave at default                     | Example                                                          |
-|-----------------------|-------------------------------------------------|--------------------------------------|------------------------------------------------------------------|
-| High support rules    | `ant_similarity=0.7` (or higher)                | `cons_similarity`, `max_antecedents` | `generate_rules(model, ant_similarity=0.7)`                      |
-| Low support rules     | `ant_similarity=0.1` (or lower)                 | `cons_similarity`, `max_antecedents` | `generate_rules(model, ant_similarity=0.1)`                      |
-| High confidence rules | `cons_similarity=0.8` (or higher)               | `ant_similarity`, `max_antecedents`  | `generate_rules(model, cons_similarity=0.8)`                     |
-| Low confidence rules  | `cons_similarity=0.3` (or lower)                | `ant_similarity`, `max_antecedents`  | `generate_rules(model, cons_similarity=0.3)`                     |
-| Fewer rules           | Increase `ant_similarity` and `cons_similarity` | `max_antecedents`                    | `generate_rules(model, ant_similarity=0.6, cons_similarity=0.8)` |
-| More rules            | Decrease `ant_similarity` and `cons_similarity` | `max_antecedents`                    | `generate_rules(model, ant_similarity=0.2, cons_similarity=0.5)` |
-| Strong associations   | `cons_similarity=0.8` (or higher)               | `ant_similarity`, `max_antecedents`  | `generate_rules(model, cons_similarity=0.8)`                     |
-| Complex patterns      | `max_antecedents=3` (or higher)                 | `ant_similarity`, `cons_similarity`  | `generate_rules(model, max_antecedents=3)`                       |
+| I want...                                | Set these parameters                          | Example                                                        |
+|------------------------------------------|-----------------------------------------------|----------------------------------------------------------------|
+| High-quality rules only (post-filtering) | `min_confidence=0.7, min_support=0.1`         | `generate_rules(model, min_confidence=0.7, min_support=0.1)`   |
+| High support rules                       | `min_rule_frequency=0.7` (or higher)              | `generate_rules(model, min_rule_frequency=0.7)`                    |
+| Low support rules                        | `min_rule_frequency=0.1` (or lower)               | `generate_rules(model, min_rule_frequency=0.1)`                    |
+| High confidence rules                    | `min_rule_strength=0.8` (or higher)               | `generate_rules(model, min_rule_strength=0.8)`                     |
+| Low confidence rules                     | `min_rule_strength=0.3` (or lower)                | `generate_rules(model, min_rule_strength=0.3)`                     |
+| Fewer rules                              | Increase `min_rule_frequency` and `min_rule_strength` | `generate_rules(model, min_rule_frequency=0.6, min_rule_strength=0.8)` |
+| More rules                               | Decrease `min_rule_frequency` and `min_rule_strength` | `generate_rules(model, min_rule_frequency=0.2, min_rule_strength=0.5)` |
+| Strong associations                      | `min_rule_strength=0.8` (or higher)               | `generate_rules(model, min_rule_strength=0.8)`                     |
+| Complex patterns                         | `max_antecedents=3` (or higher)               | `generate_rules(model, max_antecedents=3)`                     |
+| More training (more rules)               | `epochs=5` or higher                          | `model.train(data, epochs=5)`                                  |
+
+**Note** that `min_confidence` and `min_support` are post-processing filters.
 
 **💡 Tip: Still not getting the results you want?** See
 the [Advanced Tuning](configuration.md#advanced-training-and-architecture-tuning) to learn how
@@ -69,7 +87,7 @@ and more generalizable rules.
 
 **Parameters to adjust:**
 
-- Increase `ant_similarity` to 0.6, 0.7, or higher
+- Increase `min_rule_frequency` to 0.6, 0.7, or higher
 - The antecedent similarity threshold is analogous to minimum support in traditional ARM methods
 
 **What to expect:**
@@ -90,7 +108,7 @@ trained_autoencoder = model.train(breast_cancer)
 # Get high support rules
 result = rule_extraction.generate_rules(
     trained_autoencoder,
-    ant_similarity=0.7  # High threshold for common patterns
+    min_rule_frequency=0.7  # High threshold for common patterns
 )
 ```
 
@@ -100,7 +118,7 @@ result = rule_extraction.generate_rules(
 
 **Parameters to adjust:**
 
-- Decrease `ant_similarity` to 0.1, 0.05, or lower
+- Decrease `min_rule_frequency` to 0.1, 0.05, or lower
 - You may also need to adjust `max_antecedents` if discovering complex rare patterns
 
 **What to expect:**
@@ -122,7 +140,7 @@ result = rule_extraction.generate_rules(
 # Get low support (rare pattern) rules
 result = rule_extraction.generate_rules(
     trained_autoencoder,
-    ant_similarity=0.1  # Low threshold for rare patterns
+    min_rule_frequency=0.1  # Low threshold for rare patterns
 )
 ```
 
@@ -132,18 +150,18 @@ The number of rules is affected by multiple parameters working together.
 
 **To get fewer rules:**
 
-- Increase both `ant_similarity` (e.g., 0.6-0.8) and `cons_similarity` (e.g., 0.7-0.9)
+- Increase both `min_rule_frequency` (e.g., 0.6-0.8) and `min_rule_strength` (e.g., 0.7-0.9)
 - Decrease `max_antecedents` to 1 or 2
 
 **To get more rules:**
 
-- Decrease both `ant_similarity` (e.g., 0.1-0.3) and `cons_similarity` (e.g., 0.3-0.6)
+- Decrease both `min_rule_frequency` (e.g., 0.1-0.3) and `min_rule_strength` (e.g., 0.3-0.6)
 - Increase `max_antecedents` to 3 or higher
 
 **Parameter interaction:**
 
-- `ant_similarity`: Controls how many antecedent patterns are considered
-- `cons_similarity`: Filters rules based on confidence and association strength
+- `min_rule_frequency`: Controls how many antecedent patterns are considered
+- `min_rule_strength`: Filters rules based on confidence and association strength
 - `max_antecedents`: Limits complexity of patterns
 
 **Example:**
@@ -152,16 +170,16 @@ The number of rules is affected by multiple parameters working together.
 # For a concise set of strong rules
 result = rule_extraction.generate_rules(
     trained_autoencoder,
-    ant_similarity=0.6,
-    cons_similarity=0.8,
+    min_rule_frequency=0.6,
+    min_rule_strength=0.8,
     max_antecedents=2
 )
 
 # For a comprehensive exploration
 result = rule_extraction.generate_rules(
     trained_autoencoder,
-    ant_similarity=0.2,
-    cons_similarity=0.5,
+    min_rule_frequency=0.2,
+    min_rule_strength=0.5,
     max_antecedents=3
 )
 ```
@@ -172,7 +190,7 @@ result = rule_extraction.generate_rules(
 
 **Parameters to adjust:**
 
-- Increase `cons_similarity` to 0.8, 0.9, or higher
+- Increase `min_rule_strength` to 0.8, 0.9, or higher
 - The consequent similarity threshold combines confidence and association strength
 
 **What to expect:**
@@ -192,7 +210,7 @@ result = rule_extraction.generate_rules(
 # Get high confidence rules
 result = rule_extraction.generate_rules(
     trained_autoencoder,
-    cons_similarity=0.8  # High threshold for reliable rules
+    min_rule_strength=0.8  # High threshold for reliable rules
 )
 ```
 
@@ -202,7 +220,7 @@ result = rule_extraction.generate_rules(
 
 **Parameters to adjust:**
 
-- Decrease `cons_similarity` to 0.5, 0.4, or lower
+- Decrease `min_rule_strength` to 0.5, 0.4, or lower
 
 **What to expect:**
 
@@ -222,7 +240,7 @@ result = rule_extraction.generate_rules(
 # Get low confidence rules for exploration
 result = rule_extraction.generate_rules(
     trained_autoencoder,
-    cons_similarity=0.4  # Lower threshold for exploration
+    min_rule_strength=0.4  # Lower threshold for exploration
 )
 ```
 
@@ -233,7 +251,7 @@ prevalence of both.
 
 **Parameters to adjust:**
 
-- Increase `cons_similarity` to 0.7 or higher
+- Increase `min_rule_strength` to 0.7 or higher
 - The consequent similarity threshold incorporates association strength
 
 **Difference from confidence:**
@@ -248,7 +266,7 @@ prevalence of both.
 # Get rules with strong associations
 result = rule_extraction.generate_rules(
     trained_autoencoder,
-    cons_similarity=0.7  # Ensures strong correlations
+    min_rule_strength=0.7  # Ensures strong correlations
 )
 
 # Check Zhang's metric in results
@@ -262,7 +280,7 @@ for rule in result['rules']:
 
 **Parameters to adjust:**
 
-- Decrease `cons_similarity` below 0.5
+- Decrease `min_rule_strength` below 0.5
 
 **Common causes:**
 
@@ -289,6 +307,26 @@ trained_autoencoder = model.train(
 
 ## Common Scenarios
 
+### Scenario 0: Don't Know What Parameters to Use
+
+Start with defaults and filter results. Training uses smart defaults (epochs=2, auto batch_size).
+
+```python
+from aerial import model, rule_extraction
+from ucimlrepo import fetch_ucirepo
+
+breast_cancer = fetch_ucirepo(id=14).data.features
+
+# Training uses smart defaults (epochs=2 for fewer and higher quality rules)
+trained_autoencoder = model.train(breast_cancer)
+
+# Extract rules with default thresholds, filter to keep high-quality ones
+result = rule_extraction.generate_rules(
+    trained_autoencoder,
+    min_confidence=0.6
+)
+```
+
 ### Scenario 1: Finding Rare but Strong Patterns
 
 Perfect for discovering uncommon but highly reliable associations.
@@ -296,8 +334,8 @@ Perfect for discovering uncommon but highly reliable associations.
 ```python
 result = rule_extraction.generate_rules(
     trained_autoencoder,
-    ant_similarity=0.05,  # Low support for rare patterns
-    cons_similarity=0.8,  # High confidence for strong rules
+    min_rule_frequency=0.05,  # Low support for rare patterns
+    min_rule_strength=0.8,  # High confidence for strong rules
     max_antecedents=2  # Moderate complexity
 )
 ```
@@ -309,8 +347,8 @@ Get a concise summary of the most prominent patterns.
 ```python
 result = rule_extraction.generate_rules(
     trained_autoencoder,
-    ant_similarity=0.5,  # Higher support for common patterns
-    cons_similarity=0.7,  # Good confidence
+    min_rule_frequency=0.5,  # Higher support for common patterns
+    min_rule_strength=0.7,  # Good confidence
     max_antecedents=2  # Limit complexity for interpretability
 )
 ```
@@ -322,8 +360,8 @@ Discover all possible patterns for in-depth analysis.
 ```python
 result = rule_extraction.generate_rules(
     trained_autoencoder,
-    ant_similarity=0.1,  # Low support to catch rare patterns
-    cons_similarity=0.5,  # Moderate confidence
+    min_rule_frequency=0.1,  # Low support to catch rare patterns
+    min_rule_strength=0.5,  # Moderate confidence
     max_antecedents=3  # Allow complex patterns
 )
 ```
@@ -336,8 +374,8 @@ Extract rules for predictive modeling with high reliability.
 result = rule_extraction.generate_rules(
     trained_autoencoder,
     target_classes=["Class"],  # Specify class label column
-    cons_similarity=0.7,  # High confidence for predictions
-    ant_similarity=0.3  # Allow diverse patterns
+    min_rule_strength=0.7,  # High confidence for predictions
+    min_rule_frequency=0.3  # Allow diverse patterns
 )
 ```
 
@@ -357,8 +395,8 @@ features_of_interest = [
 result = rule_extraction.generate_rules(
     trained_autoencoder,
     features_of_interest,  # Focus mining on specified features
-    ant_similarity=0.3,  # Moderate support
-    cons_similarity=0.6  # Moderate confidence
+    min_rule_frequency=0.3,  # Moderate support
+    min_rule_strength=0.6  # Moderate confidence
 )
 ```
 
@@ -381,8 +419,8 @@ post: [Scalable Knowledge Discovery with PyAerial](https://erkankarabulut.github
 
 | Parameter         | Analogous to (in traditional ARM)   | Effect when increased                 | Effect when decreased            |
 |-------------------|-------------------------------------|---------------------------------------|----------------------------------|
-| `ant_similarity`  | Minimum support                     | Fewer, higher support rules           | More, lower support rules        |
-| `cons_similarity` | Minimum confidence + Zhang's metric | Fewer, higher confidence rules        | More, lower confidence rules     |
+| `min_rule_frequency`  | Minimum support                     | Fewer, higher support rules           | More, lower support rules        |
+| `min_rule_strength` | Minimum confidence + Zhang's metric | Fewer, higher confidence rules        | More, lower confidence rules     |
 | `max_antecedents` | Maximum itemset size                | More complex patterns, longer runtime | Simpler patterns, faster runtime |
 
 ## Next Steps

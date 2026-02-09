@@ -46,8 +46,8 @@ The `train()` function allows you to customize various training parameters:
 - `noise_factor` (default=0.5): amount of random noise (`+-`) added to each neuron of the denoising Autoencoder before
   the training process
 - `lr` (default=5e-3): learning rate
-- `epochs` (default=1): number of training epochs
-- `batch_size` (default=2): number of batches to train
+- `epochs` (default=2): number of training epochs. Shorter training produces fewer, higher-quality rules
+- `batch_size` (default=auto): automatically determined based on dataset size
 - `loss_function` (default=torch.nn.BCELoss()): loss function
 - `num_workers` (default=1): number of workers for parallel execution
 
@@ -105,13 +105,12 @@ can be done as follows:
 
 1. Start with `max_antecedents=2`, observe the execution time and usefulness of the rules you learned. Then gradually
    increase this number if necessary for the task you want to achieve.
-2. Start with `ant_similarity=0.5`, or even higher if necessary. A high antecedent similarity means you start
+2. Start with `min_rule_frequency=0.5`, or even higher if necessary. A high rule frequency means you start
    discovering the most prominent patterns in the data first, that are usually easier to discover. This parameter is
-   synonymous with the minimum support threshold of exhaustive ARM methods such as Apriori or FP-Growth (but not the
-   same).
-3. Do not set low `cons_similarity`. The consequent similarity is synonymous to a combination of minimum confidence and
+   analogous to the minimum support threshold of exhaustive ARM methods such as Apriori or FP-Growth.
+3. Do not set low `min_rule_strength`. The rule strength is analogous to a combination of minimum confidence and
    zhang's metric thresholds. There is no reason to set this parameter low, e.g., lower than 0.5. Similar to
-   `ant_similarity`, start with a high number such as `0.9` and then gradually decrease if necessary.
+   `min_rule_frequency`, start with a high number such as `0.9` and then gradually decrease if necessary.
 4. Train less or use less parameters. If Aerial does not terminate for an unreasonable duration, it could also mean that
    the model over-fitted the data and is finding many non-informative rules which increase the execution time. To
    prevent that, start with smaller number of epochs and parameters. For datasets where the number of rows `n` is much
@@ -151,7 +150,7 @@ Overfitting in knowledge discovery is fundamentally different from overfitting i
 - Rules may have high support and confidence but **low association strength (Zhang's metric)** or **too many low support
   and confidence rules**.
 - **Solution**: Shorter training, stronger compression, higher quality thresholds (in addition to early stopping,
-  regularization, more training data). Note that PyAerial already implements early stopping.
+  regularization, more training data). PyAerial defaults to epochs=2 for this reason.
 
 **Key Insight:** In knowledge discovery, overfitting doesn't mean poor generalization to new data—it means discovering
 non-informative patterns that lack genuine associations.

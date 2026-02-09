@@ -32,13 +32,13 @@
   <a href="LICENSE">🔑 License</a>
 </p>
 
-PyAerial is a **Python implementation** of the Aerial scalable neurosymbolic association rule miner for tabular data. It
+PyAerial is a Python implementation of the **Aerial** scalable neurosymbolic association rule miner for tabular data. It
 utilizes an under-complete denoising Autoencoder to learn a compact representation of tabular data, and extracts a
 concise set of high-quality association rules with full data coverage.
 
 Unlike traditional exhaustive methods (e.g., Apriori, FP-Growth), Aerial addresses the **rule explosion** problem by
 learning neural representations and extracting only the most relevant patterns, making it suitable for large-scale
-datasets. PyAerial supports **GPU acceleration**, **numerical data discretization**, **item constraints**, and
+datasets. PyAerial supports **GPU acceleration** (however, it is also the fastest rule miner on CPU), **numerical data discretization**, **item constraints**, and
 **classification rule extraction** and **rule visualization**
 via [NiaARM](https://github.com/firefly-cpp/NiaARM?tab=readme-ov-file#visualization) library.
 
@@ -60,15 +60,15 @@ pip install pyaerial
 > pip install ucimlrepo
 > ```
 
-> **Data Requirements:** PyAerial works with **categorical data**. Numerical columns must be discretized first, but you
-> don't need to one-hot encode your data—PyAerial handles that automatically (unlike libraries like mlxtend that require
+> **Data Requirements:** PyAerial works with **categorical data**. Numerical columns must be discretized first. This can be
+> done using the *discretization* module of PyAerial. There is no need to one-hot encode your data—PyAerial handles that automatically (unlike libraries like mlxtend that require
 > manual one-hot encoding).
 
 ---
 
 ## Performance
 
-PyAerial significantly outperforms traditional ARM methods in **scalability** while maintaining high-quality results:
+PyAerial significantly outperforms traditional ARM methods in **scalability** while maintaining high-quality results, also on CPU:
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/docs/source/_static/assets/benchmark.png" alt="PyAerial performance comparison" width="700">
@@ -79,9 +79,10 @@ PyAerial significantly outperforms traditional ARM methods in **scalability** wh
 
 - ⚡ **100-1000x faster** on large datasets compared to standard rule mining algorithms in Python (e.g.,
   Apriori, FP-Growth, ECLAT, ...)
-- 📈 **Linear scaling** with dataset size (vs. exponential for traditional methods)
+- 📈 **Linear scaling** in training, polynomial scaling in rule extraction
 - 🎯 **No rule explosion** - extracts concise, high-quality rules with full data coverage
 - 💾 **Memory efficient** - neural representation avoids storing exponential candidate sets
+- 🖥️ **Fast on CPU** - GPU is optional and only needed for very large datasets
 
 For **comprehensive benchmarking** and comparisons with Mlxtend (e.g., FPGrowth, Apriori etc.), and other ARM tools, see
 our benchmarking paper:
@@ -110,7 +111,7 @@ breast_cancer = fetch_ucirepo(id=14).data.features
 trained_autoencoder = model.train(breast_cancer)
 
 # Extract association rules with quality metrics calculated automatically
-result = rule_extraction.generate_rules(trained_autoencoder)
+result = rule_extraction.generate_rules(trained_autoencoder, min_rule_frequency=0.1, min_rule_strength=0.8)
 
 print(f"Overall statistics: {result['statistics']}\n")
 print(f"Sample rule: {result['rules'][0]}")
@@ -161,6 +162,8 @@ Learn how to adjust parameters for your specific needs:
 - 🔧 [**Troubleshooting**](https://pyaerial.readthedocs.io/en/latest/configuration.html#debugging) - What to do when Aerial doesn't find rules or takes too long
 - ⚙️ [**Advanced Tuning**](https://pyaerial.readthedocs.io/en/latest/configuration.html#advanced-training-and-architecture-tuning) - Training duration and architecture optimization
 
+> **📝 Note on Parameter Names:** The parameters `min_rule_frequency` and `min_rule_strength` correspond to `ant_similarity` and `cons_similarity` in the original [Aerial](https://proceedings.mlr.press/v284/karabulut25a.html) and [PyAerial](https://doi.org/10.1016/j.softx.2025.102341) papers.
+
 ---
 
 **Working with rules:** Access rule components and metrics easily using the dictionary format:
@@ -197,7 +200,7 @@ iris_discretized = discretization.equal_frequency_discretization(iris, n_bins=3)
 
 # Train and extract rules as usual
 trained_autoencoder = model.train(iris_discretized, epochs=10)
-result = rule_extraction.generate_rules(trained_autoencoder, ant_similarity=0.1)
+result = rule_extraction.generate_rules(trained_autoencoder, min_rule_frequency=0.1)
 print(
     f"Found {result['statistics']['rule_count']} rules with avg support {result['statistics']['average_support']:.3f}")
 ```
@@ -240,28 +243,27 @@ from ucimlrepo import fetch_ucirepo
 breast_cancer = fetch_ucirepo(id=14).data.features
 trained_autoencoder = model.train(breast_cancer)
 
-# Define features of interest for the antecedent side
-features_of_interest = ["age", {"menopause": 'premeno'}, {"node-caps": "yes"}]
+# Define features of interest for the antecedent side, either as complete features or their specific values
+features_of_interest = ["age", "tumor-size", "inv-nodes", {"menopause": 'premeno'}, "node-caps"]
 
 # Extract rules focusing only on specified features
 result = rule_extraction.generate_rules(
     trained_autoencoder,
     features_of_interest,
-    cons_similarity=0.5
+    min_rule_frequency=0.1
 )
+
+print(f"Sample rule: {result['rules'][0]}")
 ```
 
 **Output:** Rules with specified features on the antecedent side (left side of an if-else rule):
 
 ```python
 {
-    "antecedents": [{"feature": "menopause", "value": "premeno"}],
-    "consequent": {"feature": "node-caps", "value": "no"},
-    "support": 0.357,
-    "confidence": 0.68,
-    "zhangs_metric": -0.066,
-    "rule_coverage": 0.525
-}
+    'antecedents': [{'feature': 'menopause', 'value': 'premeno'}, {'feature': 'tumor-size', 'value': '30-34'}], 
+    'consequent': {'feature': 'node-caps', 'value': 'no'}, 
+    ...
+ }
 ```
 
 This is ideal for **domain-specific exploration** where you want to understand relationships involving particular
@@ -292,7 +294,8 @@ trained_autoencoder = model.train(table_with_labels)
 result = rule_extraction.generate_rules(
     trained_autoencoder,
     target_classes=["Class"],
-    cons_similarity=0.5
+    min_rule_frequency=0.01,
+    min_rule_strength=0.7
 )
 ```
 
@@ -302,15 +305,42 @@ result = rule_extraction.generate_rules(
 {
     "antecedents": [{"feature": "menopause", "value": "premeno"}],
     "consequent": {"feature": "Class", "value": "no-recurrence-events"},
-    "support": 0.357,
-    "confidence": 0.68,
-    "zhangs_metric": -0.066,
-    "rule_coverage": 0.525
+    ...
 }
 ```
 
 These rules can be used for **interpretable inference** or integrated with rule-based classifiers
 from [imodels](https://github.com/csinva/imodels).
+
+---
+
+### Filtering Rules by Quality
+
+**Post-filter rules** to keep only high-quality ones:
+
+```python
+from aerial import model, rule_extraction
+from ucimlrepo import fetch_ucirepo
+
+breast_cancer = fetch_ucirepo(id=14).data.features
+
+# Train with default epochs=2 (shorter training = fewer and higher quality rules)
+trained_autoencoder = model.train(breast_cancer)
+
+# Extract rules and filter by quality thresholds
+result = rule_extraction.generate_rules(
+    trained_autoencoder,
+    min_confidence=0.7,        # Only keep rules with ≥70% confidence
+    min_support=0.1            # Only keep rules with ≥10% support
+)
+
+print(f"Found {len(result['rules'])} high-quality rules")
+```
+
+**Filtering parameters:**
+
+- **`min_confidence`**: Post-filters rules to only include those with confidence ≥ this value
+- **`min_support`**: Post-filters rules to only include those with support ≥ this value
 
 ---
 
@@ -320,6 +350,8 @@ PyAerial provides a comprehensive toolkit for association rule mining with advan
 
 - **Scalable Rule Mining** - Efficiently mine association rules from large tabular datasets without rule explosion
 - **Automatic Quality Metrics** - Rules include support, confidence, Zhang's metric, and more calculated automatically
+- **Smart Defaults** - Short training (epochs=2) by default produces fewer, higher-quality rules
+- **Rule Filtering** - Post-filter rules with `min_confidence` and `min_support` thresholds
 - **Frequent Itemset Mining** - Generate frequent itemsets with support values using the same neural approach
 - **ARM with Item Constraints** - Focus rule mining on specific features of interest
 - **Classification Rules** - Extract rules with target class labels for interpretable inference

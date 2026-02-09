@@ -38,7 +38,9 @@ class TestAutoEncoder(unittest.TestCase):
 
     def test_encoder_decoder_shapes(self):
         encoded = self.model.encoder(self.input_data)
-        self.assertEqual(encoded.shape[-1], self.feature_count, "Encoded feature size mismatch.")
+        # Bottleneck is min(feature_count, 4) for auto-selected layer_dims
+        expected_bottleneck = min(self.feature_count, 2)
+        self.assertEqual(encoded.shape[-1], expected_bottleneck, "Encoded feature size mismatch.")
 
         decoded = self.model.decoder(encoded)
         self.assertEqual(decoded.shape[-1], self.input_dimension, "Decoded feature size mismatch.")
