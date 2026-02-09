@@ -89,7 +89,7 @@ def _apply_post_filters(result, autoencoder, min_confidence, min_support, qualit
         return {'rules': [], 'statistics': {}}
 
     # Recalculate coverage
-    transaction_array = autoencoder.input_vectors.to_numpy()
+    transaction_array = autoencoder.input_vectors.to_numpy(copy=True)
     coverage = np.zeros(len(transaction_array), dtype=bool)
     for rule in filtered:
         indices = [autoencoder.feature_values.index(f"{a['feature']}__{a['value']}") for a in rule['antecedents']]
@@ -206,7 +206,7 @@ def _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, 
         return {'rules': [], 'statistics': {}}
 
     # Calculate quality metrics
-    transaction_array = autoencoder.input_vectors.to_numpy()
+    transaction_array = autoencoder.input_vectors.to_numpy(copy=True)
     num_transactions = len(transaction_array)
 
     all_metrics = calculate_rule_metrics(
@@ -342,7 +342,7 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=No
 
     # Calculate support using batch processing with optional parallelization
     logger.info("Calculating support values")
-    transaction_array = autoencoder.input_vectors.to_numpy()
+    transaction_array = autoencoder.input_vectors.to_numpy(copy=True)
     num_transactions = len(transaction_array)
 
     # Batch calculate support for all itemsets (with optional parallelization)

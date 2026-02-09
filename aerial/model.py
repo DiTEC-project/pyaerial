@@ -176,7 +176,7 @@ def train(transactions: pd.DataFrame, autoencoder: AutoEncoder = None, noise_fac
     autoencoder.train()
     autoencoder.input_vectors = input_vectors
 
-    input_vectors = input_vectors.to_numpy(dtype=np.float32, copy=False)
+    input_vectors = input_vectors.to_numpy(dtype=np.float32, copy=True)
 
     autoencoder.feature_value_indices = feature_value_indices
     autoencoder.feature_values = columns
