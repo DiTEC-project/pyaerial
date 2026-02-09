@@ -13,7 +13,9 @@ pip install pyaerial
 > pip install ucimlrepo
 > ```
 
-> **Data Requirements:** PyAerial works with **categorical data**. You don't need to one-hot encode your data—PyAerial handles encoding automatically.
+> **Data Requirements:** PyAerial works with **categorical data**. Numerical columns must be discretized first. This can be
+> done using the *discretization* module of PyAerial. There is no need to one-hot encode your data—PyAerial handles that automatically (unlike libraries like mlxtend that require
+> manual one-hot encoding).
 
 ## Tested Platforms
 
@@ -29,20 +31,23 @@ Here's a simple example to get you started with PyAerial:
 from aerial import model, rule_extraction
 from ucimlrepo import fetch_ucirepo
 
-# Load a categorical tabular dataset from the UCI ML repository
+# Load a categorical tabular dataset
 breast_cancer = fetch_ucirepo(id=14).data.features
 
 # Train an autoencoder on the loaded table
 trained_autoencoder = model.train(breast_cancer)
 
 # Extract association rules with quality metrics calculated automatically
-result = rule_extraction.generate_rules(trained_autoencoder)
+result = rule_extraction.generate_rules(trained_autoencoder, min_rule_frequency=0.1, min_rule_strength=0.8)
 
 # Access rules and statistics
 if len(result['rules']) > 0:
     print(f"Overall statistics: {result['statistics']}\n")
     print(f"Sample rule: {result['rules'][0]}")
 ```
+
+`min_rule_frequency` is synonymous to rule coverage (antecedent support) while `min_rule_strength` is synonymous
+to a product of confidence and association strength (zhangs' metric).
 
 ### Output
 

@@ -273,7 +273,7 @@ class TestIntegratedRuleMining(unittest.TestCase):
 
     def test_generate_rules_returns_dict_with_rules_and_stats(self):
         """Test that generate_rules returns proper structure"""
-        result = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001)
+        result = generate_rules(self.model, min_rule_frequency=0.001, min_rule_strength=0.001)
 
         self.assertIsInstance(result, dict)
         self.assertIn('rules', result)
@@ -281,7 +281,7 @@ class TestIntegratedRuleMining(unittest.TestCase):
 
     def test_rules_have_quality_metrics(self):
         """Test that generated rules include quality metrics"""
-        result = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001)
+        result = generate_rules(self.model, min_rule_frequency=0.001, min_rule_strength=0.001)
 
         if len(result['rules']) > 0:
             rule = result['rules'][0]
@@ -303,7 +303,7 @@ class TestIntegratedRuleMining(unittest.TestCase):
 
     def test_statistics_calculated(self):
         """Test that aggregate statistics are calculated"""
-        result = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001)
+        result = generate_rules(self.model, min_rule_frequency=0.001, min_rule_strength=0.001)
 
         stats = result['statistics']
         if len(result['rules']) > 0:
@@ -319,8 +319,8 @@ class TestIntegratedRuleMining(unittest.TestCase):
         custom_metrics = ['support', 'confidence', 'lift', 'conviction']
         result = generate_rules(
             self.model,
-            ant_similarity=0.001,
-            cons_similarity=0.001,
+            min_rule_frequency=0.001,
+            min_rule_strength=0.001,
             quality_metrics=custom_metrics
         )
 
@@ -333,8 +333,8 @@ class TestIntegratedRuleMining(unittest.TestCase):
         """Test generating rules with all available quality metrics"""
         result = generate_rules(
             self.model,
-            ant_similarity=0.001,
-            cons_similarity=0.001,
+            min_rule_frequency=0.001,
+            min_rule_strength=0.001,
             quality_metrics=AVAILABLE_METRICS
         )
 
@@ -345,7 +345,7 @@ class TestIntegratedRuleMining(unittest.TestCase):
 
     def test_generate_frequent_itemsets_with_support(self):
         """Test that frequent itemsets include support values"""
-        result = generate_frequent_itemsets(self.model, similarity=0.001)
+        result = generate_frequent_itemsets(self.model, frequency=0.001)
 
         self.assertIsInstance(result, dict)
         self.assertIn('itemsets', result)
@@ -361,7 +361,7 @@ class TestIntegratedRuleMining(unittest.TestCase):
 
     def test_itemset_statistics(self):
         """Test that itemset statistics are calculated"""
-        result = generate_frequent_itemsets(self.model, similarity=0.001)
+        result = generate_frequent_itemsets(self.model, frequency=0.001)
 
         stats = result['statistics']
         if len(result['itemsets']) > 0:
@@ -388,7 +388,7 @@ class TestIntegratedRuleMining(unittest.TestCase):
     def test_empty_result_structure(self):
         """Test structure when no rules are found"""
         # Use very high thresholds to get no rules
-        result = generate_rules(self.model, ant_similarity=0.99, cons_similarity=0.99)
+        result = generate_rules(self.model, min_rule_frequency=0.99, min_rule_strength=0.99)
 
         self.assertIsInstance(result, dict)
         self.assertEqual(len(result['rules']), 0)
@@ -396,7 +396,7 @@ class TestIntegratedRuleMining(unittest.TestCase):
 
     def test_rule_coverage_calculation(self):
         """Test that rule_coverage (antecedent support) is calculated correctly"""
-        result = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001)
+        result = generate_rules(self.model, min_rule_frequency=0.001, min_rule_strength=0.001)
 
         if len(result['rules']) > 0:
             for rule in result['rules']:
@@ -425,8 +425,8 @@ class TestIntegratedRuleMining(unittest.TestCase):
         for quality_metrics in test_configs:
             result = generate_rules(
                 self.model,
-                ant_similarity=0.001,
-                cons_similarity=0.001,
+                min_rule_frequency=0.001,
+                min_rule_strength=0.001,
                 quality_metrics=quality_metrics
             )
 
@@ -449,7 +449,7 @@ class TestBackwardCompatibility(unittest.TestCase):
 
     def test_rule_structure_preserved(self):
         """Test that rule dictionary structure is preserved"""
-        result = generate_rules(self.model, ant_similarity=0.001, cons_similarity=0.001)
+        result = generate_rules(self.model, min_rule_frequency=0.001, min_rule_strength=0.001)
 
         if len(result['rules']) > 0:
             rule = result['rules'][0]
@@ -492,15 +492,15 @@ class TestParallelization(unittest.TestCase):
         """Test that num_workers parameter is accepted by generate_rules"""
         result_sequential = generate_rules(
             self.model,
-            ant_similarity=0.001,
-            cons_similarity=0.001,
+            min_rule_frequency=0.001,
+            min_rule_strength=0.001,
             num_workers=1
         )
 
         result_parallel = generate_rules(
             self.model,
-            ant_similarity=0.001,
-            cons_similarity=0.001,
+            min_rule_frequency=0.001,
+            min_rule_strength=0.001,
             num_workers=2
         )
 
@@ -516,13 +516,13 @@ class TestParallelization(unittest.TestCase):
         """Test that num_workers parameter is accepted by generate_frequent_itemsets"""
         result_sequential = generate_frequent_itemsets(
             self.model,
-            similarity=0.001,
+            frequency=0.001,
             num_workers=1
         )
 
         result_parallel = generate_frequent_itemsets(
             self.model,
-            similarity=0.001,
+            frequency=0.001,
             num_workers=2
         )
 
@@ -538,15 +538,15 @@ class TestParallelization(unittest.TestCase):
         """Test that parallel processing produces same results as sequential"""
         result_seq = generate_rules(
             self.model,
-            ant_similarity=0.001,
-            cons_similarity=0.001,
+            min_rule_frequency=0.001,
+            min_rule_strength=0.001,
             num_workers=1
         )
 
         result_par = generate_rules(
             self.model,
-            ant_similarity=0.001,
-            cons_similarity=0.001,
+            min_rule_frequency=0.001,
+            min_rule_strength=0.001,
             num_workers=4
         )
 

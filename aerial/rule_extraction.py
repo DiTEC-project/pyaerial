@@ -23,8 +23,9 @@ import logging
 logger = logging.getLogger("aerial")
 
 
-def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, ant_similarity=0.5, cons_similarity=0.8,
-                   max_antecedents=2, target_classes=None, quality_metrics=None, num_workers=1):
+def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, min_rule_frequency=0.5, min_rule_strength=0.8,
+                   max_antecedents=2, target_classes=None, quality_metrics=None, num_workers=1,
+                   min_confidence: float = None, min_support: float = None):
     """
     Extract association rules from a trained Autoencoder using Aerial+ algorithm.
     Rule quality metrics are calculated automatically and included in the output.
@@ -33,20 +34,78 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
     :param features_of_interest: list: only look for rules that have these features of interest on the antecedent side
         accepted form ["feature1", "feature2", {"feature3": "value1}, ...], either a feature name as str, or specific value
         of a feature in object form
-    :param ant_similarity: antecedent similarity threshold (default=0.5)
-    :param cons_similarity: consequent similarity threshold (default=0.8)
+    :param min_rule_frequency: minimum frequency threshold for patterns (default=0.5). Higher values yield fewer,
+        more common patterns. Originally named 'ant_frequency' in the Aerial paper.
+    :param min_rule_strength: minimum strength threshold for rules (default=0.8). Higher values yield fewer,
+        stronger rules. Originally named 'cons_frequency' in the Aerial paper.
     :param max_antecedents: max number of antecedents that the rules will contain (default=2)
     :param target_classes: list: if given a list of target classes, generate rules with the target classes on the
         right hand side only, the content of the list is as same as features_of_interest
     :param quality_metrics: list of quality metrics to calculate. Default is ['support', 'confidence', 'zhangs_metric'].
         Available metrics: 'support', 'confidence', 'zhangs_metric', 'lift', 'conviction', 'yulesq', 'interestingness'
     :param num_workers: number of parallel workers for quality metric calculation (default=1 for sequential processing)
+    :param min_confidence: if set, post-filter rules to only include those with confidence >= this value
+    :param min_support: if set, post-filter rules to only include those with support >= this value
     :return: dict with 'rules' (list of rules with quality metrics) and 'statistics' (aggregate stats)
     """
     if not autoencoder:
         logger.error("A trained Autoencoder has to be provided before generating rules.")
         return None
 
+    if quality_metrics is not None:
+        invalid = [m for m in quality_metrics if m not in AVAILABLE_METRICS]
+        if invalid:
+            logger.error(f"Invalid quality metrics: {invalid}. Available: {AVAILABLE_METRICS}")
+            return None
+
+    logger.info("Mining association rules...")
+    result = _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, min_rule_strength,
+                                  max_antecedents, target_classes, quality_metrics, num_workers)
+
+    if min_confidence is not None or min_support is not None:
+        result = _apply_post_filters(result, autoencoder, min_confidence, min_support, quality_metrics)
+
+    logger.info(
+        f"Mining complete: {len(result['rules'])} rules with avg support={result['statistics'].get('average_support', 0):.3f}, "
+        f"avg confidence={result['statistics'].get('average_confidence', 0):.3f}")
+    return result
+
+
+def _apply_post_filters(result, autoencoder, min_confidence, min_support, quality_metrics):
+    """Apply post-filters and recalculate statistics if rules were filtered."""
+    rules = result['rules']
+    filtered = [r for r in rules
+                if (min_confidence is None or r.get('confidence', 1.0) >= min_confidence)
+                and (min_support is None or r.get('support', 1.0) >= min_support)]
+
+    if len(filtered) == len(rules):
+        return result
+
+    logger.info(f"Post-filtering: {len(rules)} -> {len(filtered)} rules")
+
+    if not filtered:
+        logger.info("No rules remaining after post-filtering. Consider tuning parameters: "
+                     "https://pyaerial.readthedocs.io/en/latest/parameter_guide.html#quick-parameter-reference")
+        return {'rules': [], 'statistics': {}}
+
+    # Recalculate coverage
+    transaction_array = autoencoder.input_vectors.to_numpy()
+    coverage = np.zeros(len(transaction_array), dtype=bool)
+    for rule in filtered:
+        indices = [autoencoder.feature_values.index(f"{a['feature']}__{a['value']}") for a in rule['antecedents']]
+        coverage |= np.all(transaction_array[:, indices] == 1, axis=1)
+
+    metrics = quality_metrics if quality_metrics else DEFAULT_RULE_METRICS.copy()
+    return {'rules': filtered,
+            'statistics': _calculate_aggregate_stats(filtered, coverage, len(transaction_array), metrics)}
+
+
+def _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, min_rule_strength,
+                         max_antecedents, target_classes, quality_metrics, num_workers):
+    """
+    Core rule generation logic without auto-tuning or post-filtering.
+    This is the internal implementation used by both generate_rules and auto-tuning.
+    """
     # Validate quality metrics
     if quality_metrics is None:
         quality_metrics = DEFAULT_RULE_METRICS.copy()
@@ -54,10 +113,7 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
         invalid_metrics = [m for m in quality_metrics if m not in AVAILABLE_METRICS]
         if invalid_metrics:
             logger.error(f"Invalid quality metrics: {invalid_metrics}. Available: {AVAILABLE_METRICS}")
-            return None
-
-    logger.info("Mining association rules...")
-    logger.debug("Extracting association rules from the given trained Autoencoder ...")
+            return {'rules': [], 'statistics': {}}
 
     # Store rules with their integer indices for fast quality calculation
     rules_with_indices = []
@@ -76,13 +132,12 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
     softmax_ranges = [range(cat['start'], cat['end']) for cat in significant_features]
 
     # Precompute index-to-feature-range mapping for fast feature conflict detection
-    # This maps each index to its feature range (start, end) for O(1) lookup
     index_to_feature_range = {}
     for cat in feature_value_indices:
         for idx in range(cat['start'], cat['end']):
             index_to_feature_range[idx] = (cat['start'], cat['end'])
 
-    # If target_classes are specified, narrow the target range and features to constrain the consequent side of a rule
+    # If target_classes are specified, narrow the target range
     significant_consequents, insignificant_consequent_values = extract_significant_features_and_ignored_indices(
         target_classes, autoencoder)
     significant_consequent_indices = [
@@ -101,9 +156,8 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
                 not all(idx in insignificant_feature_values for idx in range(feature_range.start, feature_range.stop))
             ]
 
-        feature_combinations = list(combinations(softmax_ranges, r))  # Generate combinations
+        feature_combinations = list(combinations(softmax_ranges, r))
 
-        # Vectorized model evaluation batch
         batch_vectors = []
         batch_candidate_antecedent_list = []
 
@@ -117,49 +171,44 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
         if batch_vectors:
             batch_vectors = torch.tensor(np.array(batch_vectors), dtype=torch.float32)
             batch_vectors = batch_vectors.to(next(autoencoder.parameters()).device)
-            # Perform a single model evaluation for the batch
             implications_batch = autoencoder(batch_vectors, feature_value_indices).detach().cpu().numpy()
+
             for test_vector, implication_probabilities, candidate_antecedents \
                     in zip(batch_vectors, implications_batch, batch_candidate_antecedent_list):
                 if len(candidate_antecedents) == 0:
                     continue
 
-                # Identify low-support antecedents
-                if any(implication_probabilities[ant] <= ant_similarity for ant in candidate_antecedents):
+                if any(implication_probabilities[ant] <= min_rule_frequency for ant in candidate_antecedents):
                     if r == 1:
                         insignificant_feature_values = np.append(insignificant_feature_values, candidate_antecedents)
                     continue
 
-                # Get the feature ranges used in antecedents to prevent same-feature rules
                 antecedent_ranges = set(index_to_feature_range[ant_idx] for ant_idx in candidate_antecedents)
 
-                # Identify high-support consequents (excluding same features as antecedents)
                 consequent_list = [
                     prob_index for prob_index in significant_consequent_indices
                     if index_to_feature_range[prob_index] not in antecedent_ranges and
-                       implication_probabilities[prob_index] >= cons_similarity
+                       implication_probabilities[prob_index] >= min_rule_strength
                 ]
 
                 if consequent_list:
-                    # Store rules with integer indices for fast quality calculation
                     for consequent_idx in consequent_list:
                         rules_with_indices.append({
-                            'antecedent_indices': candidate_antecedents.tolist() if isinstance(candidate_antecedents, np.ndarray) else list(candidate_antecedents),
+                            'antecedent_indices': candidate_antecedents.tolist() if isinstance(candidate_antecedents,
+                                                                                               np.ndarray) else list(
+                                candidate_antecedents),
                             'consequent_index': int(consequent_idx)
                         })
 
-    logger.info(f"Found {len(rules_with_indices)} rules")
-
     if len(rules_with_indices) == 0:
-        logger.info("No rules found")
+        logger.info("No rules found. Consider tuning parameters: "
+                     "https://pyaerial.readthedocs.io/en/latest/parameter_guide.html#quick-parameter-reference")
         return {'rules': [], 'statistics': {}}
 
-    # Calculate quality metrics using batch processing with optional parallelization
-    logger.info(f"Calculating quality metrics: {', '.join(quality_metrics)}")
+    # Calculate quality metrics
     transaction_array = autoencoder.input_vectors.to_numpy()
     num_transactions = len(transaction_array)
 
-    # Batch calculate metrics for all rules (with optional parallelization)
     all_metrics = calculate_rule_metrics(
         rules_with_indices, transaction_array, quality_metrics, num_workers=num_workers
     )
@@ -172,11 +221,9 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
         ant_indices = rule_idx['antecedent_indices']
         cons_index = rule_idx['consequent_index']
 
-        # Extract antecedent mask for dataset coverage
         antecedent_mask = metrics.pop('_antecedent_mask')
         dataset_coverage |= antecedent_mask
 
-        # Convert indices to human-readable format
         antecedents = [
             {'feature': autoencoder.feature_values[idx].split('__', 1)[0],
              'value': autoencoder.feature_values[idx].split('__', 1)[1]}
@@ -187,7 +234,6 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
             'value': autoencoder.feature_values[cons_index].split('__', 1)[1]
         }
 
-        # Build final rule with quality metrics
         rule = {
             'antecedents': antecedents,
             'consequent': consequent
@@ -195,17 +241,13 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
         rule.update(metrics)
         final_rules.append(rule)
 
-    # Calculate aggregate statistics
-    logger.info("Calculating aggregate statistics")
     stats = _calculate_aggregate_stats(final_rules, dataset_coverage, num_transactions, quality_metrics)
-
-    logger.info(f"Mining complete: {len(final_rules)} rules with avg support={stats.get('average_support', 0):.3f}, "
-                f"avg confidence={stats.get('average_confidence', 0):.3f}")
 
     return {'rules': final_rules, 'statistics': stats}
 
 
-def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=None, similarity=0.5, max_length=2, num_workers=1):
+def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=None, frequency=0.5, max_length=2,
+                               num_workers=1):
     """
     Generate frequent itemsets using the Aerial+ algorithm.
     Support values are calculated automatically and included in the output.
@@ -214,7 +256,7 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=No
     :param features_of_interest: list: only look for itemsets that have these features of interest
         accepted form ["feature1", "feature2", {"feature3": "value1}, ...], either a feature name as str, or specific value
         of a feature in object form
-    :param similarity: similarity threshold (default=0.5)
+    :param frequency: minimum frequency threshold for itemsets (default=0.5). Originally named 'frequency' in the Aerial paper.
     :param max_length: max itemset length (default=2)
     :param num_workers: number of parallel workers for support calculation (default=1 for sequential processing)
     :return: dict with 'itemsets' (list of itemsets with support) and 'statistics' (aggregate stats)
@@ -280,20 +322,22 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=No
                     continue
 
                 # Identify low-support antecedents
-                if any(implication_probabilities[ant] <= similarity for ant in candidate_antecedents):
+                if any(implication_probabilities[ant] <= frequency for ant in candidate_antecedents):
                     if r == 1:
                         insignificant_feature_values = np.append(insignificant_feature_values, candidate_antecedents)
                     continue
 
                 # Store itemsets with integer indices for fast support calculation
                 itemsets_with_indices.append(
-                    candidate_antecedents.tolist() if isinstance(candidate_antecedents, np.ndarray) else list(candidate_antecedents)
+                    candidate_antecedents.tolist() if isinstance(candidate_antecedents, np.ndarray) else list(
+                        candidate_antecedents)
                 )
 
     logger.info(f"Found {len(itemsets_with_indices)} itemsets")
 
     if len(itemsets_with_indices) == 0:
-        logger.info("No itemsets found")
+        logger.info("No itemsets found. Consider tuning parameters: "
+                     "https://pyaerial.readthedocs.io/en/latest/parameter_guide.html#quick-parameter-reference")
         return {'itemsets': [], 'statistics': {}}
 
     # Calculate support using batch processing with optional parallelization

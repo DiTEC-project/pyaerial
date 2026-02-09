@@ -2,6 +2,10 @@
 
 This section lists the important classes and functions as part of the Aerial package.
 
+> **📝 Note on Parameter Names:** The parameters `min_rule_frequency` and `min_rule_strength` correspond to `ant_similarity` and `cons_similarity` in the original [Aerial](https://proceedings.mlr.press/v284/karabulut25a.html) and [PyAerial](https://doi.org/10.1016/j.softx.2025.102341) papers.
+
+> **🖥️ CPU Performance:** PyAerial runs fast on CPU. GPU acceleration is optional and only beneficial for very large datasets.
+
 ## Model Module
 
 ### AutoEncoder
@@ -18,13 +22,13 @@ Rule Mining method.
 - `input_dimension` (int): Number of input features after one-hot encoding.
 - `feature_count` (int): Original number of categorical features in the dataset.
 - `layer_dims` (list of int, optional): User-specified hidden layer dimensions. If not provided, the model calculates a
-  default architecture using a logarithmic reduction strategy (base 16).
+  default architecture using a logarithmic reduction strategy (base 32).
 
 **Behavior**:
 
 - Automatically builds an under-complete autoencoder with a bottleneck at the original feature count.
 - If no layer_dims are provided, the architecture is determined by reducing the input dimension using a geometric
-  progression and creates `log₁₆(input_dimension)` layers in total.
+  progression and creates `log₃₂(input_dimension)` layers in total.
 - Uses Xavier initialization for weights and sets all biases to zero.
 - Applies Tanh activation functions between layers, except the final encoder and decoder layers.
 
@@ -37,13 +41,14 @@ train(
     noise_factor=0.5,
     lr=5e-3,
     epochs=2,
-    batch_size=2,
+    batch_size=None,
     loss_function=torch.nn.BCELoss(),
     num_workers=1,
     layer_dims=None,
     device=None,
-    patience=20,
-    delta=1e-4
+    patience=10,
+    delta=1e-3,
+    show_progress=True
 )
 ```
 
@@ -61,15 +66,16 @@ cardinality is more than 10, then it throws an error.
   automatically.
 - `noise_factor` (float, default=0.5): Controls the amount of Gaussian noise added to inputs during training (denoising effect).
 - `lr` (float, default=5e-3): Learning rate for the Adam optimizer.
-- `epochs` (int, default=2): Number of training epochs.
-- `batch_size` (int, default=2): Number of samples per training batch.
+- `epochs` (int, default=2): Number of training epochs. Shorter training produces fewer, higher-quality rules.
+- `batch_size` (int, optional): Number of samples per training batch. If None (default), automatically determined based on dataset size: 2 for <200 rows, 4 for <500, 8 for <1000, 32 for <5000, 64 for larger.
 - `loss_function` (torch.nn.Module, default=torch.nn.BCELoss()): Loss function to apply.
 - `num_workers` (int, default=1): Number of subprocesses used for data loading.
 - `layer_dims` (list of int, optional): Custom hidden layer dimensions for autoencoder construction.
 - `device` (str, optional): Name of the device to run the Autoencoder model on, e.g., "cuda", "cpu" etc. The device option that is
   set here will also be used in the rule extraction stage. If not specified, uses CUDA if available, otherwise CPU.
-- `patience` (int, default=20): Number of epochs to wait for improvement before early stopping.
-- `delta` (float, default=1e-4): Minimum change in loss to qualify as an improvement for early stopping.
+- `patience` (int, default=10): Number of epochs to wait for improvement before early stopping.
+- `delta` (float, default=1e-3): Minimum change in loss to qualify as an improvement for early stopping.
+- `show_progress` (bool, default=True): Show a progress bar during training.
 
 **Returns**: A trained instance of the AutoEncoder.
 
@@ -81,12 +87,14 @@ cardinality is more than 10, then it throws an error.
 generate_rules(
     autoencoder,
     features_of_interest=None,
-    ant_similarity=0.5,
-    cons_similarity=0.8,
+    min_rule_frequency=0.5,
+    min_rule_strength=0.8,
     max_antecedents=2,
     target_classes=None,
     quality_metrics=['support', 'confidence', 'zhangs_metric'],
-    num_workers=1
+    num_workers=1,
+    min_confidence=None,
+    min_support=None
 )
 ```
 
@@ -98,10 +106,10 @@ Extracts association rules from a trained AutoEncoder using the Aerial algorithm
 - `features_of_interest` (list, optional): only look for rules that have these features of interest on the antecedent
   side. Accepted form `["feature1", "feature2", {"feature3": "value1"}, ...]`, either a feature name as str, or specific
   value of a feature in object form
-- `ant_similarity` (float, optional): Minimum similarity threshold for an antecedent to be considered frequent.
-  Default=0.5
-- `cons_similarity` (float, optional): Minimum probability threshold for a feature to qualify as a rule consequent.
-  Default=0.8
+- `min_rule_frequency` (float, optional): Minimum frequency threshold for patterns. Higher values = fewer, more common patterns.
+  Default=0.5. Originally named `ant_similarity` in the Aerial paper.
+- `min_rule_strength` (float, optional): Minimum strength threshold for rules. Higher values = fewer, stronger rules.
+  Default=0.8. Originally named `cons_similarity` in the Aerial paper.
 - `max_antecedents` (int, optional): Maximum number of features allowed in the rule antecedent. Default=2
 - `target_classes` (list, optional): When set, restricts rule consequents to the specified class(es) (constraint-based
   rule mining). The format of the list is same as the list format of `features_of_interest`.
@@ -109,6 +117,8 @@ Extracts association rules from a trained AutoEncoder using the Aerial algorithm
   Available metrics: 'support', 'confidence', 'lift', 'conviction', 'zhangs_metric', 'yulesq', 'interestingness', 'leverage'
 - `num_workers` (int, optional): Number of parallel workers for quality metric calculation. Default=1 for sequential processing.
   **Note**: Parallelization is automatically disabled for fewer than 1000 rules due to overhead costs. Set to 4-8 for datasets generating 1000+ rules.
+- `min_confidence` (float, optional): Post-filter rules to only include those with confidence >= this value.
+- `min_support` (float, optional): Post-filter rules to only include those with support >= this value.
 
 **Returns**:
 
@@ -155,7 +165,7 @@ for rule in result['rules']:
 generate_frequent_itemsets(
     autoencoder,
     features_of_interest=None,
-    similarity=0.5,
+    frequency=0.5,
     max_length=2,
     num_workers=1
 )
@@ -169,7 +179,7 @@ Generates frequent itemsets from a trained AutoEncoder using the same Aerial+ me
 - `features_of_interest` (list, Optional): only look for rules that have these features of interest on the antecedent
   side. Accepted form `["feature1", "feature2", {"feature3": "value1"}, ...]`, either a feature name as str, or specific
   value of a feature in object form
-- `similarity` (float, Optional): Minimum similarity threshold for an itemset to be considered frequent. Default=0.5
+- `frequency` (float, Optional): Minimum frequency threshold for an itemset to be considered frequent. Default=0.5
 - `max_length` (int, Optional): Maximum number of items in each itemset. Default=2
 - `num_workers` (int, optional): Number of parallel workers for support calculation. Default=1 for sequential processing.
   **Note**: Parallelization is automatically disabled for fewer than 1000 itemsets due to overhead costs. Set to 4-8 for datasets generating 1000+ itemsets.
