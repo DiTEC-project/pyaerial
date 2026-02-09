@@ -155,7 +155,7 @@ class TestRuleQualityFromIndices(unittest.TestCase):
             'Size': ['S', 'S', 'M', 'M', 'S', 'M'],
         })
         self.model = train(self.transactions, epochs=2)
-        self.transaction_array = self.model.input_vectors.to_numpy()
+        self.transaction_array = self.model.input_vectors.to_numpy(copy=True)
         self.num_transactions = len(self.transaction_array)
 
     def test_calculate_rule_quality_with_default_metrics(self):
