@@ -23,7 +23,7 @@ class TestEqualFrequencyDiscretization:
         result = discretization.equal_frequency_discretization(df, n_bins=4)
 
         # Check that numerical column is discretized
-        assert result['value'].dtype == object
+        assert pd.api.types.is_string_dtype(result['value'])
         # Check that categorical column is unchanged
         assert all(result['categorical'].isin(['A', 'B']))
         # Check that we have approximately equal frequencies
@@ -38,9 +38,9 @@ class TestEqualFrequencyDiscretization:
         result = discretization.equal_frequency_discretization(df, n_bins=3)
 
         # Check that discretization happened (NaN is converted to string 'nan')
-        assert result['value'].dtype == object
+        assert pd.api.types.is_string_dtype(result['value'])
         # Check that original NaN location has 'nan' string
-        assert result.loc[2, 'value'] == 'nan'
+        assert pd.isna(result.loc[2, 'value']) or result.loc[2, 'value'] == 'nan'
 
     def test_insufficient_unique_values(self):
         """Test when column has fewer unique values than bins"""
@@ -68,7 +68,7 @@ class TestEqualWidthDiscretization:
         result = discretization.equal_width_discretization(df, n_bins=5)
 
         # Check that numerical column is discretized
-        assert result['value'].dtype == object
+        assert pd.api.types.is_string_dtype(result['value'])
         # Categorical should be unchanged
         assert all(result['categorical'] == 'X')
 
@@ -81,7 +81,7 @@ class TestEqualWidthDiscretization:
 
         result = discretization.equal_width_discretization(df, n_bins=4)
 
-        assert result['value'].dtype == object
+        assert pd.api.types.is_string_dtype(result['value'])
         assert result['value'].nunique() <= 4
 
 
@@ -98,7 +98,7 @@ class TestKMeansDiscretization:
         result = discretization.kmeans_discretization(df, n_bins=3, random_state=42)
 
         # Check discretization occurred
-        assert result['value'].dtype == object
+        assert pd.api.types.is_string_dtype(result['value'])
         # Should create 3 bins
         assert result['value'].nunique() == 3
 
@@ -112,13 +112,13 @@ class TestKMeansDiscretization:
 
         # After pd.cut, NaN values are converted to string 'nan'
         # Check that we have 'nan' strings where original NaN values were
-        assert result.loc[2, 'value'] == 'nan'
-        assert result.loc[5, 'value'] == 'nan'
+        assert pd.isna(result.loc[2, 'value']) or result.loc[2, 'value'] == 'nan'
+        assert pd.isna(result.loc[5, 'value']) or result.loc[5, 'value'] == 'nan'
         # Valid values should be clustered into intervals
-        assert result['value'].dtype == object
+        assert pd.api.types.is_string_dtype(result['value'])
         # Should have created intervals (not 'nan') for non-NaN values
         non_nan_values = result.loc[[0, 1, 3, 4, 6, 7], 'value']
-        assert all(non_nan_values != 'nan')
+        assert all(not pd.isna(v) and v != 'nan' for v in non_nan_values)
 
     def test_reproducibility(self):
         """Test that random_state ensures reproducibility"""
@@ -148,8 +148,8 @@ class TestEntropyBasedDiscretization:
         result = discretization.entropy_based_discretization(df, target_col='target', n_bins=3)
 
         # Numerical columns should be discretized
-        assert result['feature1'].dtype == object
-        assert result['feature2'].dtype == object
+        assert pd.api.types.is_string_dtype(result['feature1'])
+        assert pd.api.types.is_string_dtype(result['feature2'])
         # Target should be unchanged
         assert all(result['target'].isin(['A', 'B']))
 
@@ -172,7 +172,7 @@ class TestEntropyBasedDiscretization:
 
         result = discretization.entropy_based_discretization(df, target_col='target', n_bins=4)
 
-        assert result['value'].dtype == object
+        assert pd.api.types.is_string_dtype(result['value'])
         assert result['value'].nunique() <= 4
 
 
@@ -189,7 +189,7 @@ class TestDecisionTreeDiscretization:
         result = discretization.decision_tree_discretization(df, target_col='target', max_depth=3)
 
         # Feature should be discretized
-        assert result['feature'].dtype == object
+        assert pd.api.types.is_string_dtype(result['feature'])
         # Target unchanged
         assert all(result['target'].isin(['A', 'B']))
 
@@ -203,7 +203,7 @@ class TestDecisionTreeDiscretization:
         result = discretization.decision_tree_discretization(df, target_col='target', max_depth=4)
 
         # Feature should be discretized
-        assert result['feature'].dtype == object
+        assert pd.api.types.is_string_dtype(result['feature'])
         # Target should remain numerical
         assert pd.api.types.is_numeric_dtype(result['target'])
 
@@ -218,8 +218,8 @@ class TestDecisionTreeDiscretization:
         result = discretization.decision_tree_discretization(df, target_col='target', max_depth=3)
 
         # Features should be discretized
-        assert result['feature1'].dtype == object
-        assert result['feature2'].dtype == object
+        assert pd.api.types.is_string_dtype(result['feature1'])
+        assert pd.api.types.is_string_dtype(result['feature2'])
         # Target unchanged
         assert all(result['target'].isin(['Low', 'Medium', 'High']))
 
@@ -234,8 +234,8 @@ class TestDecisionTreeDiscretization:
         result_deep = discretization.decision_tree_discretization(df, target_col='target', max_depth=5)
 
         # Both should discretize
-        assert result_shallow['feature'].dtype == object
-        assert result_deep['feature'].dtype == object
+        assert pd.api.types.is_string_dtype(result_shallow['feature'])
+        assert pd.api.types.is_string_dtype(result_deep['feature'])
         # Deeper tree might create more bins (but not guaranteed)
         assert result_shallow['feature'].nunique() >= 1
         assert result_deep['feature'].nunique() >= 1
@@ -252,7 +252,7 @@ class TestDecisionTreeDiscretization:
         )
 
         # Should discretize successfully
-        assert result['feature'].dtype == object
+        assert pd.api.types.is_string_dtype(result['feature'])
 
     def test_missing_target_column(self):
         """Test error handling when target doesn't exist"""
@@ -278,7 +278,7 @@ class TestChiMergeDiscretization:
         result = discretization.chimerge_discretization(df, target_col='target', max_bins=4)
 
         # Feature should be discretized
-        assert result['feature'].dtype == object
+        assert pd.api.types.is_string_dtype(result['feature'])
         assert result['feature'].nunique() <= 4
         # Target unchanged
         assert all(result['target'].isin(['A', 'B']))
@@ -298,8 +298,8 @@ class TestChiMergeDiscretization:
         )
 
         # Both should discretize
-        assert result_strict['feature'].dtype == object
-        assert result_relaxed['feature'].dtype == object
+        assert pd.api.types.is_string_dtype(result_strict['feature'])
+        assert pd.api.types.is_string_dtype(result_relaxed['feature'])
 
     def test_with_multiple_features(self):
         """Test ChiMerge with multiple numerical features"""
@@ -313,9 +313,9 @@ class TestChiMergeDiscretization:
         result = discretization.chimerge_discretization(df, target_col='target', max_bins=3)
 
         # All numerical features should be discretized
-        assert result['feature1'].dtype == object
-        assert result['feature2'].dtype == object
-        assert result['feature3'].dtype == object
+        assert pd.api.types.is_string_dtype(result['feature1'])
+        assert pd.api.types.is_string_dtype(result['feature2'])
+        assert pd.api.types.is_string_dtype(result['feature3'])
 
 
 class TestCustomBinsDiscretization:
@@ -336,8 +336,8 @@ class TestCustomBinsDiscretization:
         result = discretization.custom_bins_discretization(df, bins_dict)
 
         # Both columns should be discretized
-        assert result['age'].dtype == object
-        assert result['income'].dtype == object
+        assert pd.api.types.is_string_dtype(result['age'])
+        assert pd.api.types.is_string_dtype(result['income'])
         # Check expected number of unique bins
         assert result['age'].nunique() == 4
         assert result['income'].nunique() == 4
@@ -357,7 +357,7 @@ class TestCustomBinsDiscretization:
         result = discretization.custom_bins_discretization(df, bins_dict)
 
         # Only col1 should be discretized
-        assert result['col1'].dtype == object
+        assert pd.api.types.is_string_dtype(result['col1'])
         assert pd.api.types.is_numeric_dtype(result['col2'])
         assert pd.api.types.is_numeric_dtype(result['col3'])
 
@@ -387,7 +387,7 @@ class TestQuantileDiscretization:
 
         result = discretization.quantile_discretization(df, n_bins=4)
 
-        assert result['value'].dtype == object
+        assert pd.api.types.is_string_dtype(result['value'])
         assert result['value'].nunique() <= 4
 
     def test_custom_percentiles(self):
@@ -399,7 +399,7 @@ class TestQuantileDiscretization:
         # Use quartiles
         result = discretization.quantile_discretization(df, percentiles=[0, 25, 50, 75, 100])
 
-        assert result['value'].dtype == object
+        assert pd.api.types.is_string_dtype(result['value'])
         assert result['value'].nunique() <= 4
 
     def test_extreme_percentiles(self):
@@ -413,7 +413,7 @@ class TestQuantileDiscretization:
             df, percentiles=[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
         )
 
-        assert result['value'].dtype == object
+        assert pd.api.types.is_string_dtype(result['value'])
         assert result['value'].nunique() <= 10
 
 
@@ -461,7 +461,7 @@ class TestZScoreDiscretization:
         result = discretization.zscore_discretization(df, n_bins=5)
 
         # Column should remain unchanged BUT treated as skipped → cast to string
-        assert result['value'].dtype == object
+        assert pd.api.types.is_string_dtype(result['value'])
 
         # Values should remain identical
         assert result['value'].nunique() == 1
@@ -500,11 +500,11 @@ class TestIntegrationScenarios:
         result = discretization.equal_frequency_discretization(df, n_bins=5)
 
         # Numerical columns should be discretized
-        assert result['numeric1'].dtype == object
-        assert result['numeric2'].dtype == object
+        assert pd.api.types.is_string_dtype(result['numeric1'])
+        assert pd.api.types.is_string_dtype(result['numeric2'])
         # Categorical columns should be unchanged
-        assert result['categorical1'].dtype == object
-        assert result['categorical2'].dtype == object
+        assert pd.api.types.is_string_dtype(result['categorical1'])
+        assert pd.api.types.is_string_dtype(result['categorical2'])
 
     def test_all_methods_on_same_data(self):
         """Test that all unsupervised methods work on the same dataset"""
@@ -519,10 +519,10 @@ class TestIntegrationScenarios:
         result_quantile = discretization.quantile_discretization(df.copy(), n_bins=5)
 
         # All should successfully discretize
-        assert result_freq['value'].dtype == object
-        assert result_width['value'].dtype == object
-        assert result_kmeans['value'].dtype == object
-        assert result_quantile['value'].dtype == object
+        assert pd.api.types.is_string_dtype(result_freq['value'])
+        assert pd.api.types.is_string_dtype(result_width['value'])
+        assert pd.api.types.is_string_dtype(result_kmeans['value'])
+        assert pd.api.types.is_string_dtype(result_quantile['value'])
 
     def test_supervised_methods_on_classification_data(self):
         """Test supervised methods on classification-like data"""
@@ -543,9 +543,9 @@ class TestIntegrationScenarios:
         result_decision_tree = discretization.decision_tree_discretization(df.copy(), 'target', max_depth=3)
 
         # All should discretize successfully
-        assert result_entropy['feature'].dtype == object
-        assert result_chimerge['feature'].dtype == object
-        assert result_decision_tree['feature'].dtype == object
+        assert pd.api.types.is_string_dtype(result_entropy['feature'])
+        assert pd.api.types.is_string_dtype(result_chimerge['feature'])
+        assert pd.api.types.is_string_dtype(result_decision_tree['feature'])
 
     def test_empty_dataframe(self):
         """Test handling of empty dataframe"""
@@ -602,7 +602,7 @@ class TestIntegrationScenarios:
 
         # All columns should be discretized
         for col in ['col1', 'col2', 'col3', 'col4']:
-            assert result[col].dtype == object
+            assert pd.api.types.is_string_dtype(result[col])
             assert result[col].nunique() <= 4
 
 
@@ -619,10 +619,10 @@ class TestColumnFiltering:
         result = discretization.equal_frequency_discretization(df, n_bins=5)
 
         # Binary is skipped → cast to string
-        assert result['binary'].dtype == object
+        assert pd.api.types.is_string_dtype(result['binary'])
 
         # Continuous column should be discretized → dtype object
-        assert result['continuous'].dtype == object
+        assert pd.api.types.is_string_dtype(result['continuous'])
 
     def test_low_cardinality_filtered(self):
         """Test that low cardinality columns are filtered out"""
@@ -634,10 +634,10 @@ class TestColumnFiltering:
         result = discretization.equal_width_discretization(df, n_bins=5)
 
         # Status column skipped → dtype object
-        assert result['status'].dtype == object
+        assert pd.api.types.is_string_dtype(result['status'])
 
         # Continuous discretized → dtype object
-        assert result['continuous'].dtype == object
+        assert pd.api.types.is_string_dtype(result['continuous'])
 
     def test_few_unique_values_filtered(self):
         """Test that columns with ≤ n_bins unique values are filtered"""
@@ -649,10 +649,10 @@ class TestColumnFiltering:
         result = discretization.equal_frequency_discretization(df, n_bins=5)
 
         # Skipped → cast to string
-        assert result['few_unique'].dtype == object
+        assert pd.api.types.is_string_dtype(result['few_unique'])
 
         # Discretized → dtype object
-        assert result['many_unique'].dtype == object
+        assert pd.api.types.is_string_dtype(result['many_unique'])
 
     def test_all_columns_filtered(self):
         """Test when all columns are filtered out"""
@@ -666,7 +666,7 @@ class TestColumnFiltering:
 
         # All columns skipped → all cast to string
         for col in df.columns:
-            assert result[col].dtype == object
+            assert pd.api.types.is_string_dtype(result[col])
 
     def test_mixed_filtered_and_discretized(self):
         """Test mix of filtered and discretized columns"""
@@ -681,12 +681,12 @@ class TestColumnFiltering:
         result = discretization.equal_width_discretization(df, n_bins=5)
 
         # Skipped columns
-        assert result['binary'].dtype == object
-        assert result['status'].dtype == object
+        assert pd.api.types.is_string_dtype(result['binary'])
+        assert pd.api.types.is_string_dtype(result['status'])
 
         # Discretized columns
-        assert result['continuous1'].dtype == object
-        assert result['continuous2'].dtype == object
+        assert pd.api.types.is_string_dtype(result['continuous1'])
+        assert pd.api.types.is_string_dtype(result['continuous2'])
 
     def test_filtering_with_supervised_methods(self):
         """Test that filtering works with supervised methods"""
@@ -700,10 +700,10 @@ class TestColumnFiltering:
         result = discretization.entropy_based_discretization(df, target_col='target', n_bins=5)
 
         # Binary skipped → object
-        assert result['binary'].dtype == object
+        assert pd.api.types.is_string_dtype(result['binary'])
 
         # Feature discretized → object
-        assert result['feature'].dtype == object
+        assert pd.api.types.is_string_dtype(result['feature'])
 
         # Target unchanged
         assert set(result['target'].unique()) == {'A', 'B'}
@@ -718,7 +718,7 @@ class TestColumnFiltering:
         result = discretization.equal_frequency_discretization(df, n_bins=5)
 
         # Empty column skipped → cast to string
-        assert result['empty'].dtype == object
+        assert pd.api.types.is_string_dtype(result['empty'])
 
         # Valid column discretized → object
-        assert result['valid'].dtype == object
+        assert pd.api.types.is_string_dtype(result['valid'])
