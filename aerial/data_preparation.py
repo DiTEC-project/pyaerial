@@ -96,7 +96,7 @@ def is_effectively_categorical(col: pd.Series, col_name: str, max_categories=10)
     Logs info if a numeric column is treated as categorical due to few unique values.
     """
 
-    if isinstance(col.dtype, pd.CategoricalDtype) or pd.api.types.is_object_dtype(col):
+    if isinstance(col.dtype, pd.CategoricalDtype) or pd.api.types.is_object_dtype(col) or pd.api.types.is_string_dtype(col):
         return True
     if pd.api.types.is_numeric_dtype(col):
         unique_vals = col.dropna().unique()
