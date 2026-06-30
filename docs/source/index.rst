@@ -47,6 +47,11 @@ For comprehensive benchmarks and comparisons with Mlxtend (e.g., FPGrowth, Aprio
    research
    citation
 
+Release Notes
+-------------
+
+See `GitHub Releases <https://github.com/DiTEC-project/pyaerial/releases>`_ for the full version history and release notes.
+
 Indices and tables
 ==================
 
