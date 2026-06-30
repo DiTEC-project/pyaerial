@@ -37,13 +37,13 @@ def _one_hot_encoding_with_feature_tracking(transactions: pd.DataFrame, parallel
             non_categorical_cols.append(col)
 
     if non_categorical_cols:
-        logger.error(
-            f"Expected all columns to be categorical or already one-hot encoded. "
-            f"The following columns do not meet that condition: {non_categorical_cols}."
-            f"You can use discretization.equal_frequency_discretization(your_dataset, n_bins=5) as one way "
-            f"to discretize your data"
+        logger.info(
+            f"Numerical columns detected: {non_categorical_cols}. "
+            f"Applying equal-frequency discretization automatically. "
+            f"To use a different method, see the methods in aerial.discretization."
         )
-        return None, None
+        from aerial.discretization import equal_frequency_discretization
+        transactions = equal_frequency_discretization(transactions)
 
     # Collect unique values only for columns to encode
     unique_values = {col: sorted(transactions[col].dropna().unique()) for col in transactions.columns}
