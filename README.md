@@ -27,6 +27,7 @@
   <a href="#quick-start">🚀 Quick Start</a> |
   <a href="#features">✨ Features</a> |
   <a href="https://pyaerial.readthedocs.io">📚 Documentation</a> |
+  <a href="https://github.com/DiTEC-project/pyaerial/releases">📋 Releases</a> |
   <a href="#citation">📄 Cite</a> |
   <a href="#contribute">🤝 Contribute</a> |
   <a href="LICENSE">🔑 License</a>
@@ -415,6 +416,8 @@ our paper:
 For detailed usage examples, API reference, and advanced topics, visit our comprehensive documentation:
 
 **[📚 Read the full documentation on ReadTheDocs](https://pyaerial.readthedocs.io)**
+
+**[📋 View release notes and changelog on GitHub Releases](https://github.com/DiTEC-project/pyaerial/releases)**
 
 Documentation includes:
 

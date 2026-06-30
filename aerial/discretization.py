@@ -51,7 +51,8 @@ def _filter_numerical_columns(df: pd.DataFrame, n_bins):
 
     if skipped:
         skipped_info = [f"{col}({n},{reason})" for col, n, reason in skipped]
-        logger.info(f"Converting {len(skipped)} low-cardinality columns to categorical: {', '.join(skipped_info)}")
+        logger.info(
+            f"Converting {len(skipped)} low-cardinality columns of numerical type to categorical: {', '.join(skipped_info)}")
 
     return suitable, [col for col, _, _ in skipped]
 

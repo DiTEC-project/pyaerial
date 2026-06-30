@@ -1,0 +1,73 @@
+{
+  "acute_inflammations": {
+    "rule_count": 36.333,
+    "avg_support": 0.322,
+    "avg_confidence": 0.967,
+    "avg_zhangs_metric": 0.56,
+    "data_coverage": 1.0
+  },
+  "autism_screening_adolescent": {
+    "rule_count": 281.0,
+    "avg_support": 0.477,
+    "avg_confidence": 0.956,
+    "avg_zhangs_metric": 0.034,
+    "data_coverage": 1.0
+  },
+  "breast_cancer": {
+    "rule_count": 18.667,
+    "avg_support": 0.523,
+    "avg_confidence": 0.912,
+    "avg_zhangs_metric": 0.373,
+    "data_coverage": 0.893
+  },
+  "cervical_cancer_behavior_risk": {
+    "rule_count": 22.0,
+    "avg_support": 0.417,
+    "avg_confidence": 0.995,
+    "avg_zhangs_metric": 0.012,
+    "data_coverage": 0.972
+  },
+  "chess_king_rook_vs_king_pawn": {
+    "rule_count": 9296.667,
+    "avg_support": 0.564,
+    "avg_confidence": 0.967,
+    "avg_zhangs_metric": 0.024,
+    "data_coverage": 1.0
+  },
+  "congressional_voting": {
+    "rule_count": 404.667,
+    "avg_support": 0.363,
+    "avg_confidence": 0.948,
+    "avg_zhangs_metric": 0.537,
+    "data_coverage": 1.0
+  },
+  "fertility": {
+    "rule_count": 33.0,
+    "avg_support": 0.395,
+    "avg_confidence": 0.879,
+    "avg_zhangs_metric": 0.003,
+    "data_coverage": 1.0
+  },
+  "hepatitis": {
+    "rule_count": 338.0,
+    "avg_support": 0.507,
+    "avg_confidence": 0.905,
+    "avg_zhangs_metric": 0.124,
+    "data_coverage": 1.0
+  },
+  "mushroom": {
+    "rule_count": 555.667,
+    "avg_support": 0.493,
+    "avg_confidence": 0.97,
+    "avg_zhangs_metric": 0.09,
+    "data_coverage": 1.0
+  },
+  "overall_avg": {
+    "rule_count": 1220.667,
+    "avg_support": 0.451,
+    "avg_confidence": 0.944,
+    "avg_zhangs_metric": 0.195,
+    "data_coverage": 0.985
+  },
+  "diff": {}
+}
