@@ -34,7 +34,7 @@
 </p>
 
 PyAerial is a Python implementation of the **Aerial** scalable neurosymbolic association rule miner for tabular data. It
-utilizes an under-complete denoising Autoencoder to learn a compact representation of tabular data, and extracts a
+utilizes an under-complete masking-based Autoencoder to learn a compact representation of tabular data, and extracts a
 concise set of high-quality association rules with full data coverage.
 
 Unlike traditional exhaustive methods (e.g., Apriori, FP-Growth), Aerial addresses the **rule explosion** problem by
@@ -361,7 +361,7 @@ PyAerial provides a comprehensive toolkit for association rule mining with advan
 - **GPU Acceleration** - Leverage CUDA for faster training on large datasets
 - **Comprehensive Metrics** - Support, confidence, lift, conviction, Zhang's metric, Yule's Q, interestingness, leverage
 - **Rule Visualization** - Integrate with NiaARM for scatter plots and visual analysis
-- **Flexible Training** - Adjust epochs, learning rate, batch size, and noise factors
+- **Flexible Training** - Adjust epochs, learning rate, batch size, and the masking window (min/max unmasked features)
 
 ---
 
@@ -377,12 +377,16 @@ processing.
 
 ### 2. Autoencoder Training
 
-An under-complete denoising autoencoder learns a compact representation of the data:
+An under-complete masking-based autoencoder learns a compact representation of the data:
 
 - **Architecture**: Logarithmic reduction (base 16) automatically configures layers, or use custom dimensions
 - **Bottleneck design**: The encoder compresses input to the original feature count, forcing the network to learn
   meaningful associations
-- **Denoising mechanism**: Random noise during training improves robustness and generalization
+- **Masking mechanism**: Each batch randomly corrupts a subset of features to a uniform "unknown" distribution, and the
+  network learns to reconstruct them from the remaining unmasked features (bounded by `min_unmasked_features`/
+  `max_unmasked_features`). This is an improvement over the Gaussian-noise-based denoising mechanism used in the
+  original [Aerial+ paper](https://proceedings.mlr.press/v284/karabulut25a.html) — masking mirrors the
+  antecedent → consequent query pattern used during rule extraction more directly than noise injection does.
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/docs/source/_static/assets/example.png" alt="Rule extraction example" width="600">

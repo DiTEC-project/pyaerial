@@ -43,13 +43,21 @@ The `train()` function allows you to customize various training parameters:
 
 - `autoencoder`: You can implement your own Autoencoder and use it for ARM as part of Aerial, as long as the last layer
   matches the original version (see our paper or the source code)
-- `noise_factor` (default=0.5): amount of random noise (`+-`) added to each neuron of the denoising Autoencoder before
-  the training process
 - `lr` (default=5e-3): learning rate
 - `epochs` (default=2): number of training epochs. Shorter training produces fewer, higher-quality rules
 - `batch_size` (default=auto): automatically determined based on dataset size
-- `loss_function` (default=torch.nn.BCELoss()): loss function
 - `num_workers` (default=1): number of workers for parallel execution
+- `min_unmasked_features` (default=1): minimum number of features left unmasked per training batch (clamped down for
+  datasets with fewer features than this)
+- `max_unmasked_features` (default=10): maximum number of features left unmasked per training batch (clamped down for
+  datasets with fewer features than this)
+
+> **Note:** PyAerial trains with a **masking** objective — each batch randomly corrupts a subset of features to a
+> uniform "unknown" distribution and the Autoencoder learns to reconstruct them from the remaining unmasked features.
+> This replaces the Gaussian-noise-based denoising mechanism described in the original
+> [Aerial+ paper](https://proceedings.mlr.press/v284/karabulut25a.html) and is an improvement over it: masking mirrors
+> the antecedent → consequent query pattern used during rule extraction, so training exposes the model to a context
+> closer to how it's actually queried later.
 
 **Example:**
 

@@ -28,7 +28,12 @@ The figure below shows the pipeline of operations for Aerial in 3 main stages.
 
 1. An under-complete Autoencoder with either default automatically-picked number of layers and dimension (based on the dataset size and dimension) is constructed, or user-specified layers and dimension. (see [AutoEncoder](api_reference.md#autoencoder))
 2. All the training parameters can be customized including number of epochs, batch size, learning rate etc. (see [train() function](api_reference.md#train))
-3. An Autoencoder is then trained with a denoising mechanism to learn associations between input features. The full Autoencoder architecture is given in our [paper](https://proceedings.mlr.press/v284/karabulut25a.html).
+3. An Autoencoder is then trained with a **masking mechanism** to learn associations between input features: each batch
+   randomly corrupts a subset of features to a uniform "unknown" distribution, and the Autoencoder learns to reconstruct
+   them from the remaining unmasked features. This is an improvement over the Gaussian-noise-based denoising mechanism
+   described in the original [paper](https://proceedings.mlr.press/v284/karabulut25a.html) — masking mirrors the
+   antecedent → consequent query pattern used during rule extraction more directly than noise injection does. The full
+   original Autoencoder architecture is given in the paper.
 
 ### 3. Rule Extraction Stage
 
@@ -59,4 +64,4 @@ PyAerial provides a comprehensive toolkit for association rule mining with advan
 - **GPU Acceleration** - Leverage CUDA for faster training on large datasets
 - **Quality Metrics** - Comprehensive rule evaluation (support, confidence, coverage, Zhang's metric)
 - **Rule Visualization** - Integrate with NiaARM for scatter plots and visual analysis
-- **Flexible Training** - Adjust epochs, learning rate, batch size, and noise factors
+- **Flexible Training** - Adjust epochs, learning rate, batch size, and the masking window (min/max unmasked features)
