@@ -23,9 +23,10 @@ import logging
 logger = logging.getLogger("aerial")
 
 
-def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, min_rule_frequency=0.5, min_rule_strength=0.8,
+def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, min_rule_frequency=0.5,
+                   min_rule_strength=0.8,
                    max_antecedents=2, target_classes=None, quality_metrics=None, num_workers=1,
-                   min_confidence: float = None, min_support: float = None):
+                   min_confidence: float = 0.5, min_support: float = 0.0001):
     """
     Extract association rules from a trained Autoencoder using Aerial+ algorithm.
     Rule quality metrics are calculated automatically and included in the output.
@@ -85,7 +86,7 @@ def _apply_post_filters(result, autoencoder, min_confidence, min_support, qualit
 
     if not filtered:
         logger.info("No rules remaining after post-filtering. Consider tuning parameters: "
-                     "https://pyaerial.readthedocs.io/en/latest/parameter_guide.html#quick-parameter-reference")
+                    "https://pyaerial.readthedocs.io/en/latest/parameter_guide.html#quick-parameter-reference")
         return {'rules': [], 'statistics': {}}
 
     # Recalculate coverage
@@ -221,7 +222,7 @@ def _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, 
 
     if len(rules_with_indices) == 0:
         logger.info("No rules found. Consider tuning parameters: "
-                     "https://pyaerial.readthedocs.io/en/latest/parameter_guide.html#quick-parameter-reference")
+                    "https://pyaerial.readthedocs.io/en/latest/parameter_guide.html#quick-parameter-reference")
         return {'rules': [], 'statistics': {}}
 
     # Calculate quality metrics
@@ -356,7 +357,7 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=No
 
     if len(itemsets_with_indices) == 0:
         logger.info("No itemsets found. Consider tuning parameters: "
-                     "https://pyaerial.readthedocs.io/en/latest/parameter_guide.html#quick-parameter-reference")
+                    "https://pyaerial.readthedocs.io/en/latest/parameter_guide.html#quick-parameter-reference")
         return {'itemsets': [], 'statistics': {}}
 
     # Calculate support using batch processing with optional parallelization
