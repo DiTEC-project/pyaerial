@@ -29,14 +29,15 @@ def _git_version():
     except subprocess.CalledProcessError:
         return "unknown"
 
+
 # ── config ─────────────────────────────────────────────────────────────────────
 
 DATASETS_DIR = Path(__file__).parent / "datasets"
-EPOCHS = 5
+EPOCHS = 10
 MIN_SUPPORT = 0.1
 MIN_CONFIDENCE = 0.8
-SEEDS = [42, 123, 7]
-N_PARALLEL = 3
+SEEDS = [42, 123, 7, 55, 121231, 5345, 613131, 123125, 234, 6745]
+N_PARALLEL = 10
 
 
 def _prepare(path):
@@ -126,7 +127,12 @@ def _run(path):
         return {"error": "all seeds failed"}
     runs = list(completed.values())
     keys = runs[0].keys()
-    return {k: round(sum(run[k] for run in runs) / len(runs), 3) for k in keys}
+    avg = {k: round(sum(run[k] for run in runs) / len(runs), 3) for k in keys}
+    avg["sd"] = {
+        k: round(float(np.std([run[k] for run in runs], ddof=1)), 3) if len(runs) > 1 else 0.0
+        for k in keys
+    }
+    return avg
 
 
 PERF_KEYS = ["rule_count", "avg_support", "avg_confidence", "avg_zhangs_metric", "data_coverage"]
@@ -137,7 +143,9 @@ def _overall_avg(results):
     valid = [v for v in results.values() if "error" not in v]
     if not valid:
         return {}
-    return {k: round(sum(r[k] for r in valid) / len(valid), 3) for k in PERF_KEYS}
+    avg = {k: round(sum(r[k] for r in valid) / len(valid), 3) for k in PERF_KEYS}
+    avg["sd"] = {k: round(sum(r["sd"][k] for r in valid) / len(valid), 3) for k in PERF_KEYS}
+    return avg
 
 
 def _diff(current_avg, prev_path):
@@ -184,6 +192,10 @@ if __name__ == "__main__":
 
     avg = _overall_avg(results)
     results["overall_avg"] = avg
+    if avg:
+        print("\nOverall averages across datasets (mean ± avg within-dataset SD):")
+        for k in PERF_KEYS:
+            print(f"  {k}: {avg[k]} ± {avg['sd'][k]}")
     if prev_path:
         results["diff"] = _diff(avg, prev_path)
         print(f"Diff vs {prev_path.name}: {results['diff']}")

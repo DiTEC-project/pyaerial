@@ -53,6 +53,8 @@ Aerial uses these defaults when you don't specify parameters:
 | `lr`                   | `5e-3`                                       | Learning rate                                        |
 | `batch_size`           | Auto                                         | Training batch size                                  |
 | `device`               | Auto                                         | `'cuda'` for GPU or `'cpu'`                          |
+| `min_unmasked_features`| `1`                                          | Fewest features left unmasked per training batch     |
+| `max_unmasked_features`| `10`                                         | Most features left unmasked per training batch       |
 
 **💡 Tip:** Start with defaults, then adjust the 3 core parameters based on your goals below.
 

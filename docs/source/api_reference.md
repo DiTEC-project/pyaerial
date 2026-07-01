@@ -38,17 +38,17 @@ Rule Mining method.
 train(
     transactions,
     autoencoder=None,
-    noise_factor=0.5,
     lr=5e-3,
     epochs=2,
     batch_size=None,
-    loss_function=torch.nn.BCELoss(),
     num_workers=1,
     layer_dims=None,
     device=None,
     patience=10,
     delta=1e-3,
-    show_progress=True
+    show_progress=True,
+    min_unmasked_features=1,
+    max_unmasked_features=10
 )
 ```
 
@@ -59,16 +59,21 @@ using the one-hot encoded version.
 If there are numerical features with less than 10 cardinality, it treats them as categorical features. If the
 cardinality is more than 10, then it throws an error.
 
+Training uses a **masking-based autoencoder** objective: each batch has a random subset of features corrupted to a
+uniform/"unknown" distribution over their categories (the same representation used for unknown features during rule
+extraction), and the autoencoder learns to reconstruct the original values from the remaining, unmasked features.
+This is an improvement over the denoising approach (Gaussian noise injection) described in the original
+[Aerial+ paper](https://proceedings.mlr.press/v284/karabulut25a.html) — masking ties training more directly to the
+antecedent → consequent inference pattern used at rule-extraction time, instead of just perturbing inputs with noise.
+
 **Parameters**:
 
 - `transactions` (pd.DataFrame): Tabular input data for training.
 - `autoencoder` (AutoEncoder, optional): A preconstructed autoencoder instance. If not provided, one is created
   automatically.
-- `noise_factor` (float, default=0.5): Controls the amount of Gaussian noise added to inputs during training (denoising effect).
 - `lr` (float, default=5e-3): Learning rate for the Adam optimizer.
 - `epochs` (int, default=2): Number of training epochs. Shorter training produces fewer, higher-quality rules.
 - `batch_size` (int, optional): Number of samples per training batch. If None (default), automatically determined based on dataset size: 2 for <200 rows, 4 for <500, 8 for <1000, 32 for <5000, 64 for larger.
-- `loss_function` (torch.nn.Module, default=torch.nn.BCELoss()): Loss function to apply.
 - `num_workers` (int, default=1): Number of subprocesses used for data loading.
 - `layer_dims` (list of int, optional): Custom hidden layer dimensions for autoencoder construction.
 - `device` (str, optional): Name of the device to run the Autoencoder model on, e.g., "cuda", "cpu" etc. The device option that is
@@ -76,6 +81,8 @@ cardinality is more than 10, then it throws an error.
 - `patience` (int, default=10): Number of epochs to wait for improvement before early stopping.
 - `delta` (float, default=1e-3): Minimum change in loss to qualify as an improvement for early stopping.
 - `show_progress` (bool, default=True): Show a progress bar during training.
+- `min_unmasked_features` (int, default=1): Minimum number of features left unmasked per training batch. Clamped down for datasets with fewer features than this.
+- `max_unmasked_features` (int, default=10): Maximum number of features left unmasked per training batch, kept close to the antecedent lengths association rule mining typically cares about. Clamped down for datasets with fewer features than this.
 
 **Returns**: A trained instance of the AutoEncoder.
 

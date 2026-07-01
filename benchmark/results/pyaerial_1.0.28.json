@@ -1,0 +1,167 @@
+{
+  "acute_inflammations": {
+    "rule_count": 47.9,
+    "avg_support": 0.316,
+    "avg_confidence": 0.961,
+    "avg_zhangs_metric": 0.555,
+    "data_coverage": 1.0,
+    "sd": {
+      "train_time": 0.911,
+      "extract_time": 0.003,
+      "rule_count": 4.175,
+      "avg_support": 0.015,
+      "avg_confidence": 0.012,
+      "avg_zhangs_metric": 0.027,
+      "data_coverage": 0.0
+    }
+  },
+  "autism_screening_adolescent": {
+    "rule_count": 668.7,
+    "avg_support": 0.466,
+    "avg_confidence": 0.906,
+    "avg_zhangs_metric": 0.071,
+    "data_coverage": 1.0,
+    "sd": {
+      "train_time": 1.418,
+      "extract_time": 0.081,
+      "rule_count": 134.595,
+      "avg_support": 0.012,
+      "avg_confidence": 0.01,
+      "avg_zhangs_metric": 0.032,
+      "data_coverage": 0.0
+    }
+  },
+  "breast_cancer": {
+    "rule_count": 42.2,
+    "avg_support": 0.455,
+    "avg_confidence": 0.887,
+    "avg_zhangs_metric": 0.304,
+    "data_coverage": 0.949,
+    "sd": {
+      "train_time": 1.342,
+      "extract_time": 0.003,
+      "rule_count": 5.007,
+      "avg_support": 0.018,
+      "avg_confidence": 0.005,
+      "avg_zhangs_metric": 0.013,
+      "data_coverage": 0.009
+    }
+  },
+  "cervical_cancer_behavior_risk": {
+    "rule_count": 23.8,
+    "avg_support": 0.401,
+    "avg_confidence": 0.994,
+    "avg_zhangs_metric": 0.014,
+    "data_coverage": 0.983,
+    "sd": {
+      "train_time": 1.148,
+      "extract_time": 0.018,
+      "rule_count": 9.39,
+      "avg_support": 0.035,
+      "avg_confidence": 0.009,
+      "avg_zhangs_metric": 0.019,
+      "data_coverage": 0.028
+    }
+  },
+  "chess_king_rook_vs_king_pawn": {
+    "rule_count": 12336.4,
+    "avg_support": 0.583,
+    "avg_confidence": 0.945,
+    "avg_zhangs_metric": 0.027,
+    "data_coverage": 1.0,
+    "sd": {
+      "train_time": 4.087,
+      "extract_time": 0.921,
+      "rule_count": 445.51,
+      "avg_support": 0.009,
+      "avg_confidence": 0.002,
+      "avg_zhangs_metric": 0.003,
+      "data_coverage": 0.0
+    }
+  },
+  "congressional_voting": {
+    "rule_count": 988.3,
+    "avg_support": 0.358,
+    "avg_confidence": 0.925,
+    "avg_zhangs_metric": 0.617,
+    "data_coverage": 1.0,
+    "sd": {
+      "train_time": 1.495,
+      "extract_time": 0.027,
+      "rule_count": 104.773,
+      "avg_support": 0.012,
+      "avg_confidence": 0.006,
+      "avg_zhangs_metric": 0.015,
+      "data_coverage": 0.0
+    }
+  },
+  "fertility": {
+    "rule_count": 47.0,
+    "avg_support": 0.362,
+    "avg_confidence": 0.882,
+    "avg_zhangs_metric": 0.014,
+    "data_coverage": 1.0,
+    "sd": {
+      "train_time": 1.521,
+      "extract_time": 0.015,
+      "rule_count": 10.985,
+      "avg_support": 0.025,
+      "avg_confidence": 0.009,
+      "avg_zhangs_metric": 0.024,
+      "data_coverage": 0.0
+    }
+  },
+  "hepatitis": {
+    "rule_count": 556.7,
+    "avg_support": 0.492,
+    "avg_confidence": 0.892,
+    "avg_zhangs_metric": 0.103,
+    "data_coverage": 1.0,
+    "sd": {
+      "train_time": 1.613,
+      "extract_time": 0.101,
+      "rule_count": 61.704,
+      "avg_support": 0.01,
+      "avg_confidence": 0.004,
+      "avg_zhangs_metric": 0.006,
+      "data_coverage": 0.0
+    }
+  },
+  "mushroom": {
+    "rule_count": 1983.9,
+    "avg_support": 0.365,
+    "avg_confidence": 0.971,
+    "avg_zhangs_metric": 0.242,
+    "data_coverage": 1.0,
+    "sd": {
+      "train_time": 1.768,
+      "extract_time": 0.196,
+      "rule_count": 123.791,
+      "avg_support": 0.009,
+      "avg_confidence": 0.002,
+      "avg_zhangs_metric": 0.018,
+      "data_coverage": 0.0
+    }
+  },
+  "overall_avg": {
+    "rule_count": 1854.989,
+    "avg_support": 0.422,
+    "avg_confidence": 0.929,
+    "avg_zhangs_metric": 0.216,
+    "data_coverage": 0.992,
+    "sd": {
+      "rule_count": 99.992,
+      "avg_support": 0.016,
+      "avg_confidence": 0.007,
+      "avg_zhangs_metric": 0.017,
+      "data_coverage": 0.004
+    }
+  },
+  "diff": {
+    "rule_count": 700.933,
+    "avg_support": -0.031,
+    "avg_confidence": -0.013,
+    "avg_zhangs_metric": 0.025,
+    "data_coverage": 0.007
+  }
+}
