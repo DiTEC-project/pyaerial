@@ -114,7 +114,9 @@ Extracts association rules from a trained AutoEncoder using the Aerial algorithm
   side. Accepted form `["feature1", "feature2", {"feature3": "value1"}, ...]`, either a feature name as str, or specific
   value of a feature in object form
 - `min_rule_frequency` (float, optional): Minimum frequency threshold for patterns. Higher values = fewer, more common patterns.
-  Default=0.5. Originally named `ant_similarity` in the Aerial paper.
+  Default=0.5. Originally named `ant_similarity` in the Aerial paper. For multi-feature antecedents (`max_antecedents > 1`),
+  frequency is estimated via pairwise joint-probability approximation (geometric mean of pairwise conditionals) rather
+  than checking each feature independently — a more conservative estimate of actual co-occurrence.
 - `min_rule_strength` (float, optional): Minimum strength threshold for rules. Higher values = fewer, stronger rules.
   Default=0.8. Originally named `cons_similarity` in the Aerial paper.
 - `max_antecedents` (int, optional): Maximum number of features allowed in the rule antecedent. Default=2
