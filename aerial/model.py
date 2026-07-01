@@ -131,26 +131,32 @@ class AutoEncoder(nn.Module):
         return y
 
 
-def train(transactions: pd.DataFrame, autoencoder: AutoEncoder = None, noise_factor=0.5, lr=5e-3, epochs=2,
-          batch_size=None, loss_function=torch.nn.BCELoss(), num_workers=1, layer_dims: list = None, device=None,
-          patience: int = 10, delta: float = 1e-3, show_progress: bool = True):
+def train(transactions: pd.DataFrame, autoencoder: AutoEncoder = None,
+          lr=5e-3, epochs=2, batch_size=None, num_workers=1,
+          layer_dims: list = None, device=None, patience: int = 10, delta: float = 1e-3,
+          show_progress: bool = True, min_unmasked_features: int = 1, max_unmasked_features: int = 10):
     """
     Train an autoencoder for association rule mining.
 
     :param transactions: pandas DataFrame containing the tabular data
     :param autoencoder: optional pre-initialized AutoEncoder (if None, one is created automatically)
-    :param noise_factor: noise factor for denoising autoencoder (default=0.5)
     :param lr: learning rate (default=5e-3)
     :param epochs: number of training epochs (default=2). Shorter training produces higher-quality rules.
     :param batch_size: batch size for training. If None (default), automatically determined based on
         dataset size: 2 for <100 rows, 8 for <500, 16 for <1000, 32 for <5000, 64 for larger datasets.
-    :param loss_function: loss function to use (default=BCELoss)
     :param num_workers: number of parallel workers for data preparation (default=1)
     :param layer_dims: optional list of hidden layer dimensions
     :param device: device to train on ('cuda', 'cpu', or None for auto-detect)
     :param patience: early stopping patience - epochs to wait for improvement (default=10)
     :param delta: early stopping delta - minimum improvement threshold (default=1e-3)
     :param show_progress: if True (default), show a progress bar during training.
+    :param min_unmasked_features: minimum number of features left unmasked per batch (default=1),
+        clamped down for datasets with fewer features than this.
+    :param max_unmasked_features: maximum number of features left unmasked per batch (default=10),
+        clamped down for datasets with fewer features than this. Kept close to the antecedent
+        lengths association rule mining typically cares about (see generate_rules' max_antecedents),
+        so training exposes the model to roughly the same "known features" context it will see at
+        rule-extraction time, independent of how many features the dataset has.
     :return: trained AutoEncoder, or None if training failed
     """
     # Auto batch_size based on dataset size
@@ -190,6 +196,17 @@ def train(transactions: pd.DataFrame, autoencoder: AutoEncoder = None, noise_fac
 
     softmax_ranges = [range(cat['start'], cat['end']) for cat in feature_value_indices]
 
+    num_features = len(feature_value_indices)
+    hi_unmasked = min(max_unmasked_features, num_features - 1)
+    lo_unmasked = min(min_unmasked_features, hi_unmasked)
+    min_mask_ratio = (num_features - hi_unmasked) / num_features
+    max_mask_ratio = (num_features - lo_unmasked) / num_features
+    element_to_feature = torch.zeros(len(columns), dtype=torch.long, device=device)
+    mask_token = torch.zeros(len(columns), device=device)
+    for f_idx, fvi in enumerate(feature_value_indices):
+        element_to_feature[fvi['start']:fvi['end']] = f_idx
+        mask_token[fvi['start']:fvi['end']] = 1.0 / (fvi['end'] - fvi['start'])
+
     best_loss = float("inf")
     patience_counter = 0
     total_batches = len(dataloader)
@@ -205,9 +222,13 @@ def train(transactions: pd.DataFrame, autoencoder: AutoEncoder = None, noise_fac
         epoch_loss = 0.0
         for batch, in dataloader:
             batch = batch.to(device, non_blocking=True)
-            noisy_batch = (batch + torch.randn_like(batch) * noise_factor).clamp(0, 1)
-            reconstructed_batch = autoencoder(noisy_batch, softmax_ranges)
-            total_loss = loss_function(reconstructed_batch, batch)
+            ratio = min_mask_ratio + torch.rand(1, device=device).item() * (max_mask_ratio - min_mask_ratio)
+            num_to_mask = max(1, round(ratio * num_features))
+            rand_feats = torch.rand(batch.shape[0], num_features, device=device).argsort(dim=1) < num_to_mask
+            element_mask = rand_feats[:, element_to_feature]
+            masked_batch = torch.where(element_mask, mask_token.unsqueeze(0).expand_as(batch), batch)
+            reconstructed_batch = autoencoder(masked_batch, softmax_ranges)
+            total_loss = F.binary_cross_entropy(reconstructed_batch, batch)
             optimizer.zero_grad()
             total_loss.backward()
             optimizer.step()
