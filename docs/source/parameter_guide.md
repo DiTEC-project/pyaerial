@@ -37,10 +37,15 @@ Aerial uses these defaults when you don't specify parameters:
 
 ### Filtering Parameters
 
-| Parameter        | Default | What it Controls                                   |
-|------------------|---------|---------------------------------------------------|
-| `min_confidence` | `None`  | Post-filter rules with confidence below this value |
-| `min_support`    | `None`  | Post-filter rules with support below this value    |
+| Parameter               | Default                     | What it Controls                                                        |
+|-------------------------|------------------------------|--------------------------------------------------------------------------|
+| `filter_min_confidence` | Mirrors `min_rule_strength`  | Post-filter rules whose *exact* confidence is below this value           |
+| `filter_min_support`    | `0.0001`                     | Post-filter rules whose *exact* support is below this value              |
+
+> **Note:** `filter_min_confidence` defaults to whatever `min_rule_strength` you used for the call, since both are
+> conditional-probability-like quantities. `filter_min_support` is **not** mirrored to `min_rule_frequency` — rule
+> support (antecedent + consequent) is mathematically ≤ antecedent-only frequency, so the two aren't comparable at
+> the same threshold; it instead defaults to a near-zero floor that only excludes degenerate rules.
 
 ### Other Parameters
 
@@ -62,7 +67,7 @@ Aerial uses these defaults when you don't specify parameters:
 
 | I want...                                | Set these parameters                          | Example                                                        |
 |------------------------------------------|-----------------------------------------------|----------------------------------------------------------------|
-| High-quality rules only (post-filtering) | `min_confidence=0.7, min_support=0.1`         | `generate_rules(model, min_confidence=0.7, min_support=0.1)`   |
+| High-quality rules only (post-filtering) | `filter_min_confidence=0.7, filter_min_support=0.1` | `generate_rules(model, filter_min_confidence=0.7, filter_min_support=0.1)` |
 | High support rules                       | `min_rule_frequency=0.7` (or higher)              | `generate_rules(model, min_rule_frequency=0.7)`                    |
 | Low support rules                        | `min_rule_frequency=0.1` (or lower)               | `generate_rules(model, min_rule_frequency=0.1)`                    |
 | High confidence rules                    | `min_rule_strength=0.8` (or higher)               | `generate_rules(model, min_rule_strength=0.8)`                     |
@@ -73,7 +78,7 @@ Aerial uses these defaults when you don't specify parameters:
 | Complex patterns                         | `max_antecedents=3` (or higher)               | `generate_rules(model, max_antecedents=3)`                     |
 | More training (more rules)               | `epochs=5` or higher                          | `model.train(data, epochs=5)`                                  |
 
-**Note** that `min_confidence` and `min_support` are post-processing filters.
+**Note** that `filter_min_confidence` and `filter_min_support` are post-processing filters.
 
 **💡 Tip: Still not getting the results you want?** See
 the [Advanced Tuning](configuration.md#advanced-training-and-architecture-tuning) to learn how
@@ -325,7 +330,7 @@ trained_autoencoder = model.train(breast_cancer)
 # Extract rules with default thresholds, filter to keep high-quality ones
 result = rule_extraction.generate_rules(
     trained_autoencoder,
-    min_confidence=0.6
+    filter_min_confidence=0.6
 )
 ```
 

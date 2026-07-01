@@ -100,8 +100,8 @@ generate_rules(
     target_classes=None,
     quality_metrics=['support', 'confidence', 'zhangs_metric'],
     num_workers=1,
-    min_confidence=None,
-    min_support=None
+    filter_min_confidence=min_rule_strength,  # mirrors min_rule_strength unless overridden
+    filter_min_support=0.0001
 )
 ```
 
@@ -126,8 +126,16 @@ Extracts association rules from a trained AutoEncoder using the Aerial algorithm
   Available metrics: 'support', 'confidence', 'lift', 'conviction', 'zhangs_metric', 'yulesq', 'interestingness', 'leverage'
 - `num_workers` (int, optional): Number of parallel workers for quality metric calculation. Default=1 for sequential processing.
   **Note**: Parallelization is automatically disabled for fewer than 1000 rules due to overhead costs. Set to 4-8 for datasets generating 1000+ rules.
-- `min_confidence` (float, optional): Post-filter rules to only include those with confidence >= this value.
-- `min_support` (float, optional): Post-filter rules to only include those with support >= this value.
+- `filter_min_confidence` (float, optional): Post-filter, applied after generation, to only keep rules whose *exact*
+  confidence (computed from the real data, not the Autoencoder's approximation) is >= this value. If not passed,
+  defaults to whatever `min_rule_strength` was used for the call — confidence and strength are both
+  conditional-probability-like quantities, so mirroring the generation-time gate is meaningful. Pass `None` to
+  disable this post-filter entirely.
+- `filter_min_support` (float, optional): Post-filter, applied after generation, to only keep rules whose *exact*
+  support (computed from the real data) is >= this value. Default=0.0001 (only excludes degenerate near-zero-support
+  rules). Deliberately **not** mirrored to `min_rule_frequency`: rule support is antecedent-**and**-consequent
+  support, which is mathematically ≤ antecedent-only frequency, so the two thresholds aren't comparable. Pass `None`
+  to disable this post-filter entirely.
 
 **Returns**:
 

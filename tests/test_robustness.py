@@ -558,7 +558,7 @@ class TestMinConfidenceFilter(unittest.TestCase):
             self.trained,
             min_rule_frequency=0.01,
             min_rule_strength=0.2,
-            min_confidence=0.6
+            filter_min_confidence=0.6
         )
 
         for rule in result['rules']:
@@ -582,7 +582,7 @@ class TestMinSupportFilter(unittest.TestCase):
             self.trained,
             min_rule_frequency=0.01,
             min_rule_strength=0.2,
-            min_support=0.2
+            filter_min_support=0.2
         )
 
         for rule in result['rules']:

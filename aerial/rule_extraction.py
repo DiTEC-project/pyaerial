@@ -22,11 +22,15 @@ import logging
 
 logger = logging.getLogger("aerial")
 
+# Sentinel distinguishing "not passed" (mirror min_rule_strength) from an explicit `None`
+# (disable the confidence post-filter entirely).
+_MIRROR_MIN_RULE_STRENGTH = object()
+
 
 def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, min_rule_frequency=0.5,
                    min_rule_strength=0.8,
                    max_antecedents=2, target_classes=None, quality_metrics=None, num_workers=1,
-                   min_confidence: float = 0.5, min_support: float = 0.0001):
+                   filter_min_confidence=_MIRROR_MIN_RULE_STRENGTH, filter_min_support: float = 0.0001):
     """
     Extract association rules from a trained Autoencoder using Aerial+ algorithm.
     Rule quality metrics are calculated automatically and included in the output.
@@ -36,17 +40,26 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
         accepted form ["feature1", "feature2", {"feature3": "value1}, ...], either a feature name as str, or specific value
         of a feature in object form
     :param min_rule_frequency: minimum frequency threshold for patterns (default=0.5). Higher values yield fewer,
-        more common patterns. Originally named 'ant_frequency' in the Aerial paper.
+        more common patterns. Originally named 'ant_frequency' in the Aerial paper. This gates rule generation using
+        the Autoencoder's own (approximate) reconstructed probabilities.
     :param min_rule_strength: minimum strength threshold for rules (default=0.8). Higher values yield fewer,
-        stronger rules. Originally named 'cons_frequency' in the Aerial paper.
+        stronger rules. Originally named 'cons_frequency' in the Aerial paper. This gates rule generation using
+        the Autoencoder's own (approximate) reconstructed probabilities.
     :param max_antecedents: max number of antecedents that the rules will contain (default=2)
     :param target_classes: list: if given a list of target classes, generate rules with the target classes on the
         right hand side only, the content of the list is as same as features_of_interest
     :param quality_metrics: list of quality metrics to calculate. Default is ['support', 'confidence', 'zhangs_metric'].
         Available metrics: 'support', 'confidence', 'zhangs_metric', 'lift', 'conviction', 'yulesq', 'interestingness'
     :param num_workers: number of parallel workers for quality metric calculation (default=1 for sequential processing)
-    :param min_confidence: if set, post-filter rules to only include those with confidence >= this value
-    :param min_support: if set, post-filter rules to only include those with support >= this value
+    :param filter_min_confidence: post-filter, applied after generation, to only keep rules whose *exact* confidence
+        (computed from the real data, not the Autoencoder's approximation) is >= this value. If not passed, defaults
+        to whatever `min_rule_strength` was used for this call (confidence and strength are both conditional-
+        probability-like quantities, so mirroring is meaningful). Pass None to disable this post-filter entirely.
+    :param filter_min_support: post-filter, applied after generation, to only keep rules whose *exact* support
+        (computed from the real data, not the Autoencoder's approximation) is >= this value (default=0.0001, i.e.
+        only excludes degenerate zero/near-zero support rules). Deliberately not mirrored to `min_rule_frequency`:
+        rule support is antecedent-and-consequent support, which is mathematically <= antecedent-only frequency, so
+        the two are not comparable at the same threshold. Set to None to disable this post-filter entirely.
     :return: dict with 'rules' (list of rules with quality metrics) and 'statistics' (aggregate stats)
     """
     if not autoencoder:
@@ -59,12 +72,15 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
             logger.error(f"Invalid quality metrics: {invalid}. Available: {AVAILABLE_METRICS}")
             return None
 
+    if filter_min_confidence is _MIRROR_MIN_RULE_STRENGTH:
+        filter_min_confidence = min_rule_strength
+
     logger.info("Mining association rules...")
     result = _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, min_rule_strength,
                                   max_antecedents, target_classes, quality_metrics, num_workers)
 
-    if min_confidence is not None or min_support is not None:
-        result = _apply_post_filters(result, autoencoder, min_confidence, min_support, quality_metrics)
+    if filter_min_confidence is not None or filter_min_support is not None:
+        result = _apply_post_filters(result, autoencoder, filter_min_confidence, filter_min_support, quality_metrics)
 
     logger.info(
         f"Mining complete: {len(result['rules'])} rules with avg support={result['statistics'].get('average_support', 0):.3f}, "
@@ -72,12 +88,12 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
     return result
 
 
-def _apply_post_filters(result, autoencoder, min_confidence, min_support, quality_metrics):
+def _apply_post_filters(result, autoencoder, filter_min_confidence, filter_min_support, quality_metrics):
     """Apply post-filters and recalculate statistics if rules were filtered."""
     rules = result['rules']
     filtered = [r for r in rules
-                if (min_confidence is None or r.get('confidence', 1.0) >= min_confidence)
-                and (min_support is None or r.get('support', 1.0) >= min_support)]
+                if (filter_min_confidence is None or r.get('confidence', 1.0) >= filter_min_confidence)
+                and (filter_min_support is None or r.get('support', 1.0) >= filter_min_support)]
 
     if len(filtered) == len(rules):
         return result

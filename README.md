@@ -331,8 +331,8 @@ trained_autoencoder = model.train(breast_cancer)
 # Extract rules and filter by quality thresholds
 result = rule_extraction.generate_rules(
     trained_autoencoder,
-    min_confidence=0.7,        # Only keep rules with ≥70% confidence
-    min_support=0.1            # Only keep rules with ≥10% support
+    filter_min_confidence=0.7,        # Only keep rules with ≥70% confidence
+    filter_min_support=0.1            # Only keep rules with ≥10% support
 )
 
 print(f"Found {len(result['rules'])} high-quality rules")
@@ -340,8 +340,8 @@ print(f"Found {len(result['rules'])} high-quality rules")
 
 **Filtering parameters:**
 
-- **`min_confidence`**: Post-filters rules to only include those with confidence ≥ this value
-- **`min_support`**: Post-filters rules to only include those with support ≥ this value
+- **`filter_min_confidence`**: Post-filters rules to only include those with confidence ≥ this value
+- **`filter_min_support`**: Post-filters rules to only include those with support ≥ this value
 
 ---
 
@@ -352,7 +352,7 @@ PyAerial provides a comprehensive toolkit for association rule mining with advan
 - **Scalable Rule Mining** - Efficiently mine association rules from large tabular datasets without rule explosion
 - **Automatic Quality Metrics** - Rules include support, confidence, Zhang's metric, and more calculated automatically
 - **Smart Defaults** - Short training (epochs=2) by default produces fewer, higher-quality rules
-- **Rule Filtering** - Post-filter rules with `min_confidence` and `min_support` thresholds
+- **Rule Filtering** - Post-filter rules with `filter_min_confidence` and `filter_min_support` thresholds
 - **Frequent Itemset Mining** - Generate frequent itemsets with support values using the same neural approach
 - **ARM with Item Constraints** - Focus rule mining on specific features of interest
 - **Classification Rules** - Extract rules with target class labels for interpretable inference
