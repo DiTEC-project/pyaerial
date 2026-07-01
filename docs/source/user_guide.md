@@ -521,15 +521,15 @@ Post-filter rules to keep only those meeting quality thresholds:
 ```python
 result = rule_extraction.generate_rules(
     trained_autoencoder,
-    min_confidence=0.7,
-    min_support=0.1
+    filter_min_confidence=0.7,
+    filter_min_support=0.1
 )
 ```
 
 **Parameters:**
 
-- `min_confidence`: Keep only rules with confidence ≥ this value
-- `min_support`: Keep only rules with support ≥ this value
+- `filter_min_confidence`: Keep only rules with confidence ≥ this value
+- `filter_min_support`: Keep only rules with support ≥ this value
 
 **Use when:**
 
@@ -545,7 +545,7 @@ result = rule_extraction.generate_rules(
     trained_autoencoder,
     target_classes=["Class"],
     features_of_interest=["age"],
-    min_confidence=0.6,
+    filter_min_confidence=0.6,
     max_antecedents=2
 )
 ```

@@ -100,8 +100,8 @@ generate_rules(
     target_classes=None,
     quality_metrics=['support', 'confidence', 'zhangs_metric'],
     num_workers=1,
-    min_confidence=None,
-    min_support=None
+    filter_min_confidence=min_rule_strength,  # mirrors min_rule_strength unless overridden
+    filter_min_support=0.0001
 )
 ```
 
@@ -114,7 +114,9 @@ Extracts association rules from a trained AutoEncoder using the Aerial algorithm
   side. Accepted form `["feature1", "feature2", {"feature3": "value1"}, ...]`, either a feature name as str, or specific
   value of a feature in object form
 - `min_rule_frequency` (float, optional): Minimum frequency threshold for patterns. Higher values = fewer, more common patterns.
-  Default=0.5. Originally named `ant_similarity` in the Aerial paper.
+  Default=0.5. Originally named `ant_similarity` in the Aerial paper. For multi-feature antecedents (`max_antecedents > 1`),
+  frequency is estimated via pairwise joint-probability approximation (geometric mean of pairwise conditionals) rather
+  than checking each feature independently — a more conservative estimate of actual co-occurrence.
 - `min_rule_strength` (float, optional): Minimum strength threshold for rules. Higher values = fewer, stronger rules.
   Default=0.8. Originally named `cons_similarity` in the Aerial paper.
 - `max_antecedents` (int, optional): Maximum number of features allowed in the rule antecedent. Default=2
@@ -124,8 +126,16 @@ Extracts association rules from a trained AutoEncoder using the Aerial algorithm
   Available metrics: 'support', 'confidence', 'lift', 'conviction', 'zhangs_metric', 'yulesq', 'interestingness', 'leverage'
 - `num_workers` (int, optional): Number of parallel workers for quality metric calculation. Default=1 for sequential processing.
   **Note**: Parallelization is automatically disabled for fewer than 1000 rules due to overhead costs. Set to 4-8 for datasets generating 1000+ rules.
-- `min_confidence` (float, optional): Post-filter rules to only include those with confidence >= this value.
-- `min_support` (float, optional): Post-filter rules to only include those with support >= this value.
+- `filter_min_confidence` (float, optional): Post-filter, applied after generation, to only keep rules whose *exact*
+  confidence (computed from the real data, not the Autoencoder's approximation) is >= this value. If not passed,
+  defaults to whatever `min_rule_strength` was used for the call — confidence and strength are both
+  conditional-probability-like quantities, so mirroring the generation-time gate is meaningful. Pass `None` to
+  disable this post-filter entirely.
+- `filter_min_support` (float, optional): Post-filter, applied after generation, to only keep rules whose *exact*
+  support (computed from the real data) is >= this value. Default=0.0001 (only excludes degenerate near-zero-support
+  rules). Deliberately **not** mirrored to `min_rule_frequency`: rule support is antecedent-**and**-consequent
+  support, which is mathematically ≤ antecedent-only frequency, so the two thresholds aren't comparable. Pass `None`
+  to disable this post-filter entirely.
 
 **Returns**:
 

@@ -47,9 +47,13 @@ The figure below shows the pipeline of operations for Aerial in 3 main stages.
 
    ![Aerial rule extraction example](_static/assets/example.png)
 
-3. Frequent itemsets (instead of rules) can also be extracted ([rule_extraction.py:generate_frequent_itemsets()](api_reference.md#generate_frequent_itemsets)).
+3. For antecedents with more than one feature, frequency is estimated using a pairwise joint-probability approximation
+   (geometric mean of pairwise conditionals from the single-feature forward passes) rather than checking each feature's
+   frequency independently — a more conservative estimate that better reflects actual feature co-occurrence.
 
-4. Quality metrics (support, confidence, coverage, Zhang's metric, lift, conviction, Yule's Q, interestingness, leverage) are calculated automatically during rule extraction using optimized batch processing with optional parallelization support.
+4. Frequent itemsets (instead of rules) can also be extracted ([rule_extraction.py:generate_frequent_itemsets()](api_reference.md#generate_frequent_itemsets)).
+
+5. Quality metrics (support, confidence, coverage, Zhang's metric, lift, conviction, Yule's Q, interestingness, leverage) are calculated automatically during rule extraction using optimized batch processing with optional parallelization support.
 
 ## Key Features
 

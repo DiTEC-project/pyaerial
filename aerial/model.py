@@ -132,7 +132,7 @@ class AutoEncoder(nn.Module):
 
 
 def train(transactions: pd.DataFrame, autoencoder: AutoEncoder = None,
-          lr=5e-3, epochs=2, batch_size=None, num_workers=1,
+          lr=5e-3, epochs=5, batch_size=None, num_workers=1,
           layer_dims: list = None, device=None, patience: int = 10, delta: float = 1e-3,
           show_progress: bool = True, min_unmasked_features: int = 1, max_unmasked_features: int = 10):
     """
