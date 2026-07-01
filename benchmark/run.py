@@ -34,8 +34,8 @@ def _git_version():
 
 DATASETS_DIR = Path(__file__).parent / "datasets"
 EPOCHS = 10
-MIN_SUPPORT = 0.1
-MIN_CONFIDENCE = 0.8
+MIN_RULE_FREQUENCY = 0.1
+MIN_RULE_STRENGTH = 0.8
 SEEDS = [42, 123, 7, 55, 121231, 5345, 613131, 123125, 234, 6745]
 N_PARALLEL = 10
 
@@ -60,7 +60,7 @@ def _run_once(df, seed):
     train_time = time.perf_counter() - t0
 
     t0 = time.perf_counter()
-    result = generate_rules(model, min_support=MIN_SUPPORT, min_confidence=MIN_CONFIDENCE)
+    result = generate_rules(model, min_rule_frequency=MIN_RULE_FREQUENCY, min_rule_strength=MIN_RULE_STRENGTH)
     extract_time = time.perf_counter() - t0
 
     stats = result["statistics"]
