@@ -149,6 +149,10 @@ def _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, 
 
     feature_value_indices = [range(cat['start'], cat['end']) for cat in feature_value_indices]
 
+    # Cache r=1 implication probabilities keyed by antecedent index, used to estimate joint
+    # frequency at r>1 via pairwise conditionals: P(A,B) ≈ geomean(P(B|A)·P(A), P(A|B)·P(B))
+    r1_probs_cache = {}
+
     for r in range(1, max_antecedents + 1):
         if r == 2:
             softmax_ranges = [
@@ -178,12 +182,29 @@ def _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, 
                 if len(candidate_antecedents) == 0:
                     continue
 
-                if any(implication_probabilities[ant] <= min_rule_frequency for ant in candidate_antecedents):
+                ant_list = (candidate_antecedents.tolist() if isinstance(candidate_antecedents, np.ndarray)
+                            else list(candidate_antecedents))
+
+                if r == 1:
+                    r1_probs_cache[ant_list[0]] = implication_probabilities
+                    freq_estimate = float(implication_probabilities[ant_list[0]])
+                else:
+                    pairwise = [
+                        float(r1_probs_cache[ai][aj]) * float(r1_probs_cache[ai][ai])
+                        for ai in ant_list for aj in ant_list
+                        if ai != aj and ai in r1_probs_cache
+                    ]
+                    if pairwise:
+                        freq_estimate = float(np.prod(pairwise) ** (1.0 / len(pairwise)))
+                    else:
+                        freq_estimate = float(min(implication_probabilities[a] for a in ant_list))
+
+                if freq_estimate <= min_rule_frequency:
                     if r == 1:
                         insignificant_feature_values = np.append(insignificant_feature_values, candidate_antecedents)
                     continue
 
-                antecedent_ranges = set(index_to_feature_range[ant_idx] for ant_idx in candidate_antecedents)
+                antecedent_ranges = set(index_to_feature_range[ant_idx] for ant_idx in ant_list)
 
                 consequent_list = [
                     prob_index for prob_index in significant_consequent_indices
@@ -194,9 +215,7 @@ def _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, 
                 if consequent_list:
                     for consequent_idx in consequent_list:
                         rules_with_indices.append({
-                            'antecedent_indices': candidate_antecedents.tolist() if isinstance(candidate_antecedents,
-                                                                                               np.ndarray) else list(
-                                candidate_antecedents),
+                            'antecedent_indices': ant_list,
                             'consequent_index': int(consequent_idx)
                         })
 
