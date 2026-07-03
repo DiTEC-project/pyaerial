@@ -34,10 +34,11 @@ def _git_version():
 
 DATASETS_DIR = Path(__file__).parent / "datasets"
 EPOCHS = 10
+MAX_ANTECEDENTS = 2
 MIN_RULE_FREQUENCY = 0.1
 MIN_RULE_STRENGTH = 0.8
 SEEDS = [42, 123, 7, 55, 121231, 5345, 613131, 123125, 234, 6745]
-N_PARALLEL = 10
+N_PARALLEL = 5
 
 
 def _prepare(path):
@@ -60,14 +61,17 @@ def _run_once(df, seed):
     train_time = time.perf_counter() - t0
 
     t0 = time.perf_counter()
-    result = generate_rules(model, min_rule_frequency=MIN_RULE_FREQUENCY, min_rule_strength=MIN_RULE_STRENGTH)
+    result = generate_rules(model, min_rule_frequency=MIN_RULE_FREQUENCY, min_rule_strength=MIN_RULE_STRENGTH,
+                            max_antecedents=MAX_ANTECEDENTS)
     extract_time = time.perf_counter() - t0
 
     stats = result["statistics"]
+    rules = result["rules"]
     return {
         "train_time": train_time,
         "extract_time": extract_time,
         "rule_count": stats.get("rule_count", 0),
+        "avg_rule_length": round(float(np.mean([len(r["antecedents"]) + 1 for r in rules])), 3) if rules else 0.0,
         "avg_support": stats.get("average_support", 0.0),
         "avg_confidence": stats.get("average_confidence", 0.0),
         "avg_zhangs_metric": stats.get("average_zhangs_metric", 0.0),
@@ -85,7 +89,7 @@ def _parallel_task(args):
 def _log(dataset_name, seed, r):
     ts = datetime.now().strftime("%H:%M:%S")
     print(
-        f"[{ts}] {dataset_name} | seed={seed} | rules={r['rule_count']} "
+        f"[{ts}] {dataset_name} | seed={seed} | rules={r['rule_count']} rule_length={r['avg_rule_length']:.3f} "
         f"support={r['avg_support']:.3f} confidence={r['avg_confidence']:.3f} "
         f"zhang={r['avg_zhangs_metric']:.3f} train={r['train_time']:.1f}s",
         flush=True,
@@ -135,7 +139,7 @@ def _run(path):
     return avg
 
 
-PERF_KEYS = ["rule_count", "avg_support", "avg_confidence", "avg_zhangs_metric", "data_coverage"]
+PERF_KEYS = ["rule_count", "avg_rule_length", "avg_support", "avg_confidence", "avg_zhangs_metric", "data_coverage"]
 TIME_KEYS = ["train_time", "extract_time"]
 
 

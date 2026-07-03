@@ -1,0 +1,187 @@
+{
+  "acute_inflammations": {
+    "rule_count": 124.0,
+    "avg_rule_length": 2.883,
+    "avg_support": 0.203,
+    "avg_confidence": 0.968,
+    "avg_zhangs_metric": 0.462,
+    "data_coverage": 1.0,
+    "sd": {
+      "train_time": 1.797,
+      "extract_time": 0.02,
+      "rule_count": 10.198,
+      "avg_rule_length": 0.011,
+      "avg_support": 0.007,
+      "avg_confidence": 0.007,
+      "avg_zhangs_metric": 0.016,
+      "data_coverage": 0.0
+    }
+  },
+  "autism_screening_adolescent": {
+    "rule_count": 2624.3,
+    "avg_rule_length": 2.934,
+    "avg_support": 0.249,
+    "avg_confidence": 0.92,
+    "avg_zhangs_metric": 0.048,
+    "data_coverage": 1.0,
+    "sd": {
+      "train_time": 1.414,
+      "extract_time": 0.128,
+      "rule_count": 569.005,
+      "avg_rule_length": 0.002,
+      "avg_support": 0.006,
+      "avg_confidence": 0.008,
+      "avg_zhangs_metric": 0.021,
+      "data_coverage": 0.0
+    }
+  },
+  "breast_cancer": {
+    "rule_count": 144.4,
+    "avg_rule_length": 2.915,
+    "avg_support": 0.262,
+    "avg_confidence": 0.898,
+    "avg_zhangs_metric": 0.223,
+    "data_coverage": 0.98,
+    "sd": {
+      "train_time": 2.502,
+      "extract_time": 0.029,
+      "rule_count": 22.112,
+      "avg_rule_length": 0.01,
+      "avg_support": 0.013,
+      "avg_confidence": 0.004,
+      "avg_zhangs_metric": 0.018,
+      "data_coverage": 0.011
+    }
+  },
+  "cervical_cancer_behavior_risk": {
+    "rule_count": 615.8,
+    "avg_rule_length": 2.882,
+    "avg_support": 0.16,
+    "avg_confidence": 0.999,
+    "avg_zhangs_metric": 0.009,
+    "data_coverage": 1.0,
+    "sd": {
+      "train_time": 2.359,
+      "extract_time": 0.05,
+      "rule_count": 42.544,
+      "avg_rule_length": 0.009,
+      "avg_support": 0.003,
+      "avg_confidence": 0.002,
+      "avg_zhangs_metric": 0.009,
+      "data_coverage": 0.0
+    }
+  },
+  "chess_king_rook_vs_king_pawn": {
+    "rule_count": 26191.9,
+    "avg_rule_length": 2.962,
+    "avg_support": 0.383,
+    "avg_confidence": 0.95,
+    "avg_zhangs_metric": 0.024,
+    "data_coverage": 1.0,
+    "sd": {
+      "train_time": 3.428,
+      "extract_time": 1.558,
+      "rule_count": 298.75,
+      "avg_rule_length": 0.001,
+      "avg_support": 0.004,
+      "avg_confidence": 0.002,
+      "avg_zhangs_metric": 0.003,
+      "data_coverage": 0.0
+    }
+  },
+  "congressional_voting": {
+    "rule_count": 1443.6,
+    "avg_rule_length": 2.968,
+    "avg_support": 0.312,
+    "avg_confidence": 0.929,
+    "avg_zhangs_metric": 0.555,
+    "data_coverage": 1.0,
+    "sd": {
+      "train_time": 1.076,
+      "extract_time": 0.019,
+      "rule_count": 109.888,
+      "avg_rule_length": 0.006,
+      "avg_support": 0.007,
+      "avg_confidence": 0.004,
+      "avg_zhangs_metric": 0.006,
+      "data_coverage": 0.0
+    }
+  },
+  "fertility": {
+    "rule_count": 266.1,
+    "avg_rule_length": 2.836,
+    "avg_support": 0.188,
+    "avg_confidence": 0.908,
+    "avg_zhangs_metric": 0.043,
+    "data_coverage": 1.0,
+    "sd": {
+      "train_time": 1.127,
+      "extract_time": 0.003,
+      "rule_count": 19.559,
+      "avg_rule_length": 0.011,
+      "avg_support": 0.004,
+      "avg_confidence": 0.002,
+      "avg_zhangs_metric": 0.007,
+      "data_coverage": 0.0
+    }
+  },
+  "hepatitis": {
+    "rule_count": 2922.7,
+    "avg_rule_length": 2.924,
+    "avg_support": 0.216,
+    "avg_confidence": 0.917,
+    "avg_zhangs_metric": 0.092,
+    "data_coverage": 1.0,
+    "sd": {
+      "train_time": 1.328,
+      "extract_time": 0.091,
+      "rule_count": 581.1,
+      "avg_rule_length": 0.014,
+      "avg_support": 0.013,
+      "avg_confidence": 0.004,
+      "avg_zhangs_metric": 0.005,
+      "data_coverage": 0.0
+    }
+  },
+  "mushroom": {
+    "rule_count": 7332.3,
+    "avg_rule_length": 2.941,
+    "avg_support": 0.2,
+    "avg_confidence": 0.978,
+    "avg_zhangs_metric": 0.184,
+    "data_coverage": 1.0,
+    "sd": {
+      "train_time": 2.916,
+      "extract_time": 0.221,
+      "rule_count": 401.843,
+      "avg_rule_length": 0.003,
+      "avg_support": 0.005,
+      "avg_confidence": 0.001,
+      "avg_zhangs_metric": 0.019,
+      "data_coverage": 0.0
+    }
+  },
+  "overall_avg": {
+    "rule_count": 4629.456,
+    "avg_rule_length": 2.916,
+    "avg_support": 0.241,
+    "avg_confidence": 0.941,
+    "avg_zhangs_metric": 0.182,
+    "data_coverage": 0.998,
+    "sd": {
+      "rule_count": 228.333,
+      "avg_rule_length": 0.007,
+      "avg_support": 0.007,
+      "avg_confidence": 0.004,
+      "avg_zhangs_metric": 0.012,
+      "data_coverage": 0.001
+    }
+  },
+  "diff": {
+    "rule_count": 0.0,
+    "avg_support": 0.0,
+    "avg_confidence": 0.0,
+    "avg_zhangs_metric": 0.0,
+    "data_coverage": 0.0
+  }
+}
