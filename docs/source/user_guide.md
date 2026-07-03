@@ -13,8 +13,8 @@ This section provides detailed examples of using Aerial with various configurati
 
 - 🎯 **Parameter tuning** - See the [Parameter Tuning Guide](parameter_guide.md) for how to get high/low support,
   confidence, etc.
-- ⚙️ **Configuration** - See [Configuration](configuration.md) for GPU usage, logging, and training parameters
-- 🔧 **Troubleshooting** - See [Debugging](configuration.md#debugging) if Aerial can't learn rules or takes too long
+- ⚙️ **Configuration** - See [Configuration](configuration.md) for GPU usage, logging, and custom Autoencoders
+- 🔧 **Troubleshooting** - See [When Things Don't Work](parameter_guide.md#when-things-dont-work) if Aerial can't learn rules or takes too long
 
 ## 1. Association Rule Mining from Categorical Tabular Data
 
