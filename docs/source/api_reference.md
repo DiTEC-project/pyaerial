@@ -119,7 +119,8 @@ Extracts association rules from a trained AutoEncoder using the Aerial algorithm
   than checking each feature independently — a more conservative estimate of actual co-occurrence.
 - `min_rule_strength` (float, optional): Minimum strength threshold for rules. Higher values = fewer, stronger rules.
   Default=0.8. Originally named `cons_similarity` in the Aerial paper.
-- `max_antecedents` (int, optional): Maximum number of features allowed in the rule antecedent. Default=2
+- `max_antecedents` (int, optional): Maximum number of features allowed in the rule antecedent. Default=2.
+  Pass `None` for no limit: antecedent combinations are grown until none passes the frequency threshold.
 - `target_classes` (list, optional): When set, restricts rule consequents to the specified class(es) (constraint-based
   rule mining). The format of the list is same as the list format of `features_of_interest`.
 - `quality_metrics` (list, optional): Quality metrics to calculate for each rule. Default=['support', 'confidence', 'zhangs_metric'].
@@ -197,7 +198,8 @@ Generates frequent itemsets from a trained AutoEncoder using the same Aerial+ me
   side. Accepted form `["feature1", "feature2", {"feature3": "value1"}, ...]`, either a feature name as str, or specific
   value of a feature in object form
 - `frequency` (float, Optional): Minimum frequency threshold for an itemset to be considered frequent. Default=0.5
-- `max_length` (int, Optional): Maximum number of items in each itemset. Default=2
+- `max_length` (int, Optional): Maximum number of items in each itemset. Default=2.
+  Pass `None` for no limit: itemsets are grown until none passes the frequency threshold.
 - `num_workers` (int, optional): Number of parallel workers for support calculation. Default=1 for sequential processing.
   **Note**: Parallelization is automatically disabled for fewer than 1000 itemsets due to overhead costs. Set to 4-8 for datasets generating 1000+ itemsets.
 

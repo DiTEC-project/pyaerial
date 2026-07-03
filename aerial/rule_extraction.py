@@ -8,8 +8,6 @@ from collections import defaultdict
 
 import torch
 
-from itertools import combinations
-
 from aerial.model import AutoEncoder
 from aerial.rule_quality import (
     calculate_rule_metrics,
@@ -45,7 +43,8 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
     :param min_rule_strength: minimum strength threshold for rules (default=0.8). Higher values yield fewer,
         stronger rules. Originally named 'cons_frequency' in the Aerial paper. This gates rule generation using
         the Autoencoder's own (approximate) reconstructed probabilities.
-    :param max_antecedents: max number of antecedents that the rules will contain (default=2)
+    :param max_antecedents: max number of antecedents that the rules will contain (default=2).
+        Pass None for no limit: antecedent combinations are grown until none passes the frequency gate.
     :param target_classes: list: if given a list of target classes, generate rules with the target classes on the
         right hand side only, the content of the list is as same as features_of_interest
     :param quality_metrics: list of quality metrics to calculate. Default is ['support', 'confidence', 'zhangs_metric'].
@@ -136,6 +135,10 @@ def _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, 
     rules_with_indices = []
     input_vector_size = autoencoder.encoder[0].in_features
 
+    # No limit: antecedents can hold at most one value per feature
+    if max_antecedents is None:
+        max_antecedents = len(autoencoder.feature_value_indices)
+
     # process features of interest
     significant_features, insignificant_feature_values = extract_significant_features_and_ignored_indices(
         features_of_interest, autoencoder)
@@ -144,9 +147,6 @@ def _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, 
 
     # Initialize input vectors with all equal probability per feature value
     unmarked_features = _initialize_input_vectors(input_vector_size, feature_value_indices)
-
-    # Precompute target indices for softmax to speed things up
-    softmax_ranges = [range(cat['start'], cat['end']) for cat in significant_features]
 
     # Precompute index-to-feature-range mapping for fast feature conflict detection
     index_to_feature_range = {}
@@ -166,84 +166,101 @@ def _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, 
 
     feature_value_indices = [range(cat['start'], cat['end']) for cat in feature_value_indices]
 
-    # Cache r=1 implication probabilities keyed by antecedent index, used to estimate joint
-    # frequency at r>1 via pairwise conditionals: P(A,B) ≈ geomean(P(B|A)·P(A), P(A|B)·P(B))
-    r1_probs_cache = {}
+    transaction_array = autoencoder.input_vectors.to_numpy(copy=True)
+    num_transactions = len(transaction_array)
 
-    for r in range(1, max_antecedents + 1):
-        if r == 2:
-            softmax_ranges = [
-                feature_range for feature_range in softmax_ranges if
-                not all(idx in insignificant_feature_values for idx in range(feature_range.start, feature_range.stop))
-            ]
+    ignored = set(int(idx) for idx in np.asarray(insignificant_feature_values, dtype=int).ravel())
+    significant_feature_values = [
+        idx
+        for feature in significant_features
+        for idx in range(feature['start'], feature['end'])
+        if idx not in ignored
+    ]
 
-        feature_combinations = list(combinations(softmax_ranges, r))
+    def _forward(antecedent_lists):
+        test_vectors = np.tile(unmarked_features, (len(antecedent_lists), 1))
+        for row, antecedents in enumerate(antecedent_lists):
+            for idx in antecedents:
+                start, end = index_to_feature_range[idx]
+                test_vectors[row, start:end] = 0
+                test_vectors[row, idx] = 1
+        batch = torch.tensor(test_vectors, dtype=torch.float32).to(next(autoencoder.parameters()).device)
+        return autoencoder(batch, feature_value_indices).detach().cpu().numpy()
 
-        batch_vectors = []
-        batch_candidate_antecedent_list = []
+    def _emit_rules(antecedents, implication_probabilities):
+        antecedent_ranges = set(index_to_feature_range[idx] for idx in antecedents)
+        for consequent_idx in significant_consequent_indices:
+            if index_to_feature_range[consequent_idx] in antecedent_ranges:
+                continue
+            if implication_probabilities[consequent_idx] >= min_rule_strength:
+                rules_with_indices.append({
+                    'antecedent_indices': sorted(int(idx) for idx in antecedents),
+                    'consequent_index': int(consequent_idx)
+                })
 
-        for category_list in feature_combinations:
-            test_vectors, candidate_antecedent_list = _mark_features(unmarked_features, list(category_list),
-                                                                     insignificant_feature_values)
-            if len(test_vectors) > 0:
-                batch_vectors.extend(test_vectors)
-                batch_candidate_antecedent_list.extend(candidate_antecedent_list)
+    # Frequency of a feature value is the Autoencoder's own implication probability of that
+    # value when it is marked in the input, as in the iterative Aerial+ algorithm
+    frequent_feature_values = []
+    single_antecedent_probs = []
+    feature_value_frequencies = np.zeros(input_vector_size)
+    if significant_feature_values:
+        for idx, implication_probabilities in zip(
+                significant_feature_values, _forward([[idx] for idx in significant_feature_values])):
+            feature_value_frequencies[idx] = implication_probabilities[idx]
+            if implication_probabilities[idx] > min_rule_frequency:
+                frequent_feature_values.append(idx)
+                single_antecedent_probs.append(implication_probabilities)
 
-        if batch_vectors:
-            batch_vectors = torch.tensor(np.array(batch_vectors), dtype=torch.float32)
-            batch_vectors = batch_vectors.to(next(autoencoder.parameters()).device)
-            implications_batch = autoencoder(batch_vectors, feature_value_indices).detach().cpu().numpy()
+    if frequent_feature_values:
+        # Implication probabilities per marked feature value, in log space for the
+        # frequency estimation of antecedent combinations
+        log_frequencies = np.log(np.maximum(feature_value_frequencies, 1e-12))
+        log_implication_probs = {}
+        for idx, implication_probabilities in zip(frequent_feature_values, single_antecedent_probs):
+            _emit_rules((idx,), implication_probabilities)
+            log_implication_probs[idx] = np.log(np.maximum(implication_probabilities, 1e-12))
 
-            for test_vector, implication_probabilities, candidate_antecedents \
-                    in zip(batch_vectors, implications_batch, batch_candidate_antecedent_list):
-                if len(candidate_antecedents) == 0:
-                    continue
+        # Fixed order (descending frequency): every antecedent combination is built exactly
+        # once, by extending it only with feature values that come later in this order
+        frequent_feature_values.sort(key=lambda idx: -feature_value_frequencies[idx])
+        feature_value_rank = {idx: pos for pos, idx in enumerate(frequent_feature_values)}
 
-                ant_list = (candidate_antecedents.tolist() if isinstance(candidate_antecedents, np.ndarray)
-                            else list(candidate_antecedents))
+        # Grow antecedent combinations from frequent ones only: a combination reaches the
+        # Autoencoder only if its estimated frequency passes the gate, and only combinations
+        # that passed are extended further. Estimated frequency of an antecedent combination:
+        # geomean over ordered pairs of P(b|a)·P(a), both being the Autoencoder's implication
+        # probabilities when a is marked in the input.
+        antecedent_combinations = [((idx,), 0.0) for idx in frequent_feature_values]
 
-                if r == 1:
-                    r1_probs_cache[ant_list[0]] = implication_probabilities
-                    freq_estimate = float(implication_probabilities[ant_list[0]])
-                else:
-                    pairwise = [
-                        float(r1_probs_cache[ai][aj]) * float(r1_probs_cache[ai][ai])
-                        for ai in ant_list for aj in ant_list
-                        if ai != aj and ai in r1_probs_cache
-                    ]
-                    if pairwise:
-                        freq_estimate = float(np.prod(pairwise) ** (1.0 / len(pairwise)))
-                    else:
-                        freq_estimate = float(min(implication_probabilities[a] for a in ant_list))
+        for r in range(2, max_antecedents + 1):
+            n_pairs = r * (r - 1)
+            extended_combinations = []
+            for antecedents, log_sum in antecedent_combinations:
+                antecedent_ranges = set(index_to_feature_range[idx] for idx in antecedents)
+                for new_antecedent in frequent_feature_values[feature_value_rank[antecedents[-1]] + 1:]:
+                    if index_to_feature_range[new_antecedent] in antecedent_ranges:
+                        continue
+                    extended_log_sum = log_sum + sum(
+                        log_implication_probs[idx][new_antecedent] + log_frequencies[idx]
+                        + log_implication_probs[new_antecedent][idx] + log_frequencies[new_antecedent]
+                        for idx in antecedents
+                    )
+                    if np.exp(extended_log_sum / n_pairs) <= min_rule_frequency:
+                        continue
+                    extended_combinations.append((antecedents + (new_antecedent,), extended_log_sum))
 
-                if freq_estimate <= min_rule_frequency:
-                    if r == 1:
-                        insignificant_feature_values = np.append(insignificant_feature_values, candidate_antecedents)
-                    continue
+            if not extended_combinations:
+                break
 
-                antecedent_ranges = set(index_to_feature_range[ant_idx] for ant_idx in ant_list)
-
-                consequent_list = [
-                    prob_index for prob_index in significant_consequent_indices
-                    if index_to_feature_range[prob_index] not in antecedent_ranges and
-                       implication_probabilities[prob_index] >= min_rule_strength
-                ]
-
-                if consequent_list:
-                    for consequent_idx in consequent_list:
-                        rules_with_indices.append({
-                            'antecedent_indices': ant_list,
-                            'consequent_index': int(consequent_idx)
-                        })
+            implications_batch = _forward([antecedents for antecedents, _ in extended_combinations])
+            for (antecedents, _), implication_probabilities in zip(extended_combinations, implications_batch):
+                _emit_rules(antecedents, implication_probabilities)
+            antecedent_combinations = extended_combinations
 
     if len(rules_with_indices) == 0:
         logger.info("No rules found. Consider tuning parameters: "
                     "https://pyaerial.readthedocs.io/en/latest/parameter_guide.html#quick-parameter-reference")
         return {'rules': [], 'statistics': {}}
-
-    # Calculate quality metrics
-    transaction_array = autoencoder.input_vectors.to_numpy(copy=True)
-    num_transactions = len(transaction_array)
 
     all_metrics = calculate_rule_metrics(
         rules_with_indices, transaction_array, quality_metrics, num_workers=num_workers
@@ -293,7 +310,8 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=No
         accepted form ["feature1", "feature2", {"feature3": "value1}, ...], either a feature name as str, or specific value
         of a feature in object form
     :param frequency: minimum frequency threshold for itemsets (default=0.5). Originally named 'frequency' in the Aerial paper.
-    :param max_length: max itemset length (default=2)
+    :param max_length: max itemset length (default=2).
+        Pass None for no limit: itemsets are grown until none passes the frequency threshold.
     :param num_workers: number of parallel workers for support calculation (default=1 for sequential processing)
     :return: dict with 'itemsets' (list of itemsets with support) and 'statistics' (aggregate stats)
         Example: {
@@ -315,6 +333,10 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=No
     itemsets_with_indices = []
     input_vector_size = len(autoencoder.feature_values)
 
+    # No limit: an itemset can hold at most one value per feature
+    if max_length is None:
+        max_length = len(autoencoder.feature_value_indices)
+
     # process features of interest
     significant_features, insignificant_feature_values = extract_significant_features_and_ignored_indices(
         features_of_interest, autoencoder)
@@ -324,50 +346,74 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=No
     # Initialize input vectors once
     unmarked_features = _initialize_input_vectors(input_vector_size, feature_value_indices)
 
-    # Precompute target indices for softmax
+    # Precompute index-to-feature-range mapping for fast feature conflict detection
+    index_to_feature_range = {}
+    for cat in feature_value_indices:
+        for idx in range(cat['start'], cat['end']):
+            index_to_feature_range[idx] = (cat['start'], cat['end'])
+
     feature_value_indices = [range(cat['start'], cat['end']) for cat in feature_value_indices]
-    softmax_ranges = [range(cat['start'], cat['end']) for cat in significant_features]
 
-    # Iteratively process combinations of increasing size
-    for r in range(1, max_length + 1):
-        softmax_ranges = [
-            feature_range for feature_range in softmax_ranges if
-            not all(idx in insignificant_feature_values for idx in range(feature_range.start, feature_range.stop))
-        ]
+    ignored = set(int(idx) for idx in np.asarray(insignificant_feature_values, dtype=int).ravel())
+    significant_feature_values = [
+        idx
+        for feature in significant_features
+        for idx in range(feature['start'], feature['end'])
+        if idx not in ignored
+    ]
 
-        feature_combinations = list(combinations(softmax_ranges, r))  # Generate combinations
+    def _forward(itemset_lists):
+        test_vectors = np.tile(unmarked_features, (len(itemset_lists), 1))
+        for row, itemset in enumerate(itemset_lists):
+            for idx in itemset:
+                start, end = index_to_feature_range[idx]
+                test_vectors[row, start:end] = 0
+                test_vectors[row, idx] = 1
+        batch = torch.tensor(test_vectors, dtype=torch.float32).to(next(autoencoder.parameters()).device)
+        return autoencoder(batch, feature_value_indices).detach().cpu().numpy()
 
-        # Vectorized model evaluation batch
-        batch_vectors = []
-        batch_candidate_antecedent_list = []
+    # Frequency of a feature value is the Autoencoder's own implication probability of that
+    # value when it is marked in the input
+    frequent_feature_values = []
+    feature_value_frequencies = np.zeros(input_vector_size)
+    if significant_feature_values:
+        for idx, implication_probabilities in zip(
+                significant_feature_values, _forward([[idx] for idx in significant_feature_values])):
+            feature_value_frequencies[idx] = implication_probabilities[idx]
+            if implication_probabilities[idx] > frequency:
+                frequent_feature_values.append(idx)
+                itemsets_with_indices.append([idx])
 
-        for category_list in feature_combinations:
-            test_vectors, candidate_antecedent_list = _mark_features(unmarked_features, list(category_list),
-                                                                     insignificant_feature_values)
-            if len(test_vectors) > 0:
-                batch_vectors.extend(test_vectors)
-                batch_candidate_antecedent_list.extend(candidate_antecedent_list)
-        if batch_vectors:
-            batch_vectors = torch.tensor(np.array(batch_vectors), dtype=torch.float32)
-            batch_vectors = batch_vectors.to(next(autoencoder.parameters()).device)
-            # Perform a single model evaluation for the batch
-            implications_batch = autoencoder(batch_vectors, feature_value_indices).detach().cpu().numpy()
-            for test_vector, implication_probabilities, candidate_antecedents \
-                    in zip(batch_vectors, implications_batch, batch_candidate_antecedent_list):
-                if len(candidate_antecedents) == 0:
-                    continue
+    if frequent_feature_values:
+        # Fixed order (descending frequency): every itemset is built exactly once,
+        # by extending it only with feature values that come later in this order
+        frequent_feature_values.sort(key=lambda idx: -feature_value_frequencies[idx])
+        feature_value_rank = {idx: pos for pos, idx in enumerate(frequent_feature_values)}
 
-                # Identify low-support antecedents
-                if any(implication_probabilities[ant] <= frequency for ant in candidate_antecedents):
-                    if r == 1:
-                        insignificant_feature_values = np.append(insignificant_feature_values, candidate_antecedents)
-                    continue
+        # Grow itemsets from frequent ones only: an itemset is frequent if the implication
+        # probability of every marked feature value in it stays above the threshold, and
+        # only frequent itemsets are extended further
+        itemset_combinations = [(idx,) for idx in frequent_feature_values]
 
-                # Store itemsets with integer indices for fast support calculation
-                itemsets_with_indices.append(
-                    candidate_antecedents.tolist() if isinstance(candidate_antecedents, np.ndarray) else list(
-                        candidate_antecedents)
-                )
+        for r in range(2, max_length + 1):
+            extended_combinations = []
+            for itemset in itemset_combinations:
+                itemset_ranges = set(index_to_feature_range[idx] for idx in itemset)
+                for new_value in frequent_feature_values[feature_value_rank[itemset[-1]] + 1:]:
+                    if index_to_feature_range[new_value] in itemset_ranges:
+                        continue
+                    extended_combinations.append(itemset + (new_value,))
+
+            if not extended_combinations:
+                break
+
+            frequent_extended = []
+            implications_batch = _forward([list(itemset) for itemset in extended_combinations])
+            for itemset, implication_probabilities in zip(extended_combinations, implications_batch):
+                if all(implication_probabilities[idx] > frequency for idx in itemset):
+                    frequent_extended.append(itemset)
+                    itemsets_with_indices.append(sorted(int(idx) for idx in itemset))
+            itemset_combinations = frequent_extended
 
     logger.info(f"Found {len(itemsets_with_indices)} itemsets")
 

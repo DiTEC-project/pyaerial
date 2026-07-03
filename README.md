@@ -398,11 +398,18 @@ An under-complete masking-based autoencoder learns a compact representation of t
 Rules emerge from analyzing the trained autoencoder using test vectors:
 
 1. Test vectors are created with equal probabilities across categories
-2. Specific features are set to 1 (antecedents) while others remain at baseline
-3. Forward passes through the network produce output probabilities
-4. Rules are extracted when probabilities exceed similarity thresholds
-5. Quality metrics (support, confidence, coverage, Zhang's metric, etc.) are calculated automatically using vectorized
+2. Specific feature values are marked as antecedents while others remain at baseline
+3. Forward runs through the network produce implication probabilities
+4. Rules are extracted when implication probabilities exceed the rule frequency and strength thresholds
+5. Antecedent combinations are searched with an FP-Growth-style growth strategy: only combinations whose estimated
+   frequency passes the threshold are extended further, so forward runs scale with the number of frequent
+   combinations rather than all possible combinations (`max_antecedents=None` mines antecedents of unlimited length)
+6. Quality metrics (support, confidence, coverage, Zhang's metric, etc.) are calculated automatically using vectorized
    operations
+
+Aerial+ replaces the counting operation of classical rule mining with the Autoencoder's implication probabilities, so
+in principle the search strategy of any rule miner can run on top of it — PyAerial adopts FP-Growth's, as it is among
+the fastest rule miners.
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/docs/source/_static/assets/pipeline.png" alt="Aerial pipeline" width="700">
