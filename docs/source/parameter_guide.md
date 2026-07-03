@@ -23,7 +23,7 @@ Aerial uses these defaults when you don't specify parameters:
 |-------------------|---------|----------------------------------------------------------------|
 | `min_rule_frequency`  | `0.5`   | How frequent patterns must be (analogous to minimum support)   |
 | `min_rule_strength`   | `0.8`   | How reliable rules must be (confidence + association strength) |
-| `max_antecedents` | `2`     | Maximum complexity (number of conditions per rule)             |
+| `max_antecedents` | `2`     | Maximum complexity (number of conditions per rule); `None` = unlimited |
 
 ### Training Parameters
 

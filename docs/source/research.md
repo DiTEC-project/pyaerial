@@ -47,13 +47,35 @@ The figure below shows the pipeline of operations for Aerial in 3 main stages.
 
    ![Aerial rule extraction example](_static/assets/example.png)
 
-3. For antecedents with more than one feature, frequency is estimated using a pairwise joint-probability approximation
-   (geometric mean of pairwise conditionals from the single-feature forward passes) rather than checking each feature's
-   frequency independently — a more conservative estimate that better reflects actual feature co-occurrence.
+3. For antecedents with more than one feature value, frequency is estimated with a pairwise joint-probability
+   approximation (geometric mean of pairwise implication probabilities from the single-feature-value forward runs)
+   rather than checking each feature value's frequency independently — a more conservative estimate that better
+   reflects actual feature value co-occurrence.
 
-4. Frequent itemsets (instead of rules) can also be extracted ([rule_extraction.py:generate_frequent_itemsets()](api_reference.md#generate_frequent_itemsets)).
+4. Antecedent combinations are searched with an FP-Growth-style growth strategy: feature values are ordered by
+   descending frequency, and only combinations whose estimated frequency passes `min_rule_frequency` are extended
+   with further feature values. Aerial+ replaces the counting operation of classical ARM with the Autoencoder's
+   implication probabilities, so in principle the search strategy of any rule miner can run on top of it — PyAerial
+   adopts FP-Growth's, as it is among the fastest. As a result, the number of forward runs is proportional to the
+   number of frequent antecedent combinations rather than all possible combinations, and `max_antecedents=None` is
+   supported: the search stops on its own once no combination passes the frequency threshold.
 
-5. Quality metrics (support, confidence, coverage, Zhang's metric, lift, conviction, Yule's Q, interestingness, leverage) are calculated automatically during rule extraction using optimized batch processing with optional parallelization support.
+5. Frequent itemsets (instead of rules) can also be extracted using the same growth strategy ([rule_extraction.py:generate_frequent_itemsets()](api_reference.md#generate_frequent_itemsets)).
+
+6. Quality metrics (support, confidence, coverage, Zhang's metric, lift, conviction, Yule's Q, interestingness, leverage) are calculated automatically during rule extraction using optimized batch processing with optional parallelization support.
+
+## How PyAerial Improves on Aerial+
+
+PyAerial implements the Aerial+ paper with the following improvements:
+
+- **Masking-based training**: replaces the Gaussian-noise-based denoising of the paper; masking mirrors the
+  antecedent → consequent query pattern used during rule extraction (see the Training Stage above).
+- **Pairwise frequency estimation**: joint antecedent frequency is estimated from pairwise implication probabilities
+  instead of checking each feature value independently.
+- **FP-Growth-style rule extraction**: since Aerial+ only approximates the counting operation, any rule miner's search
+  strategy can be layered on top of the trained Autoencoder; PyAerial uses FP-Growth's — among the fastest rule
+  miners — making rule extraction scale with the number of frequent antecedent combinations and enabling unlimited
+  antecedents.
 
 ## Key Features
 
