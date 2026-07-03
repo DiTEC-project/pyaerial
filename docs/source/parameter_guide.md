@@ -4,14 +4,15 @@
 
 > **🖥️ CPU Performance:** PyAerial runs fast on CPU. GPU acceleration is optional and only beneficial for very large datasets.
 
+**On this page:** [Golden Rules](#golden-rules) · [Defaults](#default-parameter-values) · [Quick Reference](#quick-parameter-reference) · [Tuning for Specific Goals](#tuning-for-specific-goals) · [Training and Rule Quality](#training-parameters-and-rule-quality) · [Common Scenarios](#common-scenarios) · [When Things Don't Work](#when-things-dont-work)
+
 ## Golden Rules
 
 1. Association rule mining is a **knowledge discovery** task.
 2. Knowledge discovery is **unsupervised**.
 3. There are **NO GROUND TRUTHS** or **best rules** in knowledge discovery, unless an explicit objective is given.
 
-**Therefore**, we need to tell the algorithm what kind of patterns/rules we are looking for by setting the correct
-parameters!
+**Therefore**, we need to tell the algorithm what kind of patterns/rules we are looking for via the parameters.
 
 ## Default Parameter Values
 
@@ -29,11 +30,16 @@ Aerial uses these defaults when you don't specify parameters:
 
 | Parameter      | Default       | What it Controls                                                                 |
 |----------------|---------------|----------------------------------------------------------------------------------|
-| `epochs`       | `2`           | Training iterations (shorter training = fewer, higher-quality rules)             |
-| `show_progress`| `True`        | Show a progress bar during training                                              |
+| `epochs`       | `5`           | Training iterations (shorter training = fewer, higher-quality rules)             |
+| `lr`           | `5e-3`        | Learning rate                                                                    |
+| `batch_size`   | Auto          | Training batch size (based on dataset size)                                      |
 | `layer_dims`   | Auto-selected | Autoencoder architecture (smaller = stronger compression = higher quality rules) |
+| `show_progress`| `True`        | Show a progress bar during training                                              |
+| `min_unmasked_features`| `1`   | Fewest features left unmasked per training batch                                 |
+| `max_unmasked_features`| `10`  | Most features left unmasked per training batch                                   |
 
-> **💡 Tip:** Train less for fewer, higher-quality rules. The default `epochs=2` works well for most datasets. Only increase epochs if you're not getting enough rules for your use case.
+> **💡 Tip:** Train less for fewer, higher-quality rules. Only increase epochs if you are not getting enough rules for
+> your use case — see [Training and Rule Quality](#training-parameters-and-rule-quality).
 
 ### Filtering Parameters
 
@@ -55,11 +61,7 @@ Aerial uses these defaults when you don't specify parameters:
 | `target_classes`       | `None`                                       | Restrict rules to predict specific class labels      |
 | `quality_metrics`      | `['support', 'confidence', 'zhangs_metric']` | Which metrics to calculate                           |
 | `num_workers`          | `1`                                          | Parallel processing (set to 4-8 for 1000+ rules)     |
-| `lr`                   | `5e-3`                                       | Learning rate                                        |
-| `batch_size`           | Auto                                         | Training batch size                                  |
 | `device`               | Auto                                         | `'cuda'` for GPU or `'cpu'`                          |
-| `min_unmasked_features`| `1`                                          | Fewest features left unmasked per training batch     |
-| `max_unmasked_features`| `10`                                         | Most features left unmasked per training batch       |
 
 **💡 Tip:** Start with defaults, then adjust the 3 core parameters based on your goals below.
 
@@ -71,39 +73,30 @@ Aerial uses these defaults when you don't specify parameters:
 | High support rules                       | `min_rule_frequency=0.7` (or higher)              | `generate_rules(model, min_rule_frequency=0.7)`                    |
 | Low support rules                        | `min_rule_frequency=0.1` (or lower)               | `generate_rules(model, min_rule_frequency=0.1)`                    |
 | High confidence rules                    | `min_rule_strength=0.8` (or higher)               | `generate_rules(model, min_rule_strength=0.8)`                     |
-| Low confidence rules                     | `min_rule_strength=0.3` (or lower)                | `generate_rules(model, min_rule_strength=0.3)`                     |
 | Fewer rules                              | Increase `min_rule_frequency` and `min_rule_strength` | `generate_rules(model, min_rule_frequency=0.6, min_rule_strength=0.8)` |
 | More rules                               | Decrease `min_rule_frequency` and `min_rule_strength` | `generate_rules(model, min_rule_frequency=0.2, min_rule_strength=0.5)` |
-| Strong associations                      | `min_rule_strength=0.8` (or higher)               | `generate_rules(model, min_rule_strength=0.8)`                     |
 | Complex patterns                         | `max_antecedents=3` (or higher)               | `generate_rules(model, max_antecedents=3)`                     |
-| More training (more rules)               | `epochs=5` or higher                          | `model.train(data, epochs=5)`                                  |
+| Antecedents of unlimited length          | `max_antecedents=None`                        | `generate_rules(model, max_antecedents=None)`                  |
+| Faster quality-metric calculation        | `num_workers=4` (or higher, for 1000+ rules)  | `generate_rules(model, num_workers=4)`                         |
+| Rules predicting a class label           | `target_classes=[...]`                        | `generate_rules(model, target_classes=["Class"])`              |
 
 **Note** that `filter_min_confidence` and `filter_min_support` are post-processing filters.
 
-**💡 Tip: Still not getting the results you want?** See
-the [Advanced Tuning](configuration.md#advanced-training-and-architecture-tuning) to learn how
-to tune the architecture and training parameters and [Debugging section](configuration.md#debugging) for troubleshooting
-tips.
+## Tuning for Specific Goals
 
-## How to Set Parameters for Specific Goals
+### Support (via `min_rule_frequency`)
 
-### Getting High Support Rules
+**Support** measures how frequently a pattern appears in your data. `min_rule_frequency` is analogous to the minimum
+support threshold of traditional ARM methods.
 
-**Support** measures how frequently a pattern appears in your data. High support rules represent common patterns
-and more generalizable rules.
+| Direction | Set | What to expect |
+|---|---|---|
+| High support (common, generalizable patterns) | `min_rule_frequency=0.6-0.8` | Fewer rules, covering larger portions of the data |
+| Low support (rare patterns) | `min_rule_frequency=0.05-0.2` | More rules, smaller coverage each, longer runtime |
 
-**Parameters to adjust:**
-
-- Increase `min_rule_frequency` to 0.6, 0.7, or higher
-- The antecedent similarity threshold is analogous to minimum support in traditional ARM methods
-
-**What to expect:**
-
-- Fewer rules overall
-- Rules covering larger portions of your dataset
-- More general patterns
-
-**Example:**
+**Performance:** rule extraction grows antecedent combinations from frequent ones only, so a lower `min_rule_frequency`
+admits more combinations into the search and increases runtime. Start with moderate values (e.g., 0.3) and decrease
+gradually.
 
 ```python
 from aerial import model, rule_extraction
@@ -112,328 +105,250 @@ from ucimlrepo import fetch_ucirepo
 breast_cancer = fetch_ucirepo(id=14).data.features
 trained_autoencoder = model.train(breast_cancer)
 
-# Get high support rules
-result = rule_extraction.generate_rules(
-    trained_autoencoder,
-    min_rule_frequency=0.7  # High threshold for common patterns
-)
+# high support: common patterns
+result = rule_extraction.generate_rules(trained_autoencoder, min_rule_frequency=0.7)
+
+# low support: rare patterns
+result = rule_extraction.generate_rules(trained_autoencoder, min_rule_frequency=0.1)
 ```
 
-### Getting Low Support Rules
+### Confidence (via `min_rule_strength`)
 
-**Low support rules** can reveal rare but potentially interesting patterns in your data.
+**Confidence** measures how often the rule's prediction is correct. `min_rule_strength` is analogous to a combination
+of minimum confidence and Zhang's metric thresholds.
 
-**Parameters to adjust:**
-
-- Decrease `min_rule_frequency` to 0.1, 0.05, or lower
-- You may also need to adjust `max_antecedents` if discovering complex rare patterns
-
-**What to expect:**
-
-- More rules overall
-- Rules covering smaller portions of your dataset
-- Potentially longer execution time
-
-**Performance considerations:**
-
-- Unlike traditional ARM methods, Aerial's neural network performs the same operations regardless of threshold values
-- Lower thresholds don't increase search space, but they do result in more candidate rules to filter
-- Longer execution time comes from processing and validating more candidate patterns
-- Start with moderate values (e.g., 0.3) and gradually decrease
-
-**Example:**
+| Direction | Set | What to expect |
+|---|---|---|
+| High confidence (reliable rules) | `min_rule_strength=0.8-0.9` | Fewer, more reliable rules; >0.9 may yield very few |
+| Low confidence (exploratory analysis) | `min_rule_strength=0.3-0.5` | More rules, weaker relationships, possible spurious correlations |
 
 ```python
-# Get low support (rare pattern) rules
-result = rule_extraction.generate_rules(
-    trained_autoencoder,
-    min_rule_frequency=0.1  # Low threshold for rare patterns
-)
+# reliable rules
+result = rule_extraction.generate_rules(trained_autoencoder, min_rule_strength=0.9)
+
+# exploratory analysis
+result = rule_extraction.generate_rules(trained_autoencoder, min_rule_strength=0.4)
 ```
 
-### Controlling the Number of Rules
+### Association Strength (Zhang's Metric)
 
-The number of rules is affected by multiple parameters working together.
+**Association strength** measures the correlation between antecedent and consequent, accounting for the prevalence of
+both. This is unlike confidence, which is simply P(consequent|antecedent). Rules with high association strength are less
+likely to be coincidental. `min_rule_strength` incorporates association strength, so increasing it (0.7+) yields
+stronger associations.
 
-**To get fewer rules:**
-
-- Increase both `min_rule_frequency` (e.g., 0.6-0.8) and `min_rule_strength` (e.g., 0.7-0.9)
-- Decrease `max_antecedents` to 1 or 2
-
-**To get more rules:**
-
-- Decrease both `min_rule_frequency` (e.g., 0.1-0.3) and `min_rule_strength` (e.g., 0.3-0.6)
-- Increase `max_antecedents` to 3 or higher
-
-**Parameter interaction:**
-
-- `min_rule_frequency`: Controls how many antecedent patterns are considered
-- `min_rule_strength`: Filters rules based on confidence and association strength
-- `max_antecedents`: Limits complexity of patterns
-
-**Example:**
+**If Zhang's metric is unexpectedly low across your rules**, the Autoencoder likely over-fitted: reduce `epochs` or
+use a smaller `layer_dims` — see [Training and Rule Quality](#training-parameters-and-rule-quality).
 
 ```python
-# For a concise set of strong rules
-result = rule_extraction.generate_rules(
-    trained_autoencoder,
-    min_rule_frequency=0.6,
-    min_rule_strength=0.8,
-    max_antecedents=2
-)
-
-# For a comprehensive exploration
-result = rule_extraction.generate_rules(
-    trained_autoencoder,
-    min_rule_frequency=0.2,
-    min_rule_strength=0.5,
-    max_antecedents=3
-)
-```
-
-### Getting High Confidence Rules
-
-**Confidence** measures how often the rule's prediction is correct. High confidence rules are more reliable.
-
-**Parameters to adjust:**
-
-- Increase `min_rule_strength` to 0.8, 0.9, or higher
-- The consequent similarity threshold combines confidence and association strength
-
-**What to expect:**
-
-- Fewer rules overall
-- More reliable predictions
-- Stronger if-then relationships
-
-**Trade-offs:**
-
-- Very high thresholds (>0.9) may result in very few or no rules
-- Start with 0.7-0.8 and adjust based on results
-
-**Example:**
-
-```python
-# Get high confidence rules
-result = rule_extraction.generate_rules(
-    trained_autoencoder,
-    min_rule_strength=0.8  # High threshold for reliable rules
-)
-```
-
-### Getting Low Confidence Rules
-
-**Low confidence rules** can still be useful for exploratory analysis or finding weak associations.
-
-**Parameters to adjust:**
-
-- Decrease `min_rule_strength` to 0.5, 0.4, or lower
-
-**What to expect:**
-
-- More rules overall
-- Weaker if-then relationships
-- May include spurious correlations
-
-**When to use:**
-
-- Exploratory data analysis
-- When you want to see all possible patterns
-- When combined with other filtering criteria
-
-**Example:**
-
-```python
-# Get low confidence rules for exploration
-result = rule_extraction.generate_rules(
-    trained_autoencoder,
-    min_rule_strength=0.4  # Lower threshold for exploration
-)
-```
-
-### Getting Rules with High Association Strength
-
-**Association strength** (Zhang's metric) measures the correlation between antecedent and consequent, accounting for the
-prevalence of both.
-
-**Parameters to adjust:**
-
-- Increase `min_rule_strength` to 0.7 or higher
-- The consequent similarity threshold incorporates association strength
-
-**Difference from confidence:**
-
-- Confidence: P(consequent|antecedent)
-- Association strength: Accounts for how common both antecedent and consequent are
-- High association strength rules are less likely to be coincidental
-
-**Example:**
-
-```python
-# Get rules with strong associations
-result = rule_extraction.generate_rules(
-    trained_autoencoder,
-    min_rule_strength=0.7  # Ensures strong correlations
-)
-
-# Check Zhang's metric in results
+result = rule_extraction.generate_rules(trained_autoencoder, min_rule_strength=0.7)
 for rule in result['rules']:
     print(f"Zhang's metric: {rule['zhangs_metric']}")
 ```
 
-### Getting Rules with Low Association Strength
+### Controlling the Number of Rules
 
-**Low association strength** rules may indicate overfitting or spurious correlations.
-
-**Parameters to adjust:**
-
-- Decrease `min_rule_strength` below 0.5
-
-**Common causes:**
-
-- Over-training the autoencoder
-- Too many parameters in the neural network
-- Data doesn't have strong patterns
-
-**When you get low association strength unexpectedly:**
-
-- Reduce training epochs
-- Use a simpler autoencoder architecture
-- Check if your data has meaningful patterns
-
-**Example:**
+| Goal | `min_rule_frequency` | `min_rule_strength` | `max_antecedents` |
+|---|---|---|---|
+| Fewer rules | 0.6–0.8 | 0.7–0.9 | 1–2 |
+| More rules | 0.1–0.3 | 0.3–0.6 | 3+ |
 
 ```python
-# If getting low Zhang's metric unexpectedly, try:
-trained_autoencoder = model.train(
-    breast_cancer,
-    epochs=2,  # Reduce from default to prevent overfitting
-    layer_dims=[4, 2]  # Simpler architecture
-)
+# concise set of strong rules
+result = rule_extraction.generate_rules(
+    trained_autoencoder, min_rule_frequency=0.6, min_rule_strength=0.8, max_antecedents=2)
+
+# comprehensive exploration
+result = rule_extraction.generate_rules(
+    trained_autoencoder, min_rule_frequency=0.2, min_rule_strength=0.5, max_antecedents=3)
 ```
+
+## Training Parameters and Rule Quality
+
+How long you train and how strongly the Autoencoder compresses directly affect rule quality.
+
+### Overfitting in Knowledge Discovery
+
+Overfitting here does not mean poor generalization to new data — it means discovering **more rules with lower average
+quality**: the model captures spurious correlations instead of meaningful associations.
+
+**Signs of overfitting:** many rules with low Zhang's metric (association strength near 0), or a large number of
+low-support, low-confidence rules.
+
+**Solution:** shorter training, stronger compression, higher quality thresholds.
+
+### Training Duration (`epochs`)
+
+| | Shorter training (1–5 epochs) | Longer training (10+ epochs) |
+|---|---|---|
+| Rules | ✅ Fewer, higher-quality | ⚠️ More, lower average quality |
+| Associations | ✅ Strong, meaningful; higher Zhang's metric | ⚠️ Spurious correlations, noise; lower Zhang's metric |
+| Caveat | May miss patterns in complex data | Overfits to data peculiarities |
+
+**Recommendation:** the default works for most datasets. Only increase epochs if you get no rules and suspect
+underfitting. If rules have low Zhang's metric, **reduce** epochs — don't increase.
+
+### Architecture (`layer_dims` and Compression)
+
+`layer_dims=[4, 2]` means two hidden layers of dimensions 4 and 2; the last dimension is the bottleneck, and the
+decoder mirrors the encoder. Smaller dimensions mean stronger compression.
+
+| | Stronger compression (e.g., `[4, 2]`) | Weaker compression (e.g., `[50, 25]`) |
+|---|---|---|
+| Rules | ✅ Fewer, higher-quality | ⚠️ More, lower average quality |
+| Associations | ✅ Only essential relationships preserved | ⚠️ Weak associations and noise preserved |
+| Caveat | May miss nuanced patterns | May capture spurious correlations |
+
+**Recommendation:** let Aerial pick `layer_dims` automatically. Too many low-quality rules → smaller `layer_dims`;
+no rules → larger `layer_dims`. For most tabular datasets, 1–2 hidden layers are sufficient.
+
+### Balancing Training and Architecture
+
+1. **Start conservative**: default epochs + auto architecture
+2. **Evaluate**: check rule count and average Zhang's metric in `result['statistics']`
+3. **Adjust**:
+   - Too many low-quality rules → reduce epochs OR increase compression
+   - Too few rules → reduce compression OR slightly increase epochs
+   - Low Zhang's metric → reduce epochs (likely overfitting)
+
+**Anti-patterns:** ❌ long training with weak compression (maximum overfitting) · ❌ increasing epochs when Zhang's
+metric is already low · ❌ very large `layer_dims` on small datasets.
+
+```python
+# shorter training + stronger compression for higher-quality rules
+trained_autoencoder = model.train(breast_cancer, epochs=2, layer_dims=[4])
+result = rule_extraction.generate_rules(trained_autoencoder)
+print(result['statistics']['rule_count'], result['statistics']['average_zhangs_metric'])
+```
+
+For the experiments behind these recommendations, see
+this [blog post on scalable knowledge discovery](https://erkankarabulut.github.io/blog/uva-dsc-seminar-scalable-knowledge-discovery/).
 
 ## Common Scenarios
 
 ### Scenario 0: Don't Know What Parameters to Use
 
-Start with defaults and filter results. Training uses smart defaults (epochs=2, auto batch_size).
+Start with defaults and filter results.
 
 ```python
 from aerial import model, rule_extraction
 from ucimlrepo import fetch_ucirepo
 
 breast_cancer = fetch_ucirepo(id=14).data.features
-
-# Training uses smart defaults (epochs=2 for fewer and higher quality rules)
 trained_autoencoder = model.train(breast_cancer)
 
-# Extract rules with default thresholds, filter to keep high-quality ones
-result = rule_extraction.generate_rules(
-    trained_autoencoder,
-    filter_min_confidence=0.6
-)
+# extract rules with default thresholds, keep only high-quality ones
+result = rule_extraction.generate_rules(trained_autoencoder, filter_min_confidence=0.6)
 ```
 
 ### Scenario 1: Finding Rare but Strong Patterns
 
-Perfect for discovering uncommon but highly reliable associations.
-
 ```python
 result = rule_extraction.generate_rules(
     trained_autoencoder,
-    min_rule_frequency=0.05,  # Low support for rare patterns
-    min_rule_strength=0.8,  # High confidence for strong rules
-    max_antecedents=2  # Moderate complexity
-)
+    min_rule_frequency=0.05,  # low frequency for rare patterns
+    min_rule_strength=0.8,    # high strength for reliable rules
+    max_antecedents=2)
 ```
 
 ### Scenario 2: Quick Overview of Main Patterns
 
-Get a concise summary of the most prominent patterns.
-
 ```python
 result = rule_extraction.generate_rules(
     trained_autoencoder,
-    min_rule_frequency=0.5,  # Higher support for common patterns
-    min_rule_strength=0.7,  # Good confidence
-    max_antecedents=2  # Limit complexity for interpretability
-)
+    min_rule_frequency=0.5,   # common patterns
+    min_rule_strength=0.7,
+    max_antecedents=2)        # limit complexity for interpretability
 ```
 
 ### Scenario 3: Comprehensive Exploration
 
-Discover all possible patterns for in-depth analysis.
-
 ```python
 result = rule_extraction.generate_rules(
     trained_autoencoder,
-    min_rule_frequency=0.1,  # Low support to catch rare patterns
-    min_rule_strength=0.5,  # Moderate confidence
-    max_antecedents=3  # Allow complex patterns
-)
+    min_rule_frequency=0.1,   # catch rare patterns
+    min_rule_strength=0.5,
+    max_antecedents=3)        # allow complex patterns
 ```
 
 ### Scenario 4: Classification Rules
 
-Extract rules for predictive modeling with high reliability.
-
 ```python
 result = rule_extraction.generate_rules(
     trained_autoencoder,
-    target_classes=["Class"],  # Specify class label column
-    min_rule_strength=0.7,  # High confidence for predictions
-    min_rule_frequency=0.3  # Allow diverse patterns
-)
+    target_classes=["Class"],  # class label column on the consequent side
+    min_rule_strength=0.7,
+    min_rule_frequency=0.3)
 ```
 
 ### Scenario 5: Focused Mining with Item Constraints
 
-Mine rules focusing only on specific features of interest instead of the entire feature space.
+Mine rules for specific features of interest instead of the entire feature space — useful when you have domain
+knowledge about important features, or to reduce the search space and runtime.
 
 ```python
-# Define which features to focus on
 features_of_interest = [
-    "age",  # All values of 'age' feature
-    {"menopause": "premeno"},  # Only 'premeno' value of 'menopause'
-    "tumor-size",  # All values of 'tumor-size'
-    {"node-caps": "yes"}  # Only 'yes' value of 'node-caps'
+    "age",                      # all values of 'age'
+    {"menopause": "premeno"},   # only 'premeno' value of 'menopause'
+    "tumor-size",
+    {"node-caps": "yes"},
 ]
 
 result = rule_extraction.generate_rules(
-    trained_autoencoder,
-    features_of_interest,  # Focus mining on specified features
-    min_rule_frequency=0.3,  # Moderate support
-    min_rule_strength=0.6  # Moderate confidence
-)
+    trained_autoencoder, features_of_interest,
+    min_rule_frequency=0.3, min_rule_strength=0.6)
 ```
 
-**Use when:**
-
-- You have domain knowledge about important features
-- You want to reduce rule explosion by focusing on key variables
-- You're investigating relationships involving specific attributes
-- You need faster execution by limiting the search space
-
-**Note:** Features of interest appear only on the antecedent (left) side of rules. To constrain the consequent (right)
+**Note:** `features_of_interest` constrains the antecedent (left) side of rules. To constrain the consequent (right)
 side, use `target_classes` (see Scenario 4).
 
-## Understanding Parameter Effects
+## When Things Don't Work
 
-For a deeper understanding of how each parameter affects rule quality, see this detailed blog
-post: [Scalable Knowledge Discovery with PyAerial](https://erkankarabulut.github.io/blog/uva-dsc-seminar-scalable-knowledge-discovery/)
+### Aerial does not learn any rules
 
-### Parameter Summary
+Assuming the data is prepared correctly (e.g., numerical columns are discretized):
+
+- **Train longer.** More epochs can help Aerial capture associations — but see the overfitting warning
+  [above](#training-parameters-and-rule-quality).
+- **Add parameters.** Larger `layer_dims` can preserve associations that stronger compression would drop.
+- **Reduce `min_rule_frequency`.** More rules with potentially lower support.
+- **Reduce `min_rule_strength`.** More rules with potentially lower confidence.
+
+Note that it is always possible there are no prominent patterns in the data to discover.
+
+### Aerial takes too long or learns too many rules
+
+Start with a small search space and grow it gradually:
+
+1. **Start with `max_antecedents=2`**, observe execution time and rule usefulness, then increase if needed.
+2. **Start with `min_rule_frequency=0.5` or higher** — discover the most prominent patterns first.
+3. **Do not set `min_rule_strength` low** (below 0.5): there is rarely a reason to. Start high (e.g., 0.9) and
+   decrease gradually.
+4. **Train less or use fewer parameters.** Overfitting produces many non-informative rules that slow extraction —
+   see [Training and Rule Quality](#training-parameters-and-rule-quality).
+5. **Use item constraints** to mine rules only for features of interest
+   (see [Specifying Item Constraints](user_guide.md#2-specifying-item-constraints)).
+6. **Use a GPU** for big datasets with deep networks (see [GPU Usage](configuration.md#gpu-usage)).
+
+### Aerial produces error messages
+
+See [Getting Help](configuration.md#getting-help).
+
+## Parameter Summary
 
 | Parameter         | Analogous to (in traditional ARM)   | Effect when increased                 | Effect when decreased            |
 |-------------------|-------------------------------------|---------------------------------------|----------------------------------|
 | `min_rule_frequency`  | Minimum support                     | Fewer, higher support rules           | More, lower support rules        |
 | `min_rule_strength` | Minimum confidence + Zhang's metric | Fewer, higher confidence rules        | More, lower confidence rules     |
 | `max_antecedents` | Maximum itemset size                | More complex patterns, longer runtime | Simpler patterns, faster runtime |
+| `epochs`          | —                                   | More rules, lower average quality     | Fewer, higher-quality rules      |
+| `layer_dims`      | —                                   | More rules, lower average quality     | Fewer, higher-quality rules      |
+
+For a deeper understanding of how each parameter affects rule quality, see this detailed blog
+post: [Scalable Knowledge Discovery with PyAerial](https://erkankarabulut.github.io/blog/uva-dsc-seminar-scalable-knowledge-discovery/)
 
 ## Next Steps
 
-- See [Advanced: Training and Architecture Tuning](configuration.md#advanced-training-and-architecture-tuning) to learn how the architecture
-and training parameters impact rule quality.
-- See [Debugging](configuration.md#debugging) if you encounter issues
 - Check [User Guide](user_guide.md) for usage examples
 - Review [API Reference](api_reference.md) for complete parameter documentation
+- See [Configuration](configuration.md) for GPU usage, logging, and advanced topics

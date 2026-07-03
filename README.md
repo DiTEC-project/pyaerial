@@ -7,17 +7,15 @@
 
   <img src="https://img.shields.io/pypi/v/pyaerial.svg" alt="PyPI Version">
 
+  <img src="https://static.pepy.tech/badge/pyaerial" alt="Downloads">
+
   <img src="https://github.com/DiTEC-project/pyaerial/actions/workflows/tests.yml/badge.svg" alt="Build Status">
+
+  <img src="https://readthedocs.org/projects/pyaerial/badge/?version=latest" alt="Documentation Status">
 
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
 
   <img src="https://img.shields.io/github/stars/DiTEC-project/pyaerial.svg?style=social&label=Stars" alt="GitHub Stars">
-
-  <img src="https://img.shields.io/github/last-commit/DiTEC-project/pyaerial" alt="Last commit">
-
-  <img src="https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange" alt="Tested on Ubuntu 24.04 LTS">
-
-  <img src="https://img.shields.io/badge/macOS-Monterey%2012.6.7-lightgrey" alt="Tested on MacOS Monterey 12.6.7"> 
   <a href="https://doi.org/10.5281/zenodo.17650128"><img src="https://zenodo.org/badge/975774111.svg" alt="DOI"></a>
 </div>
 
@@ -33,24 +31,48 @@
   <a href="LICENSE">🔑 License</a>
 </p>
 
-PyAerial is a Python implementation of the **Aerial** scalable neurosymbolic association rule miner for tabular data. It
-utilizes an under-complete masking-based Autoencoder to learn a compact representation of tabular data, and extracts a
-concise set of high-quality association rules with full data coverage.
+PyAerial finds human-readable IF-THEN rules in tabular data:
 
-Unlike traditional exhaustive methods (e.g., Apriori, FP-Growth), Aerial addresses the **rule explosion** problem by
-learning neural representations and extracting only the most relevant patterns, making it suitable for large-scale
-datasets. PyAerial supports **GPU acceleration** (however, it is also the fastest rule miner on CPU), **numerical data discretization**, **item constraints**, and
-**classification rule extraction** and **rule visualization**
-via [NiaARM](https://github.com/firefly-cpp/NiaARM?tab=readme-ov-file#visualization) library.
+```
+IF smoking = yes AND exercise = never    THEN blood_pressure = high   (confidence 0.87, support 0.29)
+IF pressure = low AND flow_rate = high   THEN pipe_leakage = yes      (confidence 0.93, support 0.11)
+IF education = masters AND age = 30-40   THEN income = >50K           (confidence 0.82, support 0.17)
+```
+
+It is the Python implementation of **Aerial**, a scalable neurosymbolic association rule miner: an under-complete
+Autoencoder learns a compact representation of the data, and rules are extracted from the trained model. This avoids
+the **rule explosion** and **execution time** problems of exhaustive miners (Apriori, FP-Growth, ECLAT), making rule
+mining practical on large datasets such as health records, retail baskets, and sensor data, wherever you want
+interpretable patterns next to black-box models.
 
 Learn more about the architecture, training, and rule extraction in our paper:
 [Neurosymbolic Association Rule Mining from Tabular Data](https://proceedings.mlr.press/v284/karabulut25a.html)
 
 ---
 
-## Installation
+## Why PyAerial?
 
-Install PyAerial using pip:
+|                                        | PyAerial                                                             | Exhaustive miners (e.g., Mlxtend, SPMF)        |
+|----------------------------------------|----------------------------------------------------------------------|------------------------------------------------|
+| Execution time on large data           | 100-1000x faster, also on CPU                                        | Grows steeply with columns and thresholds      |
+| Number of rules                        | Concise, high-quality set with full data coverage                    | Rule explosion (easily millions)               |
+| Input format                           | pandas DataFrame, one-hot encoding handled internally               | Manual one-hot encoding or custom text formats |
+| Rule quality metrics                   | Calculated automatically (support, confidence, Zhang's metric, ...)  | Requires extra steps                           |
+| Item constraints, classification rules | Built-in                                                             | Limited or unavailable                         |
+| GPU support                            | Optional                                                             | Not available                                  |
+
+For comprehensive benchmarks against Mlxtend, SPMF and other ARM tools, see our software paper:
+[PyAerial: Scalable association rule mining from tabular data](https://doi.org/10.1016/j.softx.2025.102341)
+(SoftwareX, 2025)
+
+<div align="center">
+  <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/docs/source/_static/assets/benchmark.png" alt="PyAerial performance comparison" width="700">
+  <p><i>Execution time comparison across datasets of varying sizes. PyAerial scales linearly while traditional methods (e.g., Mlxtend, SPMF) exhibit exponential growth.</i></p>
+</div>
+
+---
+
+## Installation
 
 ```bash
 pip install pyaerial
@@ -61,43 +83,15 @@ pip install pyaerial
 > pip install ucimlrepo
 > ```
 
-> **Data Requirements:** PyAerial works with **categorical data**. Numerical columns must be discretized first. This can be
-> done using the *discretization* module of PyAerial. There is no need to one-hot encode your data—PyAerial handles that automatically (unlike libraries like mlxtend that require
-> manual one-hot encoding).
-
----
-
-## Performance
-
-PyAerial significantly outperforms traditional ARM methods in **scalability** while maintaining high-quality results, also on CPU:
-
-<div align="center">
-  <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/docs/source/_static/assets/benchmark.png" alt="PyAerial performance comparison" width="700">
-  <p><i>Execution time comparison across datasets of varying sizes. PyAerial scales linearly while traditional methods (e.g., Mlxtend, SPMF) exhibit exponential growth.</i></p>
-</div>
-
-**Key advantages:**
-
-- ⚡ **100-1000x faster** on large datasets compared to standard rule mining algorithms in Python (e.g.,
-  Apriori, FP-Growth, ECLAT, ...)
-- 📈 **Linear scaling** in training, polynomial scaling in rule extraction
-- 🎯 **No rule explosion** - extracts concise, high-quality rules with full data coverage
-- 💾 **Memory efficient** - neural representation avoids storing exponential candidate sets
-- 🖥️ **Fast on CPU** - GPU is optional and only needed for very large datasets
-
-For **comprehensive benchmarking** and comparisons with Mlxtend (e.g., FPGrowth, Apriori etc.), and other ARM tools, see
-our benchmarking paper:
-[**PyAerial: Scalable association rule mining from tabular data**](https://doi.org/10.1016/j.softx.2025.102341)
-(SoftwareX, 2025)
+> **Data Requirements:** PyAerial works with **categorical data**. Numerical columns must be discretized first, using
+> the built-in *discretization* module. There is no need to one-hot encode your data; PyAerial handles that
+> automatically.
 
 ---
 
 ## Quick Start
 
-The following are basic example usages of PyAerial. 📚
-
-See **[full feature list](#features)** | **[Read the complete documentation](https://pyaerial.readthedocs.io)**, to see
-the full capabilities.
+Or try it directly in your browser: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/DiTEC-project/pyaerial/blob/main/notebooks/quickstart.ipynb)
 
 ### Basic Association Rule Mining
 
@@ -121,8 +115,7 @@ print(f"Sample rule: {result['rules'][0]}")
 **Output:**
 
 ```python
-Overall
-statistics: {
+Overall statistics: {
     "rule_count": 15,
     "average_support": 0.448,
     "average_confidence": 0.881,
@@ -131,8 +124,7 @@ statistics: {
     "average_zhangs_metric": 0.318
 }
 
-Sample
-rule: {
+Sample rule: {
     "antecedents": [{"feature": "inv-nodes", "value": "0-2"}],
     "consequent": {"feature": "node-caps", "value": "no"},
     "support": 0.702,
@@ -154,36 +146,14 @@ rule: {
 - **Rule Coverage**: Proportion of transactions containing the antecedents
 - **Data Coverage** (in statistics): Overall proportion of the dataset covered by at least one rule
 
----
-
-**Can't get the results you're looking for?**
-
-Learn how to adjust parameters for your specific needs:
-- 🎯 [**Parameter Tuning Guide**](https://pyaerial.readthedocs.io/en/latest/parameter_guide.html) - Quick reference for high/low support, confidence, and more
-- 🔧 [**Troubleshooting**](https://pyaerial.readthedocs.io/en/latest/configuration.html#debugging) - What to do when Aerial doesn't find rules or takes too long
-- ⚙️ [**Advanced Tuning**](https://pyaerial.readthedocs.io/en/latest/configuration.html#advanced-training-and-architecture-tuning) - Training duration and architecture optimization
-
-> **📝 Note on Parameter Names:** The parameters `min_rule_frequency` and `min_rule_strength` correspond to `ant_similarity` and `cons_similarity` in the original [Aerial](https://proceedings.mlr.press/v284/karabulut25a.html) and [PyAerial](https://doi.org/10.1016/j.softx.2025.102341) papers.
-
----
-
-**Working with rules:** Access rule components and metrics easily using the dictionary format:
+Rules are plain dictionaries, so working with them is straightforward:
 
 ```python
-# Example: Print all rules in a readable format
 for rule in result['rules']:
-    antecedents_str = " AND ".join([f"{a['feature']}={a['value']}" for a in rule['antecedents']])
-    consequent_str = f"{rule['consequent']['feature']}={rule['consequent']['value']}"
-    print(
-        f"IF {antecedents_str} THEN {consequent_str} (support: {rule['support']:.2f}, conf: {rule['confidence']:.2f})")
-
-# Sample output:
-# IF inv-nodes=0-2 THEN node-caps=no (support: 0.70, conf: 0.94)
-# IF age=30-39 AND menopause=premeno THEN breast=left (support: 0.45, conf: 0.75)
-# IF tumor-size=30-34 THEN deg-malig=2 (support: 0.38, conf: 0.82)
+    antecedents = " AND ".join(f"{a['feature']}={a['value']}" for a in rule['antecedents'])
+    consequent = f"{rule['consequent']['feature']}={rule['consequent']['value']}"
+    print(f"IF {antecedents} THEN {consequent} (support: {rule['support']:.2f}, conf: {rule['confidence']:.2f})")
 ```
-
----
 
 ### Working with Numerical Data
 
@@ -197,205 +167,79 @@ from ucimlrepo import fetch_ucirepo
 iris = fetch_ucirepo(id=53).data.features
 
 # Discretize numerical columns into categorical bins
+# Before: sepal_length = 5.1, 4.9, 7.0, ...  After: sepal_length = (4.8, 5.5], (4.8, 5.5], (6.4, 7.9], ...
 iris_discretized = discretization.equal_frequency_discretization(iris, n_bins=3)
 
 # Train and extract rules as usual
 trained_autoencoder = model.train(iris_discretized, epochs=10)
 result = rule_extraction.generate_rules(trained_autoencoder, min_rule_frequency=0.1)
-print(
-    f"Found {result['statistics']['rule_count']} rules with avg support {result['statistics']['average_support']:.3f}")
 ```
 
-**Example discretization output:**
+Eight discretization methods are available: unsupervised (equal-frequency, equal-width, k-means, quantile, custom
+bins) and supervised (entropy-based, ChiMerge, decision tree), each documented with academic references in
+the [User Guide](https://pyaerial.readthedocs.io/en/latest/user_guide.html#running-aerial-for-numerical-values).
 
-```
-# Before: sepal_length = 5.1, 4.9, 7.0, ...
-# After:  sepal_length (ranges of values) = (4.8, 5.5], (4.8, 5.5], (6.4, 7.9], ...
-```
+### More Recipes
 
-**Available discretization methods:**
+| Goal                                             | How                                                                              | Details                                                                                                          |
+|--------------------------------------------------|----------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| Focus mining on features of interest             | `generate_rules(model, features_of_interest=["age", {"menopause": "premeno"}])`  | [Item constraints](https://pyaerial.readthedocs.io/en/latest/user_guide.html#specifying-item-constraints)          |
+| Classification rules (class label as consequent) | `generate_rules(model, target_classes=["Class"])`                                | [Classification rules](https://pyaerial.readthedocs.io/en/latest/user_guide.html#learning-classification-rules)    |
+| Keep only high-quality rules                     | `generate_rules(model, filter_min_confidence=0.7, filter_min_support=0.1)`       | [Parameter guide](https://pyaerial.readthedocs.io/en/latest/parameter_guide.html)                                  |
+| Frequent itemsets instead of rules               | `generate_frequent_itemsets(model)`                                              | [API reference](https://pyaerial.readthedocs.io/en/latest/api_reference.html#generate_frequent_itemsets)           |
+| Antecedents of unlimited length                  | `generate_rules(model, max_antecedents=None)`                                    | [Parameter guide](https://pyaerial.readthedocs.io/en/latest/parameter_guide.html)                                  |
+| Visualize rules                                  | Via [NiaARM](https://github.com/firefly-cpp/NiaARM#visualization)                | [User guide](https://pyaerial.readthedocs.io/en/latest/user_guide.html)                                            |
 
-**Unsupervised methods** (no target variable needed):
-- `equal_frequency_discretization` - Equal-frequency (quantile) binning
-- `equal_width_discretization` - Equal-width binning
-- `kmeans_discretization` - K-means clustering-based binning
-- `quantile_discretization` - Custom percentile-based binning
-- `custom_bins_discretization` - User-defined bin edges
+**Can't get the results you're looking for?**
 
-**Supervised methods** (use target variable for classification):
-- `entropy_based_discretization` - Entropy minimization (MDLP)
-- `chimerge_discretization` - Chi-square based merging
-- `decision_tree_discretization` - Decision tree regression-based splits
+- [Parameter Tuning Guide](https://pyaerial.readthedocs.io/en/latest/parameter_guide.html): quick reference for high/low support, confidence, and rule count
+- [Troubleshooting](https://pyaerial.readthedocs.io/en/latest/parameter_guide.html#when-things-dont-work): what to do when Aerial doesn't find rules or takes too long
+- [Training and Rule Quality](https://pyaerial.readthedocs.io/en/latest/parameter_guide.html#training-parameters-and-rule-quality): training duration and architecture optimization
 
-Each method is documented with academic references. See
-the [User Guide](https://pyaerial.readthedocs.io/en/latest/user_guide.html#running-aerial-for-numerical-values) for
-detailed examples and references.
-
----
-
-### ARM with Item Constraints
-
-**Focus rule mining on specific features of interest** instead of exploring the entire feature space:
-
-```python
-from aerial import model, rule_extraction
-from ucimlrepo import fetch_ucirepo
-
-breast_cancer = fetch_ucirepo(id=14).data.features
-trained_autoencoder = model.train(breast_cancer)
-
-# Define features of interest for the antecedent side, either as complete features or their specific values
-features_of_interest = ["age", "tumor-size", "inv-nodes", {"menopause": 'premeno'}, "node-caps"]
-
-# Extract rules focusing only on specified features
-result = rule_extraction.generate_rules(
-    trained_autoencoder,
-    features_of_interest,
-    min_rule_frequency=0.1
-)
-
-print(f"Sample rule: {result['rules'][0]}")
-```
-
-**Output:** Rules with specified features on the antecedent side (left side of an if-else rule):
-
-```python
-{
-    'antecedents': [{'feature': 'menopause', 'value': 'premeno'}, {'feature': 'tumor-size', 'value': '30-34'}], 
-    'consequent': {'feature': 'node-caps', 'value': 'no'}, 
-    ...
- }
-```
-
-This is ideal for **domain-specific exploration** where you want to understand relationships involving particular
-features.
-
----
-
-### Classification Rules for Interpretable Inference
-
-**Learn rules with target class labels** on the consequent side for interpretable classification:
-
-```python
-import pandas as pd
-from aerial import model, rule_extraction, rule_quality
-from ucimlrepo import fetch_ucirepo
-
-# Load dataset with class labels
-breast_cancer = fetch_ucirepo(id=14)
-labels = breast_cancer.data.targets
-features = breast_cancer.data.features
-
-# Combine features with labels
-table_with_labels = pd.concat([features, labels], axis=1)
-
-trained_autoencoder = model.train(table_with_labels)
-
-# Generate classification rules with target class on consequent side
-result = rule_extraction.generate_rules(
-    trained_autoencoder,
-    target_classes=["Class"],
-    min_rule_frequency=0.01,
-    min_rule_strength=0.7
-)
-```
-
-**Output:** Rules predicting class labels with quality metrics:
-
-```python
-{
-    "antecedents": [{"feature": "menopause", "value": "premeno"}],
-    "consequent": {"feature": "Class", "value": "no-recurrence-events"},
-    ...
-}
-```
-
-These rules can be used for **interpretable inference** or integrated with rule-based classifiers
-from [imodels](https://github.com/csinva/imodels).
-
----
-
-### Filtering Rules by Quality
-
-**Post-filter rules** to keep only high-quality ones:
-
-```python
-from aerial import model, rule_extraction
-from ucimlrepo import fetch_ucirepo
-
-breast_cancer = fetch_ucirepo(id=14).data.features
-
-# Train with default epochs=2 (shorter training = fewer and higher quality rules)
-trained_autoencoder = model.train(breast_cancer)
-
-# Extract rules and filter by quality thresholds
-result = rule_extraction.generate_rules(
-    trained_autoencoder,
-    filter_min_confidence=0.7,        # Only keep rules with ≥70% confidence
-    filter_min_support=0.1            # Only keep rules with ≥10% support
-)
-
-print(f"Found {len(result['rules'])} high-quality rules")
-```
-
-**Filtering parameters:**
-
-- **`filter_min_confidence`**: Post-filters rules to only include those with confidence ≥ this value
-- **`filter_min_support`**: Post-filters rules to only include those with support ≥ this value
+> **Note on Parameter Names:** The parameters `min_rule_frequency` and `min_rule_strength` correspond to `ant_similarity` and `cons_similarity` in the original [Aerial](https://proceedings.mlr.press/v284/karabulut25a.html) and [PyAerial](https://doi.org/10.1016/j.softx.2025.102341) papers.
 
 ---
 
 ## Features
 
-PyAerial provides a comprehensive toolkit for association rule mining with advanced capabilities:
+**Rule mining**
 
-- **Scalable Rule Mining** - Efficiently mine association rules from large tabular datasets without rule explosion
-- **Automatic Quality Metrics** - Rules include support, confidence, Zhang's metric, and more calculated automatically
-- **Smart Defaults** - Short training (epochs=2) by default produces fewer, higher-quality rules
-- **Rule Filtering** - Post-filter rules with `filter_min_confidence` and `filter_min_support` thresholds
-- **Frequent Itemset Mining** - Generate frequent itemsets with support values using the same neural approach
-- **ARM with Item Constraints** - Focus rule mining on specific features of interest
-- **Classification Rules** - Extract rules with target class labels for interpretable inference
-- **Numerical Data Support** - 8 built-in discretization methods (unsupervised: equal-frequency, equal-width, k-means, quantile, custom bins; supervised: entropy-based, ChiMerge, decision tree)
-- **Customizable Architectures** - Fine-tune autoencoder layers and dimensions for optimal performance
-- **GPU Acceleration** - Leverage CUDA for faster training on large datasets
-- **Comprehensive Metrics** - Support, confidence, lift, conviction, Zhang's metric, Yule's Q, interestingness, leverage
-- **Rule Visualization** - Integrate with NiaARM for scatter plots and visual analysis
-- **Flexible Training** - Adjust epochs, learning rate, batch size, and the masking window (min/max unmasked features)
+- Scalable association rule mining without rule explosion, with full data coverage
+- Frequent itemset mining with the same neural approach
+- Item constraints (features of interest) and classification rules (target classes)
+- Quality metrics calculated automatically: support, confidence, Zhang's metric, lift, conviction, Yule's Q, interestingness, leverage
+
+**Data handling**
+
+- Direct pandas DataFrame input; one-hot encoding handled internally
+- Eight discretization methods for numerical columns (unsupervised and supervised)
+
+**Performance**
+
+- Fast on CPU; optional GPU acceleration for very large datasets
+- Post-filters (`filter_min_confidence`, `filter_min_support`) for high-quality rule sets
+
+**Customization and integration**
+
+- Customizable Autoencoder architecture and training (epochs, learning rate, batch size, masking window)
+- Rule visualization via [NiaARM](https://github.com/firefly-cpp/NiaARM#visualization); interpretable inference via [imodels](https://github.com/csinva/imodels)
 
 ---
 
-## How Aerial Works?
+## How Aerial Works
 
-Aerial employs a three-stage neurosymbolic pipeline to extract high-quality association rules from tabular data:
+Aerial employs a three-stage neurosymbolic pipeline:
 
-### 1. Data Preparation
+**1. Data Preparation.** Categorical data is one-hot encoded while tracking feature relationships; numerical columns
+are pre-discretized. The encoded values form the input vectors of the Autoencoder.
 
-Categorical data is one-hot encoded while tracking feature relationships. Numerical columns require pre-discretization (
-equal-frequency or equal-width methods available). The encoded values are transformed into vector format for neural
-processing.
+**2. Autoencoder Training.** An under-complete Autoencoder is trained with a masking mechanism: each batch randomly
+corrupts a subset of features to a uniform "unknown" distribution, and the network learns to reconstruct them from the
+remaining unmasked features. Masking mirrors the antecedent to consequent query pattern used during rule extraction, an
+improvement over the Gaussian-noise-based denoising of the original
+[Aerial+ paper](https://proceedings.mlr.press/v284/karabulut25a.html).
 
-### 2. Autoencoder Training
-
-An under-complete masking-based autoencoder learns a compact representation of the data:
-
-- **Architecture**: Logarithmic reduction (base 16) automatically configures layers, or use custom dimensions
-- **Bottleneck design**: The encoder compresses input to the original feature count, forcing the network to learn
-  meaningful associations
-- **Masking mechanism**: Each batch randomly corrupts a subset of features to a uniform "unknown" distribution, and the
-  network learns to reconstruct them from the remaining unmasked features (bounded by `min_unmasked_features`/
-  `max_unmasked_features`). This is an improvement over the Gaussian-noise-based denoising mechanism used in the
-  original [Aerial+ paper](https://proceedings.mlr.press/v284/karabulut25a.html) — masking mirrors the
-  antecedent → consequent query pattern used during rule extraction more directly than noise injection does.
-
-<div align="center">
-  <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/docs/source/_static/assets/example.png" alt="Rule extraction example" width="600">
-  <p><i>Example: Rule extraction process using weather and beverage features</i></p>
-</div>
-
-### 3. Rule Extraction
-
-Rules emerge from analyzing the trained autoencoder using test vectors:
+**3. Rule Extraction.** Rules are extracted by querying the trained Autoencoder with test vectors:
 
 1. Test vectors are created with equal probabilities across categories
 2. Specific feature values are marked as antecedents while others remain at baseline
@@ -408,36 +252,36 @@ Rules emerge from analyzing the trained autoencoder using test vectors:
    operations
 
 Aerial+ replaces the counting operation of classical rule mining with the Autoencoder's implication probabilities, so
-in principle the search strategy of any rule miner can run on top of it — PyAerial adopts FP-Growth's, as it is among
+in principle the search strategy of any rule miner can run on top of it. PyAerial adopts FP-Growth's, as it is among
 the fastest rule miners.
+
+<div align="center">
+  <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/docs/source/_static/assets/example.png" alt="Rule extraction example" width="600">
+  <p><i>Example: Rule extraction process using weather and beverage features</i></p>
+</div>
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/DiTEC-project/pyaerial/main/docs/source/_static/assets/pipeline.png" alt="Aerial pipeline" width="700">
   <p><i>Complete three-stage pipeline: data preparation → training → rule extraction</i></p>
 </div>
 
-**Learn more:** For detailed explanations of the architecture, theoretical foundations, and experimental results, see
-our paper:
-[Neurosymbolic Association Rule Mining from Tabular Data](https://proceedings.mlr.press/v284/karabulut25a.html)
+For the architecture, theoretical foundations, and experimental results, see
+[How Aerial Works](https://pyaerial.readthedocs.io/en/latest/research.html) in the documentation and the
+[paper](https://proceedings.mlr.press/v284/karabulut25a.html).
 
 ---
 
 ## Documentation
 
-For detailed usage examples, API reference, and advanced topics, visit our comprehensive documentation:
+**[Read the full documentation on ReadTheDocs](https://pyaerial.readthedocs.io)** |
+**[Release notes on GitHub Releases](https://github.com/DiTEC-project/pyaerial/releases)**
 
-**[📚 Read the full documentation on ReadTheDocs](https://pyaerial.readthedocs.io)**
-
-**[📋 View release notes and changelog on GitHub Releases](https://github.com/DiTEC-project/pyaerial/releases)**
-
-Documentation includes:
-
-- **Getting Started** - Installation and basic usage
-- **User Guide** - 11 detailed examples covering all features
-- **Parameter Tuning Guide** - How to get high/low support, confidence, and control rule count
-- **Configuration & Troubleshooting** - GPU usage, debugging, and advanced training/architecture tuning
-- **API Reference** - Complete function and class documentation
-- **How Aerial Works** - Understanding the neurosymbolic architecture and algorithm
+- [Getting Started](https://pyaerial.readthedocs.io/en/latest/getting_started.html): installation and basic usage
+- [User Guide](https://pyaerial.readthedocs.io/en/latest/user_guide.html): detailed examples covering all features
+- [Parameter Tuning Guide](https://pyaerial.readthedocs.io/en/latest/parameter_guide.html): defaults, tuning for specific goals, troubleshooting
+- [Configuration](https://pyaerial.readthedocs.io/en/latest/configuration.html): GPU usage, logging, custom Autoencoders
+- [API Reference](https://pyaerial.readthedocs.io/en/latest/api_reference.html): complete function and class documentation
+- [How Aerial Works](https://pyaerial.readthedocs.io/en/latest/research.html): the neurosymbolic architecture and algorithm
 
 ---
 
@@ -476,33 +320,16 @@ If you use PyAerial in your work, please cite our research and software papers:
 
 ## Contact
 
-For questions, suggestions, or collaborations, please contact:
-
-**Erkan Karabulut**
-📧 e.karabulut@uva.nl
-📧 erkankkarabulut@gmail.com
+For questions, suggestions, or collaborations: **Erkan Karabulut**, e.karabulut@uva.nl or erkankkarabulut@gmail.com
 
 ---
 
 ## Contribute
 
-We welcome contributions from the community! Whether you're fixing bugs, adding new features, improving documentation,
-or sharing feedback, your help is appreciated.
-
-**How to contribute:**
-
-- 🐛 **Report bugs** - Open an issue describing the problem
-- 💡 **Suggest features** - Share your ideas for improvements
-- 📝 **Improve docs** - Help us make the documentation clearer
-- 🔧 **Submit PRs** - Fork the repo and create a pull request
-- 💬 **Share feedback** - Contact us with your experience using PyAerial
-
-Feel free to open an issue or pull request on [GitHub](https://github.com/DiTEC-project/pyaerial), or reach out
-directly!
+Contributions are welcome: report bugs or suggest features by opening an issue, improve the documentation, or submit a
+pull request on [GitHub](https://github.com/DiTEC-project/pyaerial).
 
 ### Contributors
-
-All contributors to this project are recognized and appreciated! The profiles of contributors will be listed here:
 
 <a href="https://github.com/DiTEC-project/pyaerial/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=DiTEC-project/pyaerial" />
@@ -514,4 +341,4 @@ All contributors to this project are recognized and appreciated! The profiles of
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License; see the [LICENSE](LICENSE) file for details.
