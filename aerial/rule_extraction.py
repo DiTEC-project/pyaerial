@@ -181,31 +181,23 @@ def _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, 
 
         batch_vectors = []
         batch_candidate_antecedent_list = []
+        # Estimated frequency per candidate, computed before the forward pass so that infrequent
+        # candidates at r>1 never reach the Autoencoder. None means the estimate needs the
+        # forward pass output (r=1, or the pairwise cache had no usable pair).
+        batch_freq_estimates = []
 
         for category_list in feature_combinations:
             test_vectors, candidate_antecedent_list = _mark_features(unmarked_features, list(category_list),
                                                                      insignificant_feature_values)
-            if len(test_vectors) > 0:
-                batch_vectors.extend(test_vectors)
-                batch_candidate_antecedent_list.extend(candidate_antecedent_list)
-
-        if batch_vectors:
-            batch_vectors = torch.tensor(np.array(batch_vectors), dtype=torch.float32)
-            batch_vectors = batch_vectors.to(next(autoencoder.parameters()).device)
-            implications_batch = autoencoder(batch_vectors, feature_value_indices).detach().cpu().numpy()
-
-            for test_vector, implication_probabilities, candidate_antecedents \
-                    in zip(batch_vectors, implications_batch, batch_candidate_antecedent_list):
+            for test_vector, candidate_antecedents in zip(test_vectors, candidate_antecedent_list):
                 if len(candidate_antecedents) == 0:
                     continue
 
                 ant_list = (candidate_antecedents.tolist() if isinstance(candidate_antecedents, np.ndarray)
                             else list(candidate_antecedents))
 
-                if r == 1:
-                    r1_probs_cache[ant_list[0]] = implication_probabilities
-                    freq_estimate = float(implication_probabilities[ant_list[0]])
-                else:
+                freq_estimate = None
+                if r > 1:
                     pairwise = [
                         float(r1_probs_cache[ai][aj]) * float(r1_probs_cache[ai][ai])
                         for ai in ant_list for aj in ant_list
@@ -213,12 +205,29 @@ def _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, 
                     ]
                     if pairwise:
                         freq_estimate = float(np.prod(pairwise) ** (1.0 / len(pairwise)))
-                    else:
-                        freq_estimate = float(min(implication_probabilities[a] for a in ant_list))
+                        if freq_estimate <= min_rule_frequency:
+                            continue
+
+                batch_vectors.append(test_vector)
+                batch_candidate_antecedent_list.append(ant_list)
+                batch_freq_estimates.append(freq_estimate)
+
+        if batch_vectors:
+            batch_vectors = torch.tensor(np.array(batch_vectors), dtype=torch.float32)
+            batch_vectors = batch_vectors.to(next(autoencoder.parameters()).device)
+            implications_batch = autoencoder(batch_vectors, feature_value_indices).detach().cpu().numpy()
+
+            for implication_probabilities, ant_list, freq_estimate \
+                    in zip(implications_batch, batch_candidate_antecedent_list, batch_freq_estimates):
+                if r == 1:
+                    r1_probs_cache[ant_list[0]] = implication_probabilities
+                    freq_estimate = float(implication_probabilities[ant_list[0]])
+                elif freq_estimate is None:
+                    freq_estimate = float(min(implication_probabilities[a] for a in ant_list))
 
                 if freq_estimate <= min_rule_frequency:
                     if r == 1:
-                        insignificant_feature_values = np.append(insignificant_feature_values, candidate_antecedents)
+                        insignificant_feature_values = np.append(insignificant_feature_values, ant_list)
                     continue
 
                 antecedent_ranges = set(index_to_feature_range[ant_idx] for ant_idx in ant_list)
