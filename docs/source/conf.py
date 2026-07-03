@@ -70,6 +70,9 @@ myst_enable_extensions = [
     "deflist",
 ]
 
+# Generate anchors for headings so cross-page links like page.md#some-heading resolve
+myst_heading_anchors = 3
+
 # Sphinx-copybutton configuration
 copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
 copybutton_prompt_is_regexp = True
