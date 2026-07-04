@@ -34,9 +34,19 @@
 PyAerial finds human-readable IF-THEN rules in tabular data:
 
 ```
-IF smoking = yes AND exercise = never    THEN blood_pressure = high   (confidence 0.87, support 0.29)
-IF pressure = low AND flow_rate = high   THEN pipe_leakage = yes      (confidence 0.93, support 0.11)
-IF education = masters AND age = 30-40   THEN income = >50K           (confidence 0.82, support 0.17)
+Congressional voting records dataset:
+IF adoption-of-the-budget-resolution=No AND physician-fee-freeze=Yes THEN Class=republican  (support=0.32, confidence=0.96, zhangs=0.90)
+IF adoption-of-the-budget-resolution=y AND physician-fee-freeze=n THEN Class=democrat  (support=0.50, confidence=1.00, zhangs=0.78)
+
+Iris dataset (plants) - numerical:
+IF sepal width=(2, 2.9] AND petal width=(1.6, 2.5] THEN class=Iris-virginica  (support=0.12, confidence=1.00, zhangs=0.76)
+IF petal length=(1, 2.63] AND petal width=(0.1, 0.87] THEN class=Iris-setosa  (support=0.33, confidence=1.00, zhangs=1.00)
+
+Mushroom dataset:
+IF odor=none AND gill-size=broad THEN poisonous=No  (support=0.40, confidence=0.98, zhangs=0.79)
+IF gill-spacing=close AND stalk-surface-above-ring=silky THEN edibility=poisonous  (support=0.27, confidence=1.00, zhangs=0.71)
+
+Datasets are from the UCI ML Repository.
 ```
 
 It is the Python implementation of **Aerial**, a scalable neurosymbolic association rule miner: an under-complete
