@@ -16,7 +16,6 @@
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
 
   <img src="https://img.shields.io/github/stars/DiTEC-project/pyaerial.svg?style=social&label=Stars" alt="GitHub Stars">
-  <a href="https://doi.org/10.5281/zenodo.17650128"><img src="https://zenodo.org/badge/975774111.svg" alt="DOI"></a>
 </div>
 
 ---
