@@ -28,7 +28,8 @@ _MIRROR_MIN_RULE_STRENGTH = object()
 def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, min_rule_frequency=0.5,
                    min_rule_strength=0.8,
                    max_antecedents=2, target_classes=None, quality_metrics=None, num_workers=1,
-                   filter_min_confidence=_MIRROR_MIN_RULE_STRENGTH, filter_min_support: float = 0.0001):
+                   filter_min_confidence=_MIRROR_MIN_RULE_STRENGTH, filter_min_support: float = 0.0001,
+                   extraction_batch_size: int = 256):
     """
     Extract association rules from a trained Autoencoder using Aerial+ algorithm.
     Rule quality metrics are calculated automatically and included in the output.
@@ -59,6 +60,10 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
         only excludes degenerate zero/near-zero support rules). Deliberately not mirrored to `min_rule_frequency`:
         rule support is antecedent-and-consequent support, which is mathematically <= antecedent-only frequency, so
         the two are not comparable at the same threshold. Set to None to disable this post-filter entirely.
+    :param extraction_batch_size: number of candidate rows sent through the Autoencoder per forward
+        pass (default=256). Lower this if you hit memory pressure on very wide or high-cardinality
+        data; raise it for faster extraction when memory allows. Does not change the rules found,
+        only how they're computed.
     :return: dict with 'rules' (list of rules with quality metrics) and 'statistics' (aggregate stats)
     """
     if not autoencoder:
@@ -76,7 +81,7 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
 
     logger.info("Mining association rules...")
     result = _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, min_rule_strength,
-                                  max_antecedents, target_classes, quality_metrics, num_workers)
+                                  max_antecedents, target_classes, quality_metrics, num_workers, extraction_batch_size)
 
     if filter_min_confidence is not None or filter_min_support is not None:
         result = _apply_post_filters(result, autoencoder, filter_min_confidence, filter_min_support, quality_metrics)
@@ -117,7 +122,7 @@ def _apply_post_filters(result, autoencoder, filter_min_confidence, filter_min_s
 
 
 def _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, min_rule_strength,
-                         max_antecedents, target_classes, quality_metrics, num_workers):
+                         max_antecedents, target_classes, quality_metrics, num_workers, extraction_batch_size):
     """
     Core rule generation logic without auto-tuning or post-filtering.
     This is the internal implementation used by both generate_rules and auto-tuning.
@@ -178,14 +183,23 @@ def _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, 
     ]
 
     def _forward(antecedent_lists):
-        test_vectors = np.tile(unmarked_features, (len(antecedent_lists), 1))
-        for row, antecedents in enumerate(antecedent_lists):
-            for idx in antecedents:
-                start, end = index_to_feature_range[idx]
-                test_vectors[row, start:end] = 0
-                test_vectors[row, idx] = 1
-        batch = torch.tensor(test_vectors, dtype=torch.float32).to(next(autoencoder.parameters()).device)
-        return autoencoder(batch, feature_value_indices).detach().cpu().numpy()
+        # switch to eval mode before inference
+        autoencoder.eval()
+        probabilities = []
+        # batched inference to prevent memory/performance issues
+        for i in range(0, len(antecedent_lists), extraction_batch_size):
+            antecedent_lists_batch = antecedent_lists[i:i + extraction_batch_size]
+            test_vectors_batch = np.tile(unmarked_features, (len(antecedent_lists_batch), 1))   # use length of antecedent_lists_batch to account for possible shorter batches
+            for row, antecedents in enumerate(antecedent_lists_batch):
+                for idx in antecedents:
+                    start, end = index_to_feature_range[idx]
+                    test_vectors_batch[row, start:end] = 0
+                    test_vectors_batch[row, idx] = 1
+            batch = torch.tensor(test_vectors_batch, dtype=torch.float32).to(next(autoencoder.parameters()).device)
+            # prevents pytorch from building the computation graph for gradient computation, as there is no backward pass during extraction
+            with torch.no_grad():
+                probabilities.append(autoencoder(batch, feature_value_indices).cpu().numpy())
+        return np.concatenate(probabilities, axis=0)
 
     def _emit_rules(antecedents, implication_probabilities):
         antecedent_ranges = set(index_to_feature_range[idx] for idx in antecedents)
@@ -300,7 +314,7 @@ def _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, 
 
 
 def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=None, frequency=0.5, max_length=2,
-                               num_workers=1):
+                               num_workers=1, extraction_batch_size: int = 256):
     """
     Generate frequent itemsets using the Aerial+ algorithm.
     Support values are calculated automatically and included in the output.
@@ -313,6 +327,10 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=No
     :param max_length: max itemset length (default=2).
         Pass None for no limit: itemsets are grown until none passes the frequency threshold.
     :param num_workers: number of parallel workers for support calculation (default=1 for sequential processing)
+    :param extraction_batch_size: number of candidate rows sent through the Autoencoder per forward
+        pass (default=256). Lower this if you hit memory pressure on very wide or high-cardinality
+        data; raise it for faster extraction when memory allows. Does not change the itemsets found,
+        only how they're computed.
     :return: dict with 'itemsets' (list of itemsets with support) and 'statistics' (aggregate stats)
         Example: {
             'itemsets': [
@@ -363,14 +381,23 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=No
     ]
 
     def _forward(itemset_lists):
-        test_vectors = np.tile(unmarked_features, (len(itemset_lists), 1))
-        for row, itemset in enumerate(itemset_lists):
-            for idx in itemset:
-                start, end = index_to_feature_range[idx]
-                test_vectors[row, start:end] = 0
-                test_vectors[row, idx] = 1
-        batch = torch.tensor(test_vectors, dtype=torch.float32).to(next(autoencoder.parameters()).device)
-        return autoencoder(batch, feature_value_indices).detach().cpu().numpy()
+        # switch to eval mode before inference
+        autoencoder.eval()
+        probabilities = []
+        # batched inference to prevent memory/performance issues
+        for i in range(0, len(itemset_lists), extraction_batch_size):
+            itemset_lists_batch = itemset_lists[i:i + extraction_batch_size]
+            test_vectors_batch = np.tile(unmarked_features, (len(itemset_lists_batch), 1))  # use length of itemset_lists_batch to account for possible shorter batches
+            for row, itemset in enumerate(itemset_lists_batch):
+                for idx in itemset:
+                    start, end = index_to_feature_range[idx]
+                    test_vectors_batch[row, start:end] = 0
+                    test_vectors_batch[row, idx] = 1
+            batch = torch.tensor(test_vectors_batch, dtype=torch.float32).to(next(autoencoder.parameters()).device)
+            # prevents pytorch from building the computation graph for gradient computation, as there is no backward pass during extraction
+            with torch.no_grad():
+                probabilities.append(autoencoder(batch, feature_value_indices).cpu().numpy())
+        return np.concatenate(probabilities, axis=0)
 
     # Frequency of a feature value is the Autoencoder's own implication probability of that
     # value when it is marked in the input
