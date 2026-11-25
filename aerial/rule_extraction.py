@@ -29,7 +29,7 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
                    min_rule_strength=0.8,
                    max_antecedents=2, target_classes=None, quality_metrics=None, num_workers=1,
                    filter_min_confidence=_MIRROR_MIN_RULE_STRENGTH, filter_min_support: float = 0.0001,
-                   extraction_batch_size: int = 256):
+                   extraction_batch_size: int = 256, evaluation_batch_size: int = 5000):
     """
     Extract association rules from a trained Autoencoder using Aerial+ algorithm.
     Rule quality metrics are calculated automatically and included in the output.
@@ -64,6 +64,11 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
         pass (default=256). Lower this if you hit memory pressure on very wide or high-cardinality
         data; raise it for faster extraction when memory allows. Does not change the rules found,
         only how they're computed.
+    :param evaluation_batch_size: number of rules whose quality metrics (support, confidence, etc.)
+        are calculated per batch (default=5000). Each rule briefly holds one boolean mask sized by
+        the transaction count alone (unlike extraction_batch_size's tensors, sized by candidate
+        count x feature count), so this can safely be much larger than extraction_batch_size --
+        just not in the hundreds of thousands.
     :return: dict with 'rules' (list of rules with quality metrics) and 'statistics' (aggregate stats)
     """
     if not autoencoder:
@@ -81,7 +86,8 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
 
     logger.info("Mining association rules...")
     result = _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, min_rule_strength,
-                                  max_antecedents, target_classes, quality_metrics, num_workers, extraction_batch_size)
+                                  max_antecedents, target_classes, quality_metrics, num_workers, extraction_batch_size,
+                                  evaluation_batch_size)
 
     if filter_min_confidence is not None or filter_min_support is not None:
         result = _apply_post_filters(result, autoencoder, filter_min_confidence, filter_min_support, quality_metrics)
@@ -122,7 +128,8 @@ def _apply_post_filters(result, autoencoder, filter_min_confidence, filter_min_s
 
 
 def _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, min_rule_strength,
-                         max_antecedents, target_classes, quality_metrics, num_workers, extraction_batch_size):
+                         max_antecedents, target_classes, quality_metrics, num_workers, extraction_batch_size,
+                         evaluation_batch_size):
     """
     Core rule generation logic without auto-tuning or post-filtering.
     This is the internal implementation used by both generate_rules and auto-tuning.
@@ -276,37 +283,42 @@ def _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, 
                     "https://pyaerial.readthedocs.io/en/latest/parameter_guide.html#quick-parameter-reference")
         return {'rules': [], 'statistics': {}}
 
-    all_metrics = calculate_rule_metrics(
-        rules_with_indices, transaction_array, quality_metrics, num_workers=num_workers
-    )
-
-    # Build final rules and calculate dataset coverage
+    # Build final rules and calculate dataset coverage, in batches: calculate_rule_metrics
+    # stores a full antecedent mask (length num_transactions) per rule in its results, so
+    # processing all rules in one call would hold every rule's mask in memory simultaneously.
+    # Batching bounds that to at most evaluation_batch_size masks alive at once.
     final_rules = []
     dataset_coverage = np.zeros(num_transactions, dtype=bool)
 
-    for rule_idx, metrics in zip(rules_with_indices, all_metrics):
-        ant_indices = rule_idx['antecedent_indices']
-        cons_index = rule_idx['consequent_index']
+    for i in range(0, len(rules_with_indices), evaluation_batch_size):
+        rules_batch = rules_with_indices[i:i + evaluation_batch_size]
+        batch_metrics = calculate_rule_metrics(
+            rules_batch, transaction_array, quality_metrics, num_workers=num_workers
+        )
 
-        antecedent_mask = metrics.pop('_antecedent_mask')
-        dataset_coverage |= antecedent_mask
+        for rule_idx, metrics in zip(rules_batch, batch_metrics):
+            ant_indices = rule_idx['antecedent_indices']
+            cons_index = rule_idx['consequent_index']
 
-        antecedents = [
-            {'feature': autoencoder.feature_values[idx].split('__', 1)[0],
-             'value': autoencoder.feature_values[idx].split('__', 1)[1]}
-            for idx in ant_indices
-        ]
-        consequent = {
-            'feature': autoencoder.feature_values[cons_index].split('__', 1)[0],
-            'value': autoencoder.feature_values[cons_index].split('__', 1)[1]
-        }
+            antecedent_mask = metrics.pop('_antecedent_mask')
+            dataset_coverage |= antecedent_mask
 
-        rule = {
-            'antecedents': antecedents,
-            'consequent': consequent
-        }
-        rule.update(metrics)
-        final_rules.append(rule)
+            antecedents = [
+                {'feature': autoencoder.feature_values[idx].split('__', 1)[0],
+                 'value': autoencoder.feature_values[idx].split('__', 1)[1]}
+                for idx in ant_indices
+            ]
+            consequent = {
+                'feature': autoencoder.feature_values[cons_index].split('__', 1)[0],
+                'value': autoencoder.feature_values[cons_index].split('__', 1)[1]
+            }
+
+            rule = {
+                'antecedents': antecedents,
+                'consequent': consequent
+            }
+            rule.update(metrics)
+            final_rules.append(rule)
 
     stats = _calculate_aggregate_stats(final_rules, dataset_coverage, num_transactions, quality_metrics)
 
