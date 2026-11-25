@@ -3,7 +3,7 @@
 ---
 <div align="center">
 
-  <img src="https://img.shields.io/badge/python-3.9%2C3.10%2C3.11%2C3.12-blue" alt="Python Versions">
+  <img src="https://img.shields.io/badge/python-3.10%2C3.11%2C3.12%2C3.13%2C3.14-blue" alt="Python Versions">
 
   <img src="https://img.shields.io/pypi/v/pyaerial.svg" alt="PyPI Version">
 
