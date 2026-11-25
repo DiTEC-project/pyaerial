@@ -21,7 +21,7 @@ pip install pyaerial
 
 - **Ubuntu 24.04 LTS**
 - **macOS Monterey 12.6.7**
-- Python 3.9, 3.10, 3.11 and 3.12
+- Python 3.10, 3.11, 3.12, 3.13 and 3.14
 
 ## Quick Start
 
