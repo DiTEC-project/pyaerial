@@ -60,15 +60,10 @@ def generate_rules(autoencoder: AutoEncoder, features_of_interest: list = None, 
         only excludes degenerate zero/near-zero support rules). Deliberately not mirrored to `min_rule_frequency`:
         rule support is antecedent-and-consequent support, which is mathematically <= antecedent-only frequency, so
         the two are not comparable at the same threshold. Set to None to disable this post-filter entirely.
-    :param extraction_batch_size: number of candidate rows sent through the Autoencoder per forward
-        pass (default=256). Lower this if you hit memory pressure on very wide or high-cardinality
-        data; raise it for faster extraction when memory allows. Does not change the rules found,
-        only how they're computed.
-    :param evaluation_batch_size: number of rules whose quality metrics (support, confidence, etc.)
-        are calculated per batch (default=5000). Each rule briefly holds one boolean mask sized by
-        the transaction count alone (unlike extraction_batch_size's tensors, sized by candidate
-        count x feature count), so this can safely be much larger than extraction_batch_size --
-        just not in the hundreds of thousands.
+    :param extraction_batch_size: number of antecedent combinations sent through the Autoencoder per forward
+        pass (default=256). Lower it to reduce memory usage on wide data; does not change the rules found.
+    :param evaluation_batch_size: number of rules whose quality metrics are calculated per batch
+        (default=5000). Lower it to reduce memory usage on large datasets; does not change the rules found.
     :return: dict with 'rules' (list of rules with quality metrics) and 'statistics' (aggregate stats)
     """
     if not autoencoder:
@@ -190,20 +185,17 @@ def _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, 
     ]
 
     def _forward(antecedent_lists):
-        # switch to eval mode before inference
         autoencoder.eval()
         probabilities = []
-        # batched inference to prevent memory/performance issues
         for i in range(0, len(antecedent_lists), extraction_batch_size):
             antecedent_lists_batch = antecedent_lists[i:i + extraction_batch_size]
-            test_vectors_batch = np.tile(unmarked_features, (len(antecedent_lists_batch), 1))   # use length of antecedent_lists_batch to account for possible shorter batches
+            test_vectors_batch = np.tile(unmarked_features, (len(antecedent_lists_batch), 1))
             for row, antecedents in enumerate(antecedent_lists_batch):
                 for idx in antecedents:
                     start, end = index_to_feature_range[idx]
                     test_vectors_batch[row, start:end] = 0
                     test_vectors_batch[row, idx] = 1
             batch = torch.tensor(test_vectors_batch, dtype=torch.float32).to(next(autoencoder.parameters()).device)
-            # prevents pytorch from building the computation graph for gradient computation, as there is no backward pass during extraction
             with torch.no_grad():
                 probabilities.append(autoencoder(batch, feature_value_indices).cpu().numpy())
         return np.concatenate(probabilities, axis=0)
@@ -283,10 +275,7 @@ def _generate_rules_core(autoencoder, features_of_interest, min_rule_frequency, 
                     "https://pyaerial.readthedocs.io/en/latest/parameter_guide.html#quick-parameter-reference")
         return {'rules': [], 'statistics': {}}
 
-    # Build final rules and calculate dataset coverage, in batches: calculate_rule_metrics
-    # stores a full antecedent mask (length num_transactions) per rule in its results, so
-    # processing all rules in one call would hold every rule's mask in memory simultaneously.
-    # Batching bounds that to at most evaluation_batch_size masks alive at once.
+    # Batched so that at most evaluation_batch_size antecedent masks are held in memory at once
     final_rules = []
     dataset_coverage = np.zeros(num_transactions, dtype=bool)
 
@@ -339,10 +328,8 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=No
     :param max_length: max itemset length (default=2).
         Pass None for no limit: itemsets are grown until none passes the frequency threshold.
     :param num_workers: number of parallel workers for support calculation (default=1 for sequential processing)
-    :param extraction_batch_size: number of candidate rows sent through the Autoencoder per forward
-        pass (default=256). Lower this if you hit memory pressure on very wide or high-cardinality
-        data; raise it for faster extraction when memory allows. Does not change the itemsets found,
-        only how they're computed.
+    :param extraction_batch_size: number of itemsets sent through the Autoencoder per forward
+        pass (default=256). Lower it to reduce memory usage on wide data; does not change the itemsets found.
     :return: dict with 'itemsets' (list of itemsets with support) and 'statistics' (aggregate stats)
         Example: {
             'itemsets': [
@@ -393,20 +380,17 @@ def generate_frequent_itemsets(autoencoder: AutoEncoder, features_of_interest=No
     ]
 
     def _forward(itemset_lists):
-        # switch to eval mode before inference
         autoencoder.eval()
         probabilities = []
-        # batched inference to prevent memory/performance issues
         for i in range(0, len(itemset_lists), extraction_batch_size):
             itemset_lists_batch = itemset_lists[i:i + extraction_batch_size]
-            test_vectors_batch = np.tile(unmarked_features, (len(itemset_lists_batch), 1))  # use length of itemset_lists_batch to account for possible shorter batches
+            test_vectors_batch = np.tile(unmarked_features, (len(itemset_lists_batch), 1))
             for row, itemset in enumerate(itemset_lists_batch):
                 for idx in itemset:
                     start, end = index_to_feature_range[idx]
                     test_vectors_batch[row, start:end] = 0
                     test_vectors_batch[row, idx] = 1
             batch = torch.tensor(test_vectors_batch, dtype=torch.float32).to(next(autoencoder.parameters()).device)
-            # prevents pytorch from building the computation graph for gradient computation, as there is no backward pass during extraction
             with torch.no_grad():
                 probabilities.append(autoencoder(batch, feature_value_indices).cpu().numpy())
         return np.concatenate(probabilities, axis=0)

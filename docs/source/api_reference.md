@@ -101,7 +101,9 @@ generate_rules(
     quality_metrics=['support', 'confidence', 'zhangs_metric'],
     num_workers=1,
     filter_min_confidence=min_rule_strength,  # mirrors min_rule_strength unless overridden
-    filter_min_support=0.0001
+    filter_min_support=0.0001,
+    extraction_batch_size=256,
+    evaluation_batch_size=5000
 )
 ```
 
@@ -137,6 +139,10 @@ Extracts association rules from a trained AutoEncoder using the Aerial algorithm
   rules). Deliberately **not** mirrored to `min_rule_frequency`: rule support is antecedent-**and**-consequent
   support, which is mathematically ≤ antecedent-only frequency, so the two thresholds aren't comparable. Pass `None`
   to disable this post-filter entirely.
+- `extraction_batch_size` (int, optional): Number of antecedent combinations sent through the Autoencoder per forward
+  pass. Default=256. Lower it to reduce memory usage on wide data; does not change the rules found.
+- `evaluation_batch_size` (int, optional): Number of rules whose quality metrics are calculated per batch.
+  Default=5000. Lower it to reduce memory usage on large datasets; does not change the rules found.
 
 **Returns**:
 
@@ -185,7 +191,8 @@ generate_frequent_itemsets(
     features_of_interest=None,
     frequency=0.5,
     max_length=2,
-    num_workers=1
+    num_workers=1,
+    extraction_batch_size=256
 )
 ```
 
@@ -202,6 +209,8 @@ Generates frequent itemsets from a trained AutoEncoder using the same Aerial+ me
   Pass `None` for no limit: itemsets are grown until none passes the frequency threshold.
 - `num_workers` (int, optional): Number of parallel workers for support calculation. Default=1 for sequential processing.
   **Note**: Parallelization is automatically disabled for fewer than 1000 itemsets due to overhead costs. Set to 4-8 for datasets generating 1000+ itemsets.
+- `extraction_batch_size` (int, optional): Number of itemsets sent through the Autoencoder per forward pass.
+  Default=256. Lower it to reduce memory usage on wide data; does not change the itemsets found.
 
 **Returns**:
 
